@@ -136,7 +136,7 @@ const TeamRegistrationPage: React.FC = () => {
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold mb-4">Team Registration</h1>
         <p className="text-gray-600">
-          Register your team for the 8-Ball League by completing the form below.
+          Register your team for League Genius by completing the form below.
         </p>
       </div>
 
@@ -428,7 +428,7 @@ const TeamRegistrationPage: React.FC = () => {
             </p>
             <p className="text-sm text-gray-600">
               For questions or assistance with registration, please contact us at 
-              <a href="mailto:info@8ballleague.com" className="text-orange-500 ml-1">info@8ballleague.com</a>.
+              <a href="mailto:info@leaguegenius.com" className="text-primary ml-1">info@leaguegenius.com</a>.
             </p>
           </div>
         </div>

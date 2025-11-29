@@ -1,80 +1,132 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authApi, type AuthResponse, type RegisterData, type LoginData, Player } from '../api';
 
 // Define user types
 export interface User {
-  id: string;
-  name: string;
+  id: number;
   email: string;
-  role: 'user' | 'admin';
+  first_name: string;
+  last_name: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  player: Player | null;
+  accessToken: string | null;
+  login: (data: LoginData) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
+  logout: () => Promise<void>;
   isLoading: boolean;
+  isAuthenticated: boolean;
+  getAuthToken: () => string | null;
 }
 
 // Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Sample admin user (for demo purposes only)
-const ADMIN_USER: User = {
-  id: '1',
-  name: 'Admin User',
-  email: 'admin@example.com',
-  role: 'admin'
-};
-
 // Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved user in localStorage
+    // Check for saved tokens and user in localStorage
+    const savedAccessToken = localStorage.getItem('accessToken');
+    const savedRefreshToken = localStorage.getItem('refreshToken');
     const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    const savedPlayer = localStorage.getItem('player');
+
+    if (savedAccessToken && savedRefreshToken && savedUser && savedPlayer) {
+      setAccessToken(savedAccessToken);
+      setRefreshToken(savedRefreshToken);
       setUser(JSON.parse(savedUser));
+      setPlayer(JSON.parse(savedPlayer));
     }
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const saveAuthData = (data: AuthResponse) => {
+    setUser(data.user);
+    setPlayer(data.player);
+    setAccessToken(data.access);
+    setRefreshToken(data.refresh);
+
+    localStorage.setItem('accessToken', data.access);
+    localStorage.setItem('refreshToken', data.refresh);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    localStorage.setItem('player', JSON.stringify(data.player));
+  };
+
+  const clearAuthData = () => {
+    setUser(null);
+    setPlayer(null);
+    setAccessToken(null);
+    setRefreshToken(null);
+
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('player');
+  };
+
+  const login = async (data: LoginData): Promise<void> => {
     setIsLoading(true);
-    
-    // In a real app, this would be an API call
-    // For demo purposes, we'll just check if email/password match hardcoded values
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      if (email === 'admin@example.com' && password === 'admin123') {
-        setUser(ADMIN_USER);
-        localStorage.setItem('user', JSON.stringify(ADMIN_USER));
-        setIsLoading(false);
-        return true;
-      }
-      
-      setIsLoading(false);
-      return false;
+      const response = await authApi.login(data);
+      saveAuthData(response);
     } catch (error) {
       console.error('Login error:', error);
+      throw error;
+    } finally {
       setIsLoading(false);
-      return false;
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const register = async (data: RegisterData): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const response = await authApi.register(data);
+      saveAuthData(response);
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      if (refreshToken && accessToken) {
+        await authApi.logout(refreshToken, accessToken);
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Continue with logout even if API call fails
+    } finally {
+      clearAuthData();
+      setIsLoading(false);
+    }
+  };
+
+  const getAuthToken = (): string | null => {
+    return accessToken;
   };
 
   const value = {
     user,
+    player,
+    accessToken,
     login,
+    register,
     logout,
-    isLoading
+    isLoading,
+    isAuthenticated: !!user && !!accessToken,
+    getAuthToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

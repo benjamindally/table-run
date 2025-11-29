@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -13,26 +13,25 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email || !password) {
       setError('Please enter both email and password');
       return;
     }
-    
-    const success = await login(email, password);
-    
-    if (success) {
+
+    try {
+      await login({ email, password });
       navigate('/admin/dashboard');
-    } else {
-      setError('Invalid email or password');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid email or password');
     }
   };
 
   return (
     <div className="max-w-md mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-        <p className="text-gray-600">
+        <h1 className="text-3xl font-bold text-dark mb-2">Welcome Back</h1>
+        <p className="text-dark-300">
           Sign in to your account to access the admin features
         </p>
       </div>
@@ -49,41 +48,31 @@ const LoginPage: React.FC = () => {
           <div className="space-y-6">
             <div className="form-group">
               <label htmlFor="email" className="form-label">Email Address</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="email"
-                  id="email"
-                  className="form-input pl-10"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
+              <input
+                type="email"
+                id="email"
+                className="form-input"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
             
             <div className="form-group">
               <div className="flex items-center justify-between">
                 <label htmlFor="password" className="form-label">Password</label>
-                <Link to="/forgot-password" className="text-sm text-orange-500 hover:text-orange-600">
+                <Link to="/forgot-password" className="text-sm text-primary hover:text-primary-600">
                   Forgot password?
                 </Link>
               </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="password"
-                  id="password"
-                  className="form-input pl-10"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+              <input
+                type="password"
+                id="password"
+                className="form-input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
             
             <div className="flex items-center">
@@ -91,9 +80,9 @@ const LoginPage: React.FC = () => {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                className="h-4 w-4 text-primary focus:ring-primary border-dark-200 rounded"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-dark">
                 Remember me
               </label>
             </div>
@@ -118,24 +107,24 @@ const LoginPage: React.FC = () => {
         <div className="mt-6">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+              <div className="w-full border-t border-cream-400"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Demo credentials</span>
+              <span className="px-2 bg-white text-dark-300">Demo credentials</span>
             </div>
           </div>
-          
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Email: <span className="font-medium">admin@example.com</span></p>
-            <p>Password: <span className="font-medium">admin123</span></p>
+
+          <div className="mt-4 text-center text-sm text-dark-300">
+            <p>Email: <span className="font-medium text-dark">admin@example.com</span></p>
+            <p>Password: <span className="font-medium text-dark">admin123</span></p>
           </div>
         </div>
       </div>
-      
+
       <div className="text-center mt-6">
-        <p className="text-gray-600 text-sm">
+        <p className="text-dark-300 text-sm">
           Don't have an account?{' '}
-          <Link to="/register" className="text-orange-500 hover:text-orange-600 font-medium">
+          <Link to="/register" className="text-primary hover:text-primary-600 font-medium">
             Contact us to register
           </Link>
         </p>

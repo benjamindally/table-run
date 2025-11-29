@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Filter, Download, Plus, Edit, Trash2, Info, X } from 'lucide-react';
+import React, { useState } from "react";
+import { Search, Download, Plus, Edit, Trash2, Info, X } from "lucide-react";
 
 interface Team {
   id: number;
@@ -15,27 +15,119 @@ interface Team {
 const TeamsPage: React.FC = () => {
   // Sample teams data
   const teamData: Team[] = [
-    { id: 1, name: 'Cue Masters', establishment: 'Corner Pocket Bar & Grill', captain: 'John Smith', players: 8, wins: 18, losses: 2, active: true },
-    { id: 2, name: 'Chalk & Awe', establishment: 'The Billiards Club', captain: 'Sarah Johnson', players: 7, wins: 16, losses: 4, active: true },
-    { id: 3, name: 'Break Point', establishment: 'Shark\'s Pool Hall', captain: 'Mike Wilson', players: 8, wins: 15, losses: 5, active: true },
-    { id: 4, name: 'Straight Shooters', establishment: 'Sully\'s Pub', captain: 'Lisa Brown', players: 6, wins: 13, losses: 7, active: true },
-    { id: 5, name: '8-Ball Wizards', establishment: 'Rack & Roll', captain: 'Dave Miller', players: 8, wins: 12, losses: 8, active: true },
-    { id: 6, name: 'Corner Pocket', establishment: 'The 8-Ball Lounge', captain: 'Robert Jones', players: 6, wins: 10, losses: 10, active: true },
-    { id: 7, name: 'Ball Busters', establishment: 'Shooter\'s Place', captain: 'Amanda Lee', players: 7, wins: 9, losses: 11, active: true },
-    { id: 8, name: 'Rack \'em Up', establishment: 'Corner Pocket Bar & Grill', captain: 'Thomas Clark', players: 5, wins: 8, losses: 12, active: true },
-    { id: 9, name: 'Stick Wizards', establishment: 'The Billiards Club', captain: 'Jennifer Adams', players: 6, wins: 7, losses: 13, active: false },
-    { id: 10, name: 'Pool Sharks', establishment: 'Shark\'s Pool Hall', captain: 'Steve Martin', players: 8, wins: 5, losses: 15, active: false },
+    {
+      id: 1,
+      name: "Cue Masters",
+      establishment: "Corner Pocket Bar & Grill",
+      captain: "John Smith",
+      players: 8,
+      wins: 18,
+      losses: 2,
+      active: true,
+    },
+    {
+      id: 2,
+      name: "Chalk & Awe",
+      establishment: "The Billiards Club",
+      captain: "Sarah Johnson",
+      players: 7,
+      wins: 16,
+      losses: 4,
+      active: true,
+    },
+    {
+      id: 3,
+      name: "break Point",
+      establishment: "Shark's Pool Hall",
+      captain: "Mike Wilson",
+      players: 8,
+      wins: 15,
+      losses: 5,
+      active: true,
+    },
+    {
+      id: 4,
+      name: "Straight Shooters",
+      establishment: "Sully's Pub",
+      captain: "Lisa Brown",
+      players: 6,
+      wins: 13,
+      losses: 7,
+      active: true,
+    },
+    {
+      id: 5,
+      name: "8-Ball Wizards",
+      establishment: "Rack & Roll",
+      captain: "Dave Miller",
+      players: 8,
+      wins: 12,
+      losses: 8,
+      active: true,
+    },
+    {
+      id: 6,
+      name: "Corner Pocket",
+      establishment: "The 8-Ball Lounge",
+      captain: "Robert Jones",
+      players: 6,
+      wins: 10,
+      losses: 10,
+      active: true,
+    },
+    {
+      id: 7,
+      name: "Ball Busters",
+      establishment: "Shooter's Place",
+      captain: "Amanda Lee",
+      players: 7,
+      wins: 9,
+      losses: 11,
+      active: true,
+    },
+    {
+      id: 8,
+      name: "Rack 'em Up",
+      establishment: "Corner Pocket Bar & Grill",
+      captain: "Thomas Clark",
+      players: 5,
+      wins: 8,
+      losses: 12,
+      active: true,
+    },
+    {
+      id: 9,
+      name: "Stick Wizards",
+      establishment: "The Billiards Club",
+      captain: "Jennifer Adams",
+      players: 6,
+      wins: 7,
+      losses: 13,
+      active: false,
+    },
+    {
+      id: 10,
+      name: "Pool Sharks",
+      establishment: "Shark's Pool Hall",
+      captain: "Steve Martin",
+      players: 8,
+      wins: 5,
+      losses: 15,
+      active: false,
+    },
   ];
 
   const [teams, setTeams] = useState<Team[]>(teamData);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<boolean | null>(null);
-  const [establishmentFilter, setEstablishmentFilter] = useState('');
+  const [establishmentFilter, setEstablishmentFilter] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
 
   // Get unique establishments for filter dropdown
-  const establishments = Array.from(new Set(teamData.map(team => team.establishment)));
+  const establishments = Array.from(
+    new Set(teamData.map((team) => team.establishment))
+  );
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -45,14 +137,16 @@ const TeamsPage: React.FC = () => {
     setActiveFilter(value);
   };
 
-  const handleEstablishmentFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleEstablishmentFilter = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     setEstablishmentFilter(e.target.value);
   };
 
   const resetFilters = () => {
-    setSearchTerm('');
+    setSearchTerm("");
     setActiveFilter(null);
-    setEstablishmentFilter('');
+    setEstablishmentFilter("");
   };
 
   const confirmDelete = (team: Team) => {
@@ -62,22 +156,24 @@ const TeamsPage: React.FC = () => {
 
   const deleteTeam = () => {
     if (teamToDelete) {
-      setTeams(teams.filter(team => team.id !== teamToDelete.id));
+      setTeams(teams.filter((team) => team.id !== teamToDelete.id));
       setShowDeleteModal(false);
       setTeamToDelete(null);
     }
   };
 
   // Apply filters
-  const filteredTeams = teams.filter(team => {
-    const matchesSearch = team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredTeams = teams.filter((team) => {
+    const matchesSearch =
+      team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       team.captain.toLowerCase().includes(searchTerm.toLowerCase()) ||
       team.establishment.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesActive = activeFilter === null || team.active === activeFilter;
-    
-    const matchesEstablishment = establishmentFilter === '' || team.establishment === establishmentFilter;
-    
+
+    const matchesEstablishment =
+      establishmentFilter === "" || team.establishment === establishmentFilter;
+
     return matchesSearch && matchesActive && matchesEstablishment;
   });
 
@@ -89,7 +185,7 @@ const TeamsPage: React.FC = () => {
           <Plus className="h-5 w-5 mr-1" /> Add New Team
         </button>
       </div>
-      
+
       {/* Filters and search */}
       <div className="bg-white rounded-lg shadow-sm p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -106,16 +202,18 @@ const TeamsPage: React.FC = () => {
               onChange={handleSearch}
             />
           </div>
-          
+
           {/* Active filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
             <div className="flex space-x-2">
               <button
                 className={`px-3 py-2 rounded-md text-sm ${
                   activeFilter === null
-                    ? 'bg-gray-800 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? "bg-gray-800 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
                 onClick={() => handleActiveFilter(null)}
               >
@@ -124,8 +222,8 @@ const TeamsPage: React.FC = () => {
               <button
                 className={`px-3 py-2 rounded-md text-sm ${
                   activeFilter === true
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
                 onClick={() => handleActiveFilter(true)}
               >
@@ -134,8 +232,8 @@ const TeamsPage: React.FC = () => {
               <button
                 className={`px-3 py-2 rounded-md text-sm ${
                   activeFilter === false
-                    ? 'bg-red-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? "bg-red-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
                 onClick={() => handleActiveFilter(false)}
               >
@@ -143,10 +241,13 @@ const TeamsPage: React.FC = () => {
               </button>
             </div>
           </div>
-          
+
           {/* Establishment filter */}
           <div>
-            <label htmlFor="establishmentFilter" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="establishmentFilter"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Establishment
             </label>
             <select
@@ -163,13 +264,15 @@ const TeamsPage: React.FC = () => {
               ))}
             </select>
           </div>
-          
+
           {/* Actions */}
           <div className="flex items-end space-x-2">
             <button
               onClick={resetFilters}
               className="btn btn-outline px-3 py-2"
-              disabled={!searchTerm && activeFilter === null && !establishmentFilter}
+              disabled={
+                !searchTerm && activeFilter === null && !establishmentFilter
+              }
             >
               Reset Filters
             </button>
@@ -179,7 +282,7 @@ const TeamsPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Teams table */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -217,7 +320,9 @@ const TeamsPage: React.FC = () => {
                 filteredTeams.map((team) => (
                   <tr key={team.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{team.name}</div>
+                      <div className="font-medium text-gray-900">
+                        {team.name}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {team.establishment}
@@ -232,32 +337,37 @@ const TeamsPage: React.FC = () => {
                       {team.wins}W - {team.losses}L
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-medium">
-                      {((team.wins / (team.wins + team.losses)) * 100).toFixed(1)}%
+                      {((team.wins / (team.wins + team.losses)) * 100).toFixed(
+                        1
+                      )}
+                      %
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        team.active 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {team.active ? 'Active' : 'Inactive'}
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          team.active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {team.active ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
                       <div className="flex justify-center space-x-2">
-                        <button 
+                        <button
                           className="text-blue-600 hover:text-blue-800"
                           title="View team details"
                         >
                           <Info className="h-5 w-5" />
                         </button>
-                        <button 
+                        <button
                           className="text-gray-600 hover:text-gray-800"
                           title="Edit team"
                         >
                           <Edit className="h-5 w-5" />
                         </button>
-                        <button 
+                        <button
                           className="text-red-600 hover:text-red-800"
                           title="Delete team"
                           onClick={() => confirmDelete(team)}
@@ -270,7 +380,10 @@ const TeamsPage: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={8}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     No teams found matching your filters.
                   </td>
                 </tr>
@@ -279,14 +392,14 @@ const TeamsPage: React.FC = () => {
           </table>
         </div>
       </div>
-      
+
       {/* Delete confirmation modal */}
       {showDeleteModal && teamToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-medium">Confirm Delete</h3>
-              <button 
+              <button
                 onClick={() => setShowDeleteModal(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -298,7 +411,8 @@ const TeamsPage: React.FC = () => {
                 Are you sure you want to delete the team "{teamToDelete.name}"?
               </p>
               <p className="text-red-600 text-sm">
-                This action cannot be undone. All team data, including match history, will be removed.
+                This action cannot be undone. All team data, including match
+                history, will be removed.
               </p>
             </div>
             <div className="flex justify-end space-x-3">

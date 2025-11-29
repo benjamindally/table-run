@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, ClipboardList, LogOut, School as PoolBall } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, LogOut, Calendar } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const AdminSidebar: React.FC = () => {
@@ -18,6 +18,11 @@ const AdminSidebar: React.FC = () => {
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
+      name: 'Seasons',
+      path: '/admin/seasons',
+      icon: <Calendar className="h-5 w-5" />,
+    },
+    {
       name: 'Teams',
       path: '/admin/teams',
       icon: <Users className="h-5 w-5" />,
@@ -30,12 +35,12 @@ const AdminSidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="bg-black text-white w-64 flex-shrink-0 hidden md:block">
+    <aside className="bg-dark text-cream w-64 flex-shrink-0 hidden md:block">
       <div className="h-full flex flex-col">
-        <div className="p-6 border-b border-gray-800">
+        <div className="p-6 border-b border-dark-400">
           <Link to="/" className="flex items-center space-x-2">
-            <PoolBall className="h-8 w-8 text-orange-500" />
-            <span className="font-bold text-xl">8-Ball Admin</span>
+            <img src="/league-genius-logo.png" alt="League Genius" className="h-10 w-10" />
+            <span className="font-bold text-xl">League Genius</span>
           </Link>
         </div>
 
@@ -47,8 +52,8 @@ const AdminSidebar: React.FC = () => {
                   to={item.path}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${
                     isActive(item.path)
-                      ? 'bg-orange-500 text-white'
-                      : 'text-gray-300 hover:bg-gray-800'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-cream-400 hover:bg-dark-400 hover:text-cream'
                   }`}
                 >
                   {item.icon}
@@ -59,10 +64,10 @@ const AdminSidebar: React.FC = () => {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-gray-800">
+        <div className="p-4 border-t border-dark-400">
           <button
             onClick={logout}
-            className="flex items-center space-x-3 px-4 py-3 rounded-md text-gray-300 hover:bg-gray-800 w-full transition-colors"
+            className="flex items-center space-x-3 px-4 py-3 rounded-md text-cream-400 hover:bg-dark-400 hover:text-cream w-full transition-colors"
           >
             <LogOut className="h-5 w-5" />
             <span>Logout</span>

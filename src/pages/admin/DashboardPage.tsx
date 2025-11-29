@@ -1,50 +1,50 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  TrendingUp, 
-  Users, 
-  Calendar, 
-  Award, 
+import React from "react";
+import { Link } from "react-router-dom";
+import {
+  TrendingUp,
+  Users,
+  Calendar,
+  Award,
   ArrowRight,
   ArrowUpRight,
   ArrowDownRight,
   CheckCircle2,
-  Clock
-} from 'lucide-react';
+  Clock,
+} from "lucide-react";
 
 const DashboardPage: React.FC = () => {
   // Sample data for demonstration
   const recentMatches = [
     {
       id: 1,
-      date: '2025-01-15',
-      homeTeam: 'Cue Masters',
+      date: "2025-01-15",
+      homeTeam: "Cue Masters",
       homeScore: 3,
-      awayTeam: 'Chalk & Awe',
+      awayTeam: "Chalk & Awe",
       awayScore: 1,
     },
     {
       id: 2,
-      date: '2025-01-14',
-      homeTeam: 'Break Point',
+      date: "2025-01-14",
+      homeTeam: "break Point",
       homeScore: 2,
-      awayTeam: 'Straight Shooters',
+      awayTeam: "Straight Shooters",
       awayScore: 2,
     },
     {
       id: 3,
-      date: '2025-01-13',
-      homeTeam: '8-Ball Wizards',
+      date: "2025-01-13",
+      homeTeam: "8-Ball Wizards",
       homeScore: 0,
-      awayTeam: 'Corner Pocket',
+      awayTeam: "Corner Pocket",
       awayScore: 4,
     },
     {
       id: 4,
-      date: '2025-01-12',
-      homeTeam: 'Ball Busters',
+      date: "2025-01-12",
+      homeTeam: "Ball Busters",
       homeScore: 3,
-      awayTeam: 'Rack \'em Up',
+      awayTeam: "Rack 'em Up",
       awayScore: 1,
     },
   ];
@@ -52,31 +52,31 @@ const DashboardPage: React.FC = () => {
   const upcomingMatches = [
     {
       id: 1,
-      date: '2025-01-20',
-      homeTeam: 'Chalk & Awe',
-      awayTeam: 'Break Point',
-      venue: 'The Billiards Club',
+      date: "2025-01-20",
+      homeTeam: "Chalk & Awe",
+      awayTeam: "break Point",
+      venue: "The Billiards Club",
     },
     {
       id: 2,
-      date: '2025-01-21',
-      homeTeam: 'Straight Shooters',
-      awayTeam: 'Cue Masters',
-      venue: 'Corner Pocket Bar & Grill',
+      date: "2025-01-21",
+      homeTeam: "Straight Shooters",
+      awayTeam: "Cue Masters",
+      venue: "Corner Pocket Bar & Grill",
     },
     {
       id: 3,
-      date: '2025-01-22',
-      homeTeam: 'Corner Pocket',
-      awayTeam: 'Ball Busters',
-      venue: 'Shark\'s Pool Hall',
+      date: "2025-01-22",
+      homeTeam: "Corner Pocket",
+      awayTeam: "Ball Busters",
+      venue: "Shark's Pool Hall",
     },
   ];
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-      
+
       {/* Stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow-sm p-6">
@@ -97,11 +97,13 @@ const DashboardPage: React.FC = () => {
             <span className="text-gray-500 ml-2">Since last season</span>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-gray-500">Active Players</p>
+              <p className="text-sm font-medium text-gray-500">
+                Active Players
+              </p>
               <p className="text-2xl font-bold mt-1">156</p>
             </div>
             <div className="bg-green-100 p-2 rounded-lg">
@@ -116,11 +118,13 @@ const DashboardPage: React.FC = () => {
             <span className="text-gray-500 ml-2">Since last month</span>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-gray-500">Matches Played</p>
+              <p className="text-sm font-medium text-gray-500">
+                Matches Played
+              </p>
               <p className="text-2xl font-bold mt-1">432</p>
             </div>
             <div className="bg-orange-100 p-2 rounded-lg">
@@ -135,11 +139,13 @@ const DashboardPage: React.FC = () => {
             <span className="text-gray-500 ml-2">Current season</span>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-gray-500">Upcoming Matches</p>
+              <p className="text-sm font-medium text-gray-500">
+                Upcoming Matches
+              </p>
               <p className="text-2xl font-bold mt-1">16</p>
             </div>
             <div className="bg-purple-100 p-2 rounded-lg">
@@ -155,7 +161,7 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Recent Matches */}
       <div className="bg-white rounded-lg shadow-sm">
         <div className="flex justify-between items-center p-6 border-b">
@@ -171,11 +177,21 @@ const DashboardPage: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
               <tr className="bg-gray-50">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Home Team</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Away Team</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Home Team
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Score
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Away Team
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -188,23 +204,27 @@ const DashboardPage: React.FC = () => {
                     {match.homeTeam}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                    <span className={`font-bold ${
-                      match.homeScore > match.awayScore 
-                        ? 'text-green-600' 
-                        : match.homeScore < match.awayScore 
-                          ? 'text-red-600' 
-                          : 'text-blue-600'
-                    }`}>
+                    <span
+                      className={`font-bold ${
+                        match.homeScore > match.awayScore
+                          ? "text-green-600"
+                          : match.homeScore < match.awayScore
+                          ? "text-red-600"
+                          : "text-blue-600"
+                      }`}
+                    >
                       {match.homeScore}
                     </span>
                     {" - "}
-                    <span className={`font-bold ${
-                      match.awayScore > match.homeScore 
-                        ? 'text-green-600' 
-                        : match.awayScore < match.homeScore 
-                          ? 'text-red-600' 
-                          : 'text-blue-600'
-                    }`}>
+                    <span
+                      className={`font-bold ${
+                        match.awayScore > match.homeScore
+                          ? "text-green-600"
+                          : match.awayScore < match.homeScore
+                          ? "text-red-600"
+                          : "text-blue-600"
+                      }`}
+                    >
                       {match.awayScore}
                     </span>
                   </td>
@@ -222,7 +242,7 @@ const DashboardPage: React.FC = () => {
           </table>
         </div>
       </div>
-      
+
       {/* Two-column layout for Upcoming Matches and Top Teams */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Matches */}
@@ -239,13 +259,16 @@ const DashboardPage: React.FC = () => {
           <div className="p-6">
             <div className="space-y-4">
               {upcomingMatches.map((match) => (
-                <div key={match.id} className="border rounded-md p-4 hover:shadow-sm transition-shadow">
+                <div
+                  key={match.id}
+                  className="border rounded-md p-4 hover:shadow-sm transition-shadow"
+                >
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-500">
-                      {new Date(match.date).toLocaleDateString('en-US', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric' 
+                      {new Date(match.date).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
                       })}
                     </span>
                     <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
@@ -266,7 +289,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Top Teams */}
         <div className="bg-white rounded-lg shadow-sm">
           <div className="flex justify-between items-center p-6 border-b">
@@ -281,11 +304,32 @@ const DashboardPage: React.FC = () => {
           <div className="p-6">
             <div className="space-y-4">
               {[
-                { rank: 1, team: 'Cue Masters', wins: 18, losses: 2, percentage: 90 },
-                { rank: 2, team: 'Chalk & Awe', wins: 16, losses: 4, percentage: 80 },
-                { rank: 3, team: 'Break Point', wins: 15, losses: 5, percentage: 75 },
+                {
+                  rank: 1,
+                  team: "Cue Masters",
+                  wins: 18,
+                  losses: 2,
+                  percentage: 90,
+                },
+                {
+                  rank: 2,
+                  team: "Chalk & Awe",
+                  wins: 16,
+                  losses: 4,
+                  percentage: 80,
+                },
+                {
+                  rank: 3,
+                  team: "break Point",
+                  wins: 15,
+                  losses: 5,
+                  percentage: 75,
+                },
               ].map((team) => (
-                <div key={team.rank} className="flex items-center p-3 border rounded-md hover:bg-gray-50">
+                <div
+                  key={team.rank}
+                  className="flex items-center p-3 border rounded-md hover:bg-gray-50"
+                >
                   <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 mr-4">
                     {team.rank === 1 ? (
                       <Award className="h-4 w-4 text-yellow-500" />
@@ -302,7 +346,9 @@ const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-bold text-gray-900">{team.percentage}%</div>
+                    <div className="text-sm font-bold text-gray-900">
+                      {team.percentage}%
+                    </div>
                     <div className="text-xs text-gray-500">Win rate</div>
                   </div>
                 </div>
@@ -311,12 +357,14 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-orange-500 text-white rounded-lg shadow-sm p-6 hover:bg-orange-600 transition-colors">
           <h2 className="text-lg font-bold mb-2">Register New Team</h2>
-          <p className="mb-4 text-orange-100">Quickly add a new team to the league database.</p>
+          <p className="mb-4 text-orange-100">
+            Quickly add a new team to the league database.
+          </p>
           <Link
             to="/register"
             className="inline-flex items-center text-sm font-medium"
@@ -324,10 +372,12 @@ const DashboardPage: React.FC = () => {
             Add Team <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
         </div>
-        
+
         <div className="bg-gray-800 text-white rounded-lg shadow-sm p-6 hover:bg-gray-900 transition-colors">
           <h2 className="text-lg font-bold mb-2">Record Match</h2>
-          <p className="mb-4 text-gray-300">Enter results for a recently completed match.</p>
+          <p className="mb-4 text-gray-300">
+            Enter results for a recently completed match.
+          </p>
           <Link
             to="/match-score"
             className="inline-flex items-center text-sm font-medium"
@@ -335,10 +385,12 @@ const DashboardPage: React.FC = () => {
             Enter Scores <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
         </div>
-        
+
         <div className="bg-blue-600 text-white rounded-lg shadow-sm p-6 hover:bg-blue-700 transition-colors">
           <h2 className="text-lg font-bold mb-2">Export Reports</h2>
-          <p className="mb-4 text-blue-100">Generate and download league statistics and reports.</p>
+          <p className="mb-4 text-blue-100">
+            Generate and download league statistics and reports.
+          </p>
           <button className="inline-flex items-center text-sm font-medium">
             Export Data <ArrowRight className="ml-1 h-4 w-4" />
           </button>

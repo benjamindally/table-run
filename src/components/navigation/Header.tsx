@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, School as PoolBall } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Header: React.FC = () => {
@@ -17,54 +17,61 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-black text-white shadow-md">
+    <header className="bg-dark-900 text-cream shadow-md">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <PoolBall className="h-8 w-8 text-orange-500" />
-            <span className="font-bold text-xl">8-Ball League</span>
+            <span className="font-bold text-xl">League</span>
+            <img src="/league-genius-logo.png" alt="League Genius" className="h-[45px] w-[45px]" />
+            <span className="font-bold text-xl">Genius</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-6">
             <Link
               to="/"
-              className={`hover:text-orange-400 transition-colors ${
-                isActive('/') ? 'text-orange-500 font-medium' : ''
+              className={`hover:text-primary-300 transition-colors ${
+                isActive('/') ? 'text-primary font-medium' : ''
               }`}
             >
               Home
             </Link>
             <Link
+              to="/standings"
+              className={`hover:text-primary-300 transition-colors ${
+                isActive('/standings') ? 'text-primary font-medium' : ''
+              }`}
+            >
+              Standings
+            </Link>
+            <Link
               to="/register"
-              className={`hover:text-orange-400 transition-colors ${
-                isActive('/register') ? 'text-orange-500 font-medium' : ''
+              className={`hover:text-primary-300 transition-colors ${
+                isActive('/register') ? 'text-primary font-medium' : ''
               }`}
             >
               Register Team
             </Link>
             <Link
-              to="/match-score"
-              className={`hover:text-orange-400 transition-colors ${
-                isActive('/match-score') ? 'text-orange-500 font-medium' : ''
+              to="/score-entry"
+              className={`hover:text-primary-300 transition-colors ${
+                isActive('/score-entry') ? 'text-primary font-medium' : ''
               }`}
             >
               Submit Scores
             </Link>
             {user ? (
               <>
-                {user.role === 'admin' && (
-                  <Link
-                    to="/admin/dashboard"
-                    className="hover:text-orange-400 transition-colors"
-                  >
-                    Admin
-                  </Link>
-                )}
+                <Link
+                  to="/admin/dashboard"
+                  className="hover:text-primary-300 transition-colors"
+                >
+                  Admin
+                </Link>
                 <button
                   onClick={logout}
-                  className="hover:text-orange-400 transition-colors"
+                  className="hover:text-primary-300 transition-colors"
                 >
                   Logout
                 </button>
@@ -72,8 +79,8 @@ const Header: React.FC = () => {
             ) : (
               <Link
                 to="/login"
-                className={`hover:text-orange-400 transition-colors ${
-                  isActive('/login') ? 'text-orange-500 font-medium' : ''
+                className={`hover:text-primary-300 transition-colors ${
+                  isActive('/login') ? 'text-primary font-medium' : ''
                 }`}
               >
                 Login
@@ -83,7 +90,7 @@ const Header: React.FC = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-white focus:outline-none"
+            className="md:hidden text-cream focus:outline-none"
             onClick={toggleMenu}
           >
             {isMenuOpen ? (
@@ -99,26 +106,35 @@ const Header: React.FC = () => {
           <div className="md:hidden py-4 space-y-3 slide-in">
             <Link
               to="/"
-              className={`block py-2 hover:text-orange-400 ${
-                isActive('/') ? 'text-orange-500 font-medium' : ''
+              className={`block py-2 hover:text-primary-300 transition-colors ${
+                isActive('/') ? 'text-primary font-medium' : ''
               }`}
               onClick={toggleMenu}
             >
               Home
             </Link>
             <Link
+              to="/standings"
+              className={`block py-2 hover:text-primary-300 transition-colors ${
+                isActive('/standings') ? 'text-primary font-medium' : ''
+              }`}
+              onClick={toggleMenu}
+            >
+              Standings
+            </Link>
+            <Link
               to="/register"
-              className={`block py-2 hover:text-orange-400 ${
-                isActive('/register') ? 'text-orange-500 font-medium' : ''
+              className={`block py-2 hover:text-primary-300 transition-colors ${
+                isActive('/register') ? 'text-primary font-medium' : ''
               }`}
               onClick={toggleMenu}
             >
               Register Team
             </Link>
             <Link
-              to="/match-score"
-              className={`block py-2 hover:text-orange-400 ${
-                isActive('/match-score') ? 'text-orange-500 font-medium' : ''
+              to="/score-entry"
+              className={`block py-2 hover:text-primary-300 transition-colors ${
+                isActive('/score-entry') ? 'text-primary font-medium' : ''
               }`}
               onClick={toggleMenu}
             >
@@ -126,21 +142,19 @@ const Header: React.FC = () => {
             </Link>
             {user ? (
               <>
-                {user.role === 'admin' && (
-                  <Link
-                    to="/admin/dashboard"
-                    className="block py-2 hover:text-orange-400"
-                    onClick={toggleMenu}
-                  >
-                    Admin
-                  </Link>
-                )}
+                <Link
+                  to="/admin/dashboard"
+                  className="block py-2 hover:text-primary-300 transition-colors"
+                  onClick={toggleMenu}
+                >
+                  Admin
+                </Link>
                 <button
                   onClick={() => {
                     logout();
                     toggleMenu();
                   }}
-                  className="block py-2 hover:text-orange-400 w-full text-left"
+                  className="block py-2 hover:text-primary-300 transition-colors w-full text-left"
                 >
                   Logout
                 </button>
@@ -148,8 +162,8 @@ const Header: React.FC = () => {
             ) : (
               <Link
                 to="/login"
-                className={`block py-2 hover:text-orange-400 ${
-                  isActive('/login') ? 'text-orange-500 font-medium' : ''
+                className={`block py-2 hover:text-primary-300 transition-colors ${
+                  isActive('/login') ? 'text-primary font-medium' : ''
                 }`}
                 onClick={toggleMenu}
               >

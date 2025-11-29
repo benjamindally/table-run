@@ -1,15 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import {
-  Info,
-  Calendar,
-  Users,
-  TrendingUp,
-  Save,
-  School as PoolBall,
-  X,
-} from "lucide-react";
 
 interface MatchPlayer {
   name: string;
@@ -69,28 +59,6 @@ const MatchScorePage: React.FC = () => {
   );
   const [newMemberName, setNewMemberName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // For demo - teams and venues
-  const availableTeams = [
-    "Cue Masters",
-    "Chalk & Awe",
-    "Break Point",
-    "Straight Shooters",
-    "8-Ball Wizards",
-    "Corner Pocket",
-    "Ball Busters",
-    "Rack 'em Up",
-  ];
-
-  const availableVenues = [
-    `Corner Pocket Bar & Grill`,
-    `The Billiards Club`,
-    `Shark's Pool Hall`,
-    `Sully's Pub`,
-    `Rack & Roll`,
-    `The 8-Ball Lounge`,
-    `Shooter's Place`,
-  ];
 
   return <div>{/* Component implementation */}</div>;
 };
