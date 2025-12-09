@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Search, Plus, Info, Users, Trophy, Calendar, Copy } from 'lucide-react';
-import { useSeasons, useSeasonTeams } from '../../hooks/useSeasons';
+import { Search, Plus, Info, Users, Trophy, Calendar, Copy, X } from 'lucide-react';
+import { useSeasons, useSeasonTeams, useCreateSeason } from '../../hooks/useSeasons';
+import { useLeagues } from '../../hooks/useLeagues';
 import { Season } from '../../api/types';
 import { toast } from 'react-toastify';
 
@@ -8,12 +9,26 @@ const SeasonsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<boolean | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [formData, setFormData] = useState({
+    league: '',
+    name: '',
+    start_date: '',
+    end_date: '',
+    is_active: true,
+  });
 
   // Fetch all seasons using React Query
   const { data: seasonsData, isLoading, error } = useSeasons();
 
   // Fetch teams for selected season (only when a season is selected)
   const { data: seasonTeams, isLoading: loadingTeams } = useSeasonTeams(selectedSeason?.id || 0);
+
+  // Fetch all leagues for the create modal
+  const { data: leaguesData } = useLeagues();
+
+  // Create season mutation
+  const createSeasonMutation = useCreateSeason();
 
   const seasons = seasonsData?.results || [];
 
@@ -33,6 +48,39 @@ const SeasonsPage: React.FC = () => {
   const resetFilters = () => {
     setSearchTerm('');
     setActiveFilter(null);
+  };
+
+  const handleCreateSeason = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.league || !formData.name || !formData.start_date) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      await createSeasonMutation.mutateAsync({
+        league: Number(formData.league),
+        name: formData.name,
+        start_date: formData.start_date,
+        end_date: formData.end_date || null,
+        is_active: formData.is_active,
+        is_archived: false,
+      });
+
+      toast.success('Season created successfully!');
+      setShowCreateModal(false);
+      setFormData({
+        league: '',
+        name: '',
+        start_date: '',
+        end_date: '',
+        is_active: true,
+      });
+    } catch (error) {
+      console.error('Failed to create season:', error);
+      toast.error('Failed to create season');
+    }
   };
 
   // Apply filters
@@ -70,7 +118,10 @@ const SeasonsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-dark">Season Management</h1>
-        <button className="btn btn-primary flex items-center">
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="btn btn-primary flex items-center"
+        >
           <Plus className="h-5 w-5 mr-1" /> Create New Season
         </button>
       </div>
@@ -327,6 +378,124 @@ const SeasonsPage: React.FC = () => {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Season Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
+            <div className="flex justify-between items-start p-6 border-b">
+              <h3 className="text-xl font-semibold">Create New Season</h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSeason} className="p-6">
+              <div className="space-y-4">
+                {/* League Select */}
+                <div>
+                  <label htmlFor="league" className="block text-sm font-medium text-gray-700 mb-1">
+                    League <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="league"
+                    required
+                    value={formData.league}
+                    onChange={(e) => setFormData({ ...formData, league: e.target.value })}
+                    className="form-input w-full"
+                  >
+                    <option value="">Select a league...</option>
+                    {leaguesData?.results.map((league) => (
+                      <option key={league.id} value={league.id}>
+                        {league.name} - {league.city}, {league.state}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Season Name */}
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Season Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    required
+                    placeholder="e.g., Fall 2024, Winter League"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="form-input w-full"
+                  />
+                </div>
+
+                {/* Start Date */}
+                <div>
+                  <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="start_date"
+                    required
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    className="form-input w-full"
+                  />
+                </div>
+
+                {/* End Date */}
+                <div>
+                  <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    id="end_date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                    className="form-input w-full"
+                  />
+                </div>
+
+                {/* Active Toggle */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={formData.is_active}
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700">
+                    Active (teams can join)
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="btn btn-outline"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createSeasonMutation.isPending}
+                  className="btn btn-primary"
+                >
+                  {createSeasonMutation.isPending ? 'Creating...' : 'Create Season'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
