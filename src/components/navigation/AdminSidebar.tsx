@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, ClipboardList, LogOut, Calendar } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, LogOut, Calendar } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const AdminSidebar: React.FC = () => {
@@ -18,18 +18,13 @@ const AdminSidebar: React.FC = () => {
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-      name: 'Seasons',
-      path: '/admin/seasons',
+      name: 'Leagues',
+      path: '/admin/leagues',
       icon: <Calendar className="h-5 w-5" />,
     },
     {
-      name: 'Teams',
-      path: '/admin/teams',
-      icon: <Users className="h-5 w-5" />,
-    },
-    {
-      name: 'Matches',
-      path: '/admin/matches',
+      name: 'Seasons',
+      path: '/admin/seasons',
       icon: <ClipboardList className="h-5 w-5" />,
     },
   ];

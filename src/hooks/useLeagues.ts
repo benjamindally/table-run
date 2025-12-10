@@ -29,6 +29,18 @@ export const useLeagues = () => {
 };
 
 /**
+ * Get leagues where the current user is an operator
+ */
+export const useMyLeagues = () => {
+  const { getAuthToken } = useAuth();
+
+  return useQuery({
+    queryKey: [...leagueKeys.all, 'my-leagues'] as const,
+    queryFn: () => leaguesApi.getMyLeagues(getAuthToken() || undefined),
+  });
+};
+
+/**
  * Get a single league by ID
  */
 export const useLeague = (id: number) => {
@@ -52,7 +64,9 @@ export const useCreateLeague = () => {
     mutationFn: (data: Partial<League>) =>
       leaguesApi.create(data, getAuthToken() || undefined),
     onSuccess: () => {
+      // Invalidate both general league list and user's leagues
       queryClient.invalidateQueries({ queryKey: leagueKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: [...leagueKeys.all, 'my-leagues'] });
     },
   });
 };
@@ -70,6 +84,7 @@ export const useUpdateLeague = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: leagueKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: leagueKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: [...leagueKeys.all, 'my-leagues'] });
     },
   });
 };

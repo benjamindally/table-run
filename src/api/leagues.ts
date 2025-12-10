@@ -13,6 +13,12 @@ export const leaguesApi = {
     api.get<PaginatedResponse<League>>('/leagues/', token),
 
   /**
+   * Get leagues where the current user is an operator
+   */
+  getMyLeagues: (token?: string) =>
+    api.get<PaginatedResponse<League>>('/league-operators/my_leagues/', token),
+
+  /**
    * Get a single league by ID
    */
   getById: (id: number, token?: string) =>

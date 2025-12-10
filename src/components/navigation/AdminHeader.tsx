@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Bell, User, Search, LayoutDashboard, Users, ClipboardList, LogOut } from 'lucide-react';
+import { Menu, X, Bell, User, LayoutDashboard, Users, ClipboardList, LogOut } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -56,22 +56,11 @@ const AdminHeader: React.FC = () => {
           )}
         </button>
 
-        {/* Page title - show current path formatted nicely */}
-        <h1 className="text-xl font-semibold text-dark hidden md:block">
-          {location.pathname.split('/').pop()?.replace(/-/g, ' ').replace(/^\w/, (c) => c.toUpperCase())}
-        </h1>
+        {/* Spacer to push right side elements to the right */}
+        <div className="flex-1"></div>
 
         {/* Right side elements */}
         <div className="flex items-center space-x-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-9 pr-4 py-2 border border-dark-200 rounded-md text-sm text-dark bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent hidden md:block"
-            />
-            <Search className="h-4 w-4 text-dark-300 absolute top-2.5 left-3 hidden md:block" />
-          </div>
-
           <button className="text-dark hover:text-primary transition-colors relative">
             <Bell className="h-6 w-6" />
             <span className="absolute top-0 right-0 h-2 w-2 bg-accent rounded-full"></span>
