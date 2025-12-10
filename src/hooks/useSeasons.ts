@@ -82,6 +82,8 @@ export const useCreateSeason = () => {
     onSuccess: () => {
       // Invalidate and refetch seasons list
       queryClient.invalidateQueries({ queryKey: seasonKeys.lists() });
+      // Also invalidate leagues to update season count
+      queryClient.invalidateQueries({ queryKey: ['leagues'] });
     },
   });
 };

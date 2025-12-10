@@ -12,6 +12,7 @@ export type { TeamSeasonStats, PlayerSeasonStats, PlayerWeekStats } from './team
 export { matchesApi } from './matches';
 export { seasonsApi } from './seasons';
 export type { SeasonStandingsResponse, TeamStanding } from './seasons';
+export { leaguesApi } from './leagues';
 export { captainRequestsApi } from './captainRequests';
 export { statsApi } from './stats';
 export type { LeagueStats } from './stats';

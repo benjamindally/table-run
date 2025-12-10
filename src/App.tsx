@@ -21,7 +21,10 @@ import RegisterPage from './pages/RegisterPage';
 import AdminDashboardPage from './pages/admin/DashboardPage';
 import AdminTeamsPage from './pages/admin/TeamsPage';
 import AdminMatchesPage from './pages/admin/MatchesPage';
+import AdminLeaguesPage from './pages/admin/LeaguesPage';
+import AdminLeagueDetailsPage from './pages/admin/LeagueDetailsPage';
 import AdminSeasonsPage from './pages/admin/SeasonsPage';
+import AdminSeasonDetailsPage from './pages/admin/SeasonDetailsPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
@@ -50,7 +53,10 @@ function App() {
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="teams" element={<AdminTeamsPage />} />
             <Route path="matches" element={<AdminMatchesPage />} />
+            <Route path="leagues" element={<AdminLeaguesPage />} />
+            <Route path="leagues/:id" element={<AdminLeagueDetailsPage />} />
             <Route path="seasons" element={<AdminSeasonsPage />} />
+            <Route path="seasons/:id" element={<AdminSeasonDetailsPage />} />
           </Route>
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} />
