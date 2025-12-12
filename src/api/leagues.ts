@@ -2,21 +2,21 @@
  * League-related API calls
  */
 
-import { api } from './client';
-import { League, PaginatedResponse } from './types';
+import { api } from "./client";
+import { League, PaginatedResponse } from "./types";
 
 export const leaguesApi = {
   /**
    * Get all leagues (paginated)
    */
   getAll: (token?: string) =>
-    api.get<PaginatedResponse<League>>('/leagues/', token),
+    api.get<PaginatedResponse<League>>("/leagues/", token),
 
   /**
    * Get leagues where the current user is an operator
    */
   getMyLeagues: (token?: string) =>
-    api.get<PaginatedResponse<League>>('/league-operators/my_leagues/', token),
+    api.get<PaginatedResponse<League>>("/league-operators/my_leagues/", token),
 
   /**
    * Get a single league by ID
@@ -28,7 +28,7 @@ export const leaguesApi = {
    * Create a new league
    */
   create: (data: Partial<League>, token?: string) =>
-    api.post<League>('/leagues/', data, token),
+    api.post<League>("/leagues/", data, token),
 
   /**
    * Update a league

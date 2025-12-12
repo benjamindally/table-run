@@ -17,14 +17,18 @@ async function apiRequest<T>(
 ): Promise<T> {
   const { token, ...fetchOptions } = options;
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...fetchOptions.headers,
   };
 
   // Add auth token if provided
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  // Merge with any additional headers from fetchOptions
+  if (fetchOptions.headers) {
+    Object.assign(headers, fetchOptions.headers);
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -36,6 +40,11 @@ async function apiRequest<T>(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || errorData.error || `API Error: ${response.status}`);
+  }
+
+  // Handle empty responses (e.g., 204 No Content from DELETE requests)
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
+    return {} as T;
   }
 
   // Return parsed JSON
