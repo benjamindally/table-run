@@ -53,6 +53,33 @@ export const seasonsApi = {
    */
   getStandings: (seasonId: number, token?: string) =>
     api.get<SeasonStandingsResponse>(`/seasons/${seasonId}/standings/`, token),
+
+  /**
+   * Import CSV files to populate season with teams and players
+   */
+  importCSV: async (seasonId: number, files: { teamStandings: File; individualStandings: File }, token?: string) => {
+    const formData = new FormData();
+    formData.append('team_standings', files.teamStandings);
+    formData.append('individual_standings', files.individualStandings);
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/seasons/${seasonId}/import-csv/`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Import failed: ${response.status}`);
+    }
+
+    return response.json();
+  },
 };
 
 export interface SeasonStandingsResponse {
