@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, Users, ArrowRight } from 'lucide-react';
-import { useMyLeagues } from '../../hooks/useLeagues';
-import { useSeasons } from '../../hooks/useSeasons';
+import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { Calendar, Users, ArrowRight } from "lucide-react";
+import { useMyLeagues } from "../../hooks/useLeagues";
+import { useSeasons } from "../../hooks/useSeasons";
 
 const SeasonsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,10 +16,13 @@ const SeasonsPage: React.FC = () => {
 
   // Filter seasons to only show those from leagues the user operates
   const mySeasons = useMemo(() => {
-    const myLeagueIds = leagues.map(l => l.id);
+    const myLeagueIds = leagues.map((l) => l.id);
     return allSeasons
-      .filter(season => myLeagueIds.includes(season.league))
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      .filter((season) => myLeagueIds.includes(season.league))
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
   }, [allSeasons, leagues]);
 
   const displayedSeasons = showAll ? mySeasons : mySeasons.slice(0, 9);
@@ -63,19 +66,27 @@ const SeasonsPage: React.FC = () => {
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-dark">{season.name}</h3>
+                      <h3 className="text-lg font-semibold text-dark">
+                        {season.name}
+                      </h3>
                       <p className="text-sm text-dark-300 mt-1">
                         {season.league_detail?.name}
                       </p>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      season.is_active
-                        ? 'bg-secondary-100 text-secondary-800'
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        season.is_active
+                          ? "bg-secondary-100 text-secondary-800"
+                          : season.is_archived
+                          ? "bg-cream-400 text-dark-400"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {season.is_active
+                        ? "Active"
                         : season.is_archived
-                        ? 'bg-cream-400 text-dark-400'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {season.is_active ? 'Active' : season.is_archived ? 'Archived' : 'Inactive'}
+                        ? "Archived"
+                        : "Inactive"}
                     </span>
                   </div>
 
@@ -107,7 +118,9 @@ const SeasonsPage: React.FC = () => {
                         <Users className="h-4 w-4 mr-2" />
                         <span>Teams</span>
                       </div>
-                      <span className="font-semibold text-dark">{season.team_count || 0}</span>
+                      <span className="font-semibold text-dark">
+                        {season.team_count || 0}
+                      </span>
                     </div>
                   </div>
 
@@ -139,10 +152,10 @@ const SeasonsPage: React.FC = () => {
       ) : (
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
           <div className="text-gray-500 mb-4">
-            No seasons found. Create a season from the Leagues page to get started.
+            No seasons found. Create a League to get started.
           </div>
           <button
-            onClick={() => navigate('/admin/leagues')}
+            onClick={() => navigate("/admin/leagues")}
             className="btn btn-primary flex items-center mx-auto"
           >
             Go to Leagues

@@ -1,14 +1,18 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Plus, UserPlus, Building2, Users } from "lucide-react";
+import { leaguesApi } from "../api/leagues";
+import CreateLeagueModal from "../components/CreateLeagueModal";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, getAuthToken } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showNoLeaguesPrompt, setShowNoLeaguesPrompt] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +25,30 @@ const LoginPage: React.FC = () => {
 
     try {
       await login({ email, password });
-      navigate("/admin/dashboard");
+
+      // After successful login, check if user has any leagues
+      const token = getAuthToken();
+      if (token) {
+        try {
+          const leaguesResponse = await leaguesApi.getMyLeagues(token);
+          const hasLeagues = leaguesResponse.results && leaguesResponse.results.length > 0;
+
+          if (hasLeagues) {
+            // User has leagues, navigate to dashboard
+            navigate("/admin/dashboard");
+          } else {
+            // User has no leagues, show the prompt
+            setShowNoLeaguesPrompt(true);
+          }
+        } catch (leagueError) {
+          // If we can't fetch leagues, just navigate to dashboard
+          // The dashboard will handle the no leagues case
+          console.error("Error fetching leagues:", leagueError);
+          navigate("/admin/dashboard");
+        }
+      } else {
+        navigate("/admin/dashboard");
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Invalid email or password"
@@ -29,6 +56,70 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  // Show no leagues prompt after successful login
+  if (showNoLeaguesPrompt) {
+    return (
+      <>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-dark">Welcome to League Genius</h1>
+            <p className="text-sm text-dark-300 mt-1">Get started by creating or joining a league</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+            {/* Add a League Card */}
+            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-8">
+              <div className="bg-primary-100 p-4 rounded-lg w-fit mb-4">
+                <Building2 className="h-8 w-8 text-primary-600" />
+              </div>
+              <h2 className="text-xl font-bold text-dark mb-2">Create a League</h2>
+              <p className="text-dark-300 mb-6">
+                Start your own pool league and manage teams, matches, and standings.
+              </p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="btn btn-primary flex items-center"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Create League
+              </button>
+            </div>
+
+            {/* Join a League Card */}
+            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-8">
+              <div className="bg-secondary-100 p-4 rounded-lg w-fit mb-4">
+                <UserPlus className="h-8 w-8 text-secondary-600" />
+              </div>
+              <h2 className="text-xl font-bold text-dark mb-2">Join a League</h2>
+              <p className="text-dark-300 mb-6">
+                Connect with an existing league as an operator or staff member.
+              </p>
+              <button className="btn btn-outline flex items-center">
+                <Users className="h-5 w-5 mr-2" />
+                Browse Leagues
+              </button>
+            </div>
+          </div>
+
+          {/* Help Section */}
+          <div className="bg-cream-200 rounded-lg p-6 max-w-4xl">
+            <h3 className="font-semibold text-dark mb-2">Need help getting started?</h3>
+            <p className="text-sm text-dark-300">
+              Check out our documentation or contact support for assistance setting up your first league.
+            </p>
+          </div>
+        </div>
+
+        {/* Create League Modal */}
+        <CreateLeagueModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+        />
+      </>
+    );
+  }
+
+  // Show login form
   return (
     <div className="max-w-md mx-auto">
       <div className="text-center mb-8">

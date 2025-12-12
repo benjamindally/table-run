@@ -110,11 +110,24 @@ const LeagueDetailsPage: React.FC = () => {
   };
 
   const handleDelete = async () => {
+    console.log('🗑️ [DELETE LEAGUE] Starting delete process for league ID:', leagueId);
+    console.log('🗑️ [DELETE LEAGUE] League data:', league);
+
     try {
-      await deleteLeagueMutation.mutateAsync(leagueId);
+      console.log('🗑️ [DELETE LEAGUE] Calling deleteLeagueMutation.mutateAsync...');
+      const result = await deleteLeagueMutation.mutateAsync(leagueId);
+      console.log('🗑️ [DELETE LEAGUE] Delete successful! Result:', result);
+
       toast.success('League deleted successfully!');
       navigate('/admin/leagues');
     } catch (error) {
+      console.error('❌ [DELETE LEAGUE] Delete failed with error:', error);
+      console.error('❌ [DELETE LEAGUE] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        fullError: error,
+      });
+
       toast.error(
         'Something went wrong while deleting your league. Please try again in 15 minutes or email contact@leaguegenius.app for assistance.',
         { autoClose: 8000 }
