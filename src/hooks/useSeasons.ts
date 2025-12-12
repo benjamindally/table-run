@@ -123,3 +123,21 @@ export const useJoinSeason = () => {
     },
   });
 };
+
+/**
+ * Import CSV files to populate a season
+ */
+export const useImportSeasonCSV = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ seasonId, files }: { seasonId: number; files: { teamStandings: File; individualStandings: File } }) =>
+      seasonsApi.importCSV(seasonId, files, getAuthToken() || undefined),
+    onSuccess: (_, variables) => {
+      // Invalidate season data to show newly imported teams and players
+      queryClient.invalidateQueries({ queryKey: seasonKeys.teams(variables.seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.detail(variables.seasonId) });
+    },
+  });
+};

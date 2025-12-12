@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Users, Trophy, Target, Edit, Archive } from 'lucide-react';
-import { useSeason, useSeasonTeams, useSeasonMatches } from '../../hooks/useSeasons';
+import { ArrowLeft, Calendar, Users, Trophy, Target, Edit, Archive, Upload } from 'lucide-react';
+import { useSeason, useSeasonTeams, useSeasonMatches, useImportSeasonCSV } from '../../hooks/useSeasons';
+import { toast } from 'react-toastify';
+import Modal from '../../components/Modal';
 
 const SeasonDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +13,40 @@ const SeasonDetailsPage: React.FC = () => {
   const { data: season, isLoading, error } = useSeason(seasonId);
   const { data: teams } = useSeasonTeams(seasonId);
   const { data: matches } = useSeasonMatches(seasonId);
+  const importCSVMutation = useImportSeasonCSV();
+
+  const [teamStandingsFile, setTeamStandingsFile] = useState<File | null>(null);
+  const [individualStandingsFile, setIndividualStandingsFile] = useState<File | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
+  const teamStandingsInputRef = useRef<HTMLInputElement>(null);
+  const individualStandingsInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportCSV = async () => {
+    if (!teamStandingsFile || !individualStandingsFile) {
+      toast.error('Please select both CSV files');
+      return;
+    }
+
+    try {
+      await importCSVMutation.mutateAsync({
+        seasonId,
+        files: {
+          teamStandings: teamStandingsFile,
+          individualStandings: individualStandingsFile,
+        },
+      });
+      toast.success('CSV files imported successfully!');
+      setShowUploadModal(false);
+      setTeamStandingsFile(null);
+      setIndividualStandingsFile(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to import CSV files',
+        { autoClose: 8000 }
+      );
+    }
+  };
 
   if (isLoading) {
     return (
@@ -144,9 +180,18 @@ const SeasonDetailsPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-dark">Teams</h2>
-          <button className="btn btn-primary btn-sm">
-            Add Team
-          </button>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="btn btn-outline btn-sm flex items-center"
+            >
+              <Upload className="h-4 w-4 mr-1" />
+              Import CSV
+            </button>
+            <button className="btn btn-primary btn-sm">
+              Add Team
+            </button>
+          </div>
         </div>
         {teams && teams.length > 0 ? (
           <div className="space-y-2">
@@ -205,6 +250,98 @@ const SeasonDetailsPage: React.FC = () => {
           Coming soon - Player statistics and analytics will appear here
         </div>
       </div>
+
+      {/* CSV Upload Modal */}
+      <Modal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        title="Import Season Data from CSV"
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <p className="text-dark-300 text-sm">
+            Upload your team standings and individual standings CSV files to populate this season with teams and players.
+          </p>
+
+          {/* Team Standings File */}
+          <div>
+            <label className="block text-sm font-medium text-dark mb-2">
+              Team Standings CSV
+            </label>
+            <input
+              ref={teamStandingsInputRef}
+              type="file"
+              accept=".csv"
+              onChange={(e) => setTeamStandingsFile(e.target.files?.[0] || null)}
+              className="block w-full text-sm text-dark-300
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-md file:border-0
+                file:text-sm file:font-semibold
+                file:bg-primary-100 file:text-primary-700
+                hover:file:bg-primary-200
+                cursor-pointer"
+            />
+            {teamStandingsFile && (
+              <p className="text-sm text-dark-300 mt-1">
+                Selected: {teamStandingsFile.name}
+              </p>
+            )}
+          </div>
+
+          {/* Individual Standings File */}
+          <div>
+            <label className="block text-sm font-medium text-dark mb-2">
+              Individual Standings CSV
+            </label>
+            <input
+              ref={individualStandingsInputRef}
+              type="file"
+              accept=".csv"
+              onChange={(e) => setIndividualStandingsFile(e.target.files?.[0] || null)}
+              className="block w-full text-sm text-dark-300
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-md file:border-0
+                file:text-sm file:font-semibold
+                file:bg-primary-100 file:text-primary-700
+                hover:file:bg-primary-200
+                cursor-pointer"
+            />
+            {individualStandingsFile && (
+              <p className="text-sm text-dark-300 mt-1">
+                Selected: {individualStandingsFile.name}
+              </p>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              onClick={() => setShowUploadModal(false)}
+              className="btn btn-outline"
+              disabled={importCSVMutation.isPending}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleImportCSV}
+              className="btn btn-primary flex items-center"
+              disabled={!teamStandingsFile || !individualStandingsFile || importCSVMutation.isPending}
+            >
+              {importCSVMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import CSV Files
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
