@@ -2,21 +2,21 @@
  * League-related API calls
  */
 
-import { api } from './client';
-import { League, PaginatedResponse } from './types';
+import { api } from "./client";
+import { League, PaginatedResponse } from "./types";
 
 export const leaguesApi = {
   /**
    * Get all leagues (paginated)
    */
   getAll: (token?: string) =>
-    api.get<PaginatedResponse<League>>('/leagues/', token),
+    api.get<PaginatedResponse<League>>("/leagues/", token),
 
   /**
    * Get leagues where the current user is an operator
    */
   getMyLeagues: (token?: string) =>
-    api.get<PaginatedResponse<League>>('/league-operators/my_leagues/', token),
+    api.get<PaginatedResponse<League>>("/league-operators/my_leagues/", token),
 
   /**
    * Get a single league by ID
@@ -28,7 +28,7 @@ export const leaguesApi = {
    * Create a new league
    */
   create: (data: Partial<League>, token?: string) =>
-    api.post<League>('/leagues/', data, token),
+    api.post<League>("/leagues/", data, token),
 
   /**
    * Update a league
@@ -39,24 +39,6 @@ export const leaguesApi = {
   /**
    * Delete a league
    */
-  delete: (id: number, token?: string) => {
-    console.log('🌐 [leaguesApi.delete] Called with ID:', id);
-    console.log('🌐 [leaguesApi.delete] Token exists:', !!token);
-    console.log('🌐 [leaguesApi.delete] Making DELETE request to:', `/leagues/${id}/`);
-
-    const result = api.delete(`/leagues/${id}/`, token);
-
-    result
-      .then((response) => {
-        console.log('✅ [leaguesApi.delete] Request successful, response:', response);
-      })
-      .catch((error) => {
-        console.error('❌ [leaguesApi.delete] Request failed, error:', error);
-        console.error('❌ [leaguesApi.delete] Error response:', error?.response);
-        console.error('❌ [leaguesApi.delete] Error status:', error?.response?.status);
-        console.error('❌ [leaguesApi.delete] Error data:', error?.response?.data);
-      });
-
-    return result;
-  },
+  delete: (id: number, token?: string) =>
+    api.delete(`/leagues/${id}/`, token),
 };

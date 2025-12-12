@@ -97,24 +97,10 @@ export const useDeleteLeague = () => {
   const { getAuthToken } = useAuth();
 
   return useMutation({
-    mutationFn: (id: number) => {
-      console.log('🔧 [useDeleteLeague] mutationFn called with ID:', id);
-      const token = getAuthToken();
-      console.log('🔧 [useDeleteLeague] Auth token exists:', !!token);
-      console.log('🔧 [useDeleteLeague] Calling leaguesApi.delete...');
-      return leaguesApi.delete(id, token || undefined);
-    },
-    onSuccess: (data, variables) => {
-      console.log('✅ [useDeleteLeague] onSuccess called');
-      console.log('✅ [useDeleteLeague] Response data:', data);
-      console.log('✅ [useDeleteLeague] Deleted league ID:', variables);
-      console.log('✅ [useDeleteLeague] Invalidating queries...');
+    mutationFn: (id: number) =>
+      leaguesApi.delete(id, getAuthToken() || undefined),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leagueKeys.lists() });
-    },
-    onError: (error, variables) => {
-      console.error('❌ [useDeleteLeague] onError called');
-      console.error('❌ [useDeleteLeague] Error:', error);
-      console.error('❌ [useDeleteLeague] Failed league ID:', variables);
     },
   });
 };
