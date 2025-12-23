@@ -16,6 +16,8 @@ export const seasonKeys = {
   detail: (id: number) => [...seasonKeys.details(), id] as const,
   teams: (id: number) => [...seasonKeys.detail(id), 'teams'] as const,
   matches: (id: number) => [...seasonKeys.detail(id), 'matches'] as const,
+  standings: (id: number) => [...seasonKeys.detail(id), 'standings'] as const,
+  players: (id: number) => [...seasonKeys.detail(id), 'players'] as const,
 };
 
 /**
@@ -65,6 +67,32 @@ export const useSeasonMatches = (seasonId: number) => {
   return useQuery({
     queryKey: seasonKeys.matches(seasonId),
     queryFn: () => seasonsApi.getMatches(seasonId, getAuthToken() || undefined),
+    enabled: !!seasonId,
+  });
+};
+
+/**
+ * Get standings for a season
+ */
+export const useSeasonStandings = (seasonId: number) => {
+  const { getAuthToken } = useAuth();
+
+  return useQuery({
+    queryKey: seasonKeys.standings(seasonId),
+    queryFn: () => seasonsApi.getStandings(seasonId, getAuthToken() || undefined),
+    enabled: !!seasonId,
+  });
+};
+
+/**
+ * Get all players in a season with their stats
+ */
+export const useSeasonPlayers = (seasonId: number) => {
+  const { getAuthToken } = useAuth();
+
+  return useQuery({
+    queryKey: seasonKeys.players(seasonId),
+    queryFn: () => seasonsApi.getPlayers(seasonId, getAuthToken() || undefined),
     enabled: !!seasonId,
   });
 };
@@ -132,12 +160,14 @@ export const useImportSeasonCSV = () => {
   const { getAuthToken } = useAuth();
 
   return useMutation({
-    mutationFn: ({ seasonId, files }: { seasonId: number; files: { teamStandings: File; individualStandings: File } }) =>
+    mutationFn: ({ seasonId, files }: { seasonId: number; files: { teamStandings: File; individualStandings: File; weeklyStandings: File } }) =>
       seasonsApi.importCSV(seasonId, files, getAuthToken() || undefined),
     onSuccess: (_, variables) => {
       // Invalidate season data to show newly imported teams and players
       queryClient.invalidateQueries({ queryKey: seasonKeys.teams(variables.seasonId) });
       queryClient.invalidateQueries({ queryKey: seasonKeys.detail(variables.seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.standings(variables.seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.players(variables.seasonId) });
     },
   });
 };

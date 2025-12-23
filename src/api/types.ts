@@ -12,14 +12,15 @@ export interface User {
 
 export interface Player {
   id: number;
-  user: number;
-  user_detail?: {
+  user: {
     id: number;
     username: string;
     email: string;
     first_name: string;
     last_name: string;
   };
+  user_id?: number;
+  full_name: string;
   phone: string;
   skill_level: number | null;
   created_at: string;
@@ -200,4 +201,12 @@ export interface TeamRegistrationData {
 export interface MatchScoreSubmission {
   home_score: number;
   away_score: number;
+}
+
+export interface PlayerUpdateData {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  skill_level?: number | null;
 }

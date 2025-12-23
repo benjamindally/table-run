@@ -107,6 +107,26 @@ All league data (teams, matches, players, statistics) is currently hardcoded wit
 4. **Context Usage**: Access auth state via `useAuth()` hook
 5. **Icon Usage**: Import individual icons from `lucide-react` for tree-shaking
 
+## Context Management Workflow
+
+Before starting any significant work:
+
+1. **Read `.claude/context.md` first** - This file contains up-to-date documentation of the current codebase state, including recent changes, key implementations, and line number references.
+
+2. **Update `.claude/context.md` after making changes**:
+   - Add significant changes to the "Recent Changes" section with today's date
+   - Update relevant sections if you modify core functionality
+   - Include line numbers and code snippets for new implementations
+   - Add any new API endpoints, hooks, or components to their respective sections
+
+3. **When to update**:
+   - After implementing new features
+   - When modifying existing functionality
+   - After fixing bugs that change behavior
+   - When adding new files or components
+
+This workflow reduces context-gathering time in future sessions and maintains accurate living documentation.
+
 ## Testing
 
 No test framework is currently configured. When adding tests, consider:

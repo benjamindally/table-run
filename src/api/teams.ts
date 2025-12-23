@@ -9,6 +9,7 @@ import {
   TeamRegistrationData,
   TeamMembership,
   CaptainRequest,
+  SeasonParticipation,
 } from "./types";
 
 export const teamsApi = {
@@ -53,6 +54,16 @@ export const teamsApi = {
     ),
 
   /**
+   * Add a captain to the team
+   */
+  addCaptain: (teamId: number, playerId: number, token?: string) =>
+    api.post<Team>(
+      `/teams/${teamId}/add_captain/`,
+      { player_id: playerId },
+      token
+    ),
+
+  /**
    * Transfer captaincy to another player
    */
   transferCaptain: (teamId: number, newCaptainId: number, token?: string) =>
@@ -63,12 +74,12 @@ export const teamsApi = {
     ),
 
   /**
-   * Remove a co-captain
+   * Remove a captain
    */
-  removeCoCaptain: (teamId: number, coCaptainId: number, token?: string) =>
+  removeCaptain: (teamId: number, playerId: number, token?: string) =>
     api.post<Team>(
-      `/teams/${teamId}/remove_co_captain/`,
-      { co_captain_id: coCaptainId },
+      `/teams/${teamId}/remove_captain/`,
+      { player_id: playerId },
       token
     ),
 
@@ -83,6 +94,12 @@ export const teamsApi = {
    */
   getSeasonStats: (teamId: number, seasonId: number, token?: string) =>
     api.get<TeamSeasonStats>(`/teams/${teamId}/season_stats/?season_id=${seasonId}`, token),
+
+  /**
+   * Get all season participations for a team
+   */
+  getSeasons: (teamId: number, token?: string) =>
+    api.get<SeasonParticipation[]>(`/teams/${teamId}/seasons/`, token),
 };
 
 export interface TeamSeasonStats {
