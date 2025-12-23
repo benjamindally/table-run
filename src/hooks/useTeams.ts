@@ -13,6 +13,7 @@ export const teamsKeys = {
   details: () => [...teamsKeys.all, 'detail'] as const,
   detail: (id: number) => [...teamsKeys.details(), id] as const,
   roster: (id: number) => [...teamsKeys.detail(id), 'roster'] as const,
+  seasons: (id: number) => [...teamsKeys.detail(id), 'seasons'] as const,
 };
 
 /**
@@ -45,6 +46,18 @@ export const useTeamRoster = (teamId: number) => {
   return useQuery({
     queryKey: teamsKeys.roster(teamId),
     queryFn: () => teamsApi.getRoster(teamId),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!teamId,
+  });
+};
+
+/**
+ * Hook to fetch team season participations
+ */
+export const useTeamSeasons = (teamId: number) => {
+  return useQuery({
+    queryKey: teamsKeys.seasons(teamId),
+    queryFn: () => teamsApi.getSeasons(teamId),
     staleTime: 1000 * 60 * 5,
     enabled: !!teamId,
   });

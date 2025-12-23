@@ -55,12 +55,19 @@ export const seasonsApi = {
     api.get<SeasonStandingsResponse>(`/seasons/${seasonId}/standings/`, token),
 
   /**
+   * Get all players in a season with their stats
+   */
+  getPlayers: (seasonId: number, token?: string) =>
+    api.get<SeasonPlayersResponse>(`/seasons/${seasonId}/players/`, token),
+
+  /**
    * Import CSV files to populate season with teams and players
    */
-  importCSV: async (seasonId: number, files: { teamStandings: File; individualStandings: File }, token?: string) => {
+  importCSV: async (seasonId: number, files: { teamStandings: File; individualStandings: File; weeklyStandings: File }, token?: string) => {
     const formData = new FormData();
     formData.append('team_standings', files.teamStandings);
     formData.append('individual_standings', files.individualStandings);
+    formData.append('weekly_standings', files.weeklyStandings);
 
     const headers: Record<string, string> = {};
     if (token) {
@@ -100,4 +107,33 @@ export interface TeamStanding {
   total_games: number;
   win_percentage: number;
   games_behind: number;
+}
+
+export interface SeasonPlayersResponse {
+  league_id: number;
+  league_name: string;
+  season_id: number;
+  season_name: string;
+  player_count: number;
+  players: PlayerSeasonStat[];
+}
+
+export interface PlayerSeasonStat {
+  player_id: number;
+  player_name: string;
+  team_id: number;
+  team_name: string;
+  total_wins: number;
+  total_losses: number;
+  total_games: number;
+  win_percentage: number;
+  table_runs: number;
+  eight_ball_breaks: number;
+  weeks: PlayerWeekStat[];
+}
+
+export interface PlayerWeekStat {
+  week: number;
+  wins: number;
+  losses: number;
 }

@@ -25,6 +25,8 @@ import AdminLeaguesPage from './pages/admin/LeaguesPage';
 import AdminLeagueDetailsPage from './pages/admin/LeagueDetailsPage';
 import AdminSeasonsPage from './pages/admin/SeasonsPage';
 import AdminSeasonDetailsPage from './pages/admin/SeasonDetailsPage';
+import AdminTeamDetailsPage from './pages/admin/TeamDetailsPage';
+import AdminPlayerDetailsPage from './pages/admin/PlayerDetailsPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
@@ -52,6 +54,8 @@ function App() {
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="teams" element={<AdminTeamsPage />} />
+            <Route path="teams/:id" element={<AdminTeamDetailsPage />} />
+            <Route path="players/:id" element={<AdminPlayerDetailsPage />} />
             <Route path="matches" element={<AdminMatchesPage />} />
             <Route path="leagues" element={<AdminLeaguesPage />} />
             <Route path="leagues/:id" element={<AdminLeagueDetailsPage />} />
