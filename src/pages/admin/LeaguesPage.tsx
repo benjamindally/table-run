@@ -1,16 +1,26 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Building2, MapPin, Users, Trophy, Calendar, Plus, ArrowRight } from 'lucide-react';
-import { useMyLeagues } from '../../hooks/useLeagues';
-import { useSeasons } from '../../hooks/useSeasons';
-import CreateSeasonModal from '../../components/CreateSeasonModal';
-import CreateLeagueModal from '../../components/CreateLeagueModal';
+import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Building2,
+  MapPin,
+  Users,
+  Trophy,
+  Calendar,
+  Plus,
+  ArrowRight,
+} from "lucide-react";
+import { useMyLeagues } from "../../hooks/useLeagues";
+import { useSeasons } from "../../hooks/useSeasons";
+import CreateSeasonModal from "../../components/CreateSeasonModal";
+import CreateLeagueModal from "../../components/CreateLeagueModal";
 
 const LeaguesPage: React.FC = () => {
   const navigate = useNavigate();
   const [showAllLeagues, setShowAllLeagues] = useState(false);
   const [showAllSeasons, setShowAllSeasons] = useState(false);
-  const [selectedLeagueForSeason, setSelectedLeagueForSeason] = useState<number | null>(null);
+  const [selectedLeagueForSeason, setSelectedLeagueForSeason] = useState<
+    number | null
+  >(null);
   const [showCreateLeagueModal, setShowCreateLeagueModal] = useState(false);
 
   // Fetch leagues where current user is an operator
@@ -22,10 +32,13 @@ const LeaguesPage: React.FC = () => {
 
   // Filter seasons to only show those from leagues the user operates
   const mySeasons = useMemo(() => {
-    const myLeagueIds = leagues.map(l => l.id);
+    const myLeagueIds = leagues.map((l) => l.id);
     return allSeasons
-      .filter(season => myLeagueIds.includes(season.league))
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      .filter((season) => myLeagueIds.includes(season.league))
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
   }, [allSeasons, leagues]);
 
   // Show only the 3 most recent leagues by default
@@ -53,9 +66,17 @@ const LeaguesPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-dark">Leagues</h1>
-        <p className="text-sm text-dark-300 mt-1">League Management</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-dark">Leagues</h1>
+          <p className="text-sm text-dark-300 mt-1">League Management</p>
+        </div>
+        <button
+          onClick={() => setShowCreateLeagueModal(true)}
+          className="btn btn-primary flex items-center"
+        >
+          <Plus className="h-5 w-5 mr-1" /> Create League
+        </button>
       </div>
 
       {/* Leagues Grid */}
@@ -78,19 +99,23 @@ const LeaguesPage: React.FC = () => {
                         <Building2 className="h-6 w-6 text-primary-600" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-dark">{league.name}</h3>
+                        <h3 className="text-lg font-semibold text-dark">
+                          {league.name}
+                        </h3>
                         <div className="flex items-center text-sm text-dark-300 mt-1">
                           <MapPin className="h-3 w-3 mr-1" />
                           {league.city}, {league.state}
                         </div>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      league.is_active
-                        ? 'bg-secondary-100 text-secondary-800'
-                        : 'bg-cream-400 text-dark-400'
-                    }`}>
-                      {league.is_active ? 'Active' : 'Inactive'}
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        league.is_active
+                          ? "bg-secondary-100 text-secondary-800"
+                          : "bg-cream-400 text-dark-400"
+                      }`}
+                    >
+                      {league.is_active ? "Active" : "Inactive"}
                     </span>
                   </div>
 
@@ -106,7 +131,9 @@ const LeaguesPage: React.FC = () => {
                         <Calendar className="h-4 w-4 mr-2" />
                         <span>Seasons</span>
                       </div>
-                      <span className="font-semibold text-dark">{league.season_count || 0}</span>
+                      <span className="font-semibold text-dark">
+                        {league.season_count || 0}
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between text-sm">
@@ -114,7 +141,9 @@ const LeaguesPage: React.FC = () => {
                         <Trophy className="h-4 w-4 mr-2" />
                         <span>Games per Match</span>
                       </div>
-                      <span className="font-semibold text-dark">{league.total_games || 0}</span>
+                      <span className="font-semibold text-dark">
+                        {league.total_games || 0}
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between text-sm">
@@ -122,7 +151,9 @@ const LeaguesPage: React.FC = () => {
                         <Users className="h-4 w-4 mr-2" />
                         <span>Sets per Match</span>
                       </div>
-                      <span className="font-semibold text-dark">{league.sets_per_match}</span>
+                      <span className="font-semibold text-dark">
+                        {league.sets_per_match}
+                      </span>
                     </div>
                   </div>
 
@@ -138,7 +169,7 @@ const LeaguesPage: React.FC = () => {
                       onClick={() => navigate(`/admin/leagues/${league.id}`)}
                       className="btn btn-outline text-sm flex items-center justify-center"
                     >
-                      View Details
+                      Edit League
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </button>
                   </div>
@@ -196,19 +227,27 @@ const LeaguesPage: React.FC = () => {
                     <div className="p-6">
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <h3 className="text-lg font-semibold text-dark">{season.name}</h3>
+                          <h3 className="text-lg font-semibold text-dark">
+                            {season.name}
+                          </h3>
                           <p className="text-sm text-dark-300 mt-1">
                             {season.league_detail?.name}
                           </p>
                         </div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          season.is_active
-                            ? 'bg-secondary-100 text-secondary-800'
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            season.is_active
+                              ? "bg-secondary-100 text-secondary-800"
+                              : season.is_archived
+                              ? "bg-cream-400 text-dark-400"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {season.is_active
+                            ? "Active"
                             : season.is_archived
-                            ? 'bg-cream-400 text-dark-400'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {season.is_active ? 'Active' : season.is_archived ? 'Archived' : 'Inactive'}
+                            ? "Archived"
+                            : "Inactive"}
                         </span>
                       </div>
 
@@ -240,7 +279,9 @@ const LeaguesPage: React.FC = () => {
                             <Users className="h-4 w-4 mr-2" />
                             <span>Teams</span>
                           </div>
-                          <span className="font-semibold text-dark">{season.team_count || 0}</span>
+                          <span className="font-semibold text-dark">
+                            {season.team_count || 0}
+                          </span>
                         </div>
                       </div>
 
@@ -272,7 +313,8 @@ const LeaguesPage: React.FC = () => {
           ) : (
             <div className="bg-white rounded-lg shadow-sm p-8 text-center">
               <div className="text-gray-500">
-                No seasons yet. Add a season to one of your leagues to get started.
+                No seasons yet. Add a season to one of your leagues to get
+                started.
               </div>
             </div>
           )}
