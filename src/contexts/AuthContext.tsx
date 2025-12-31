@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi, type AuthResponse, type RegisterData, type LoginData, Player } from '../api';
+import { setRefreshTokenCallback } from '../api/client';
 
 // Define user types
 export interface User {
@@ -19,6 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   getAuthToken: () => string | null;
+  refreshAccessToken: () => Promise<string | null>;
 }
 
 // Create context
@@ -32,20 +34,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Check for saved tokens and user in localStorage
-    const savedAccessToken = localStorage.getItem('accessToken');
-    const savedRefreshToken = localStorage.getItem('refreshToken');
-    const savedUser = localStorage.getItem('user');
-    const savedPlayer = localStorage.getItem('player');
+  const clearAuthData = () => {
+    setUser(null);
+    setPlayer(null);
+    setAccessToken(null);
+    setRefreshToken(null);
 
-    if (savedAccessToken && savedRefreshToken && savedUser && savedPlayer) {
-      setAccessToken(savedAccessToken);
-      setRefreshToken(savedRefreshToken);
-      setUser(JSON.parse(savedUser));
-      setPlayer(JSON.parse(savedPlayer));
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('player');
+  };
+
+  const refreshAccessToken = async (): Promise<string | null> => {
+    try {
+      const currentRefreshToken = refreshToken || localStorage.getItem('refreshToken');
+
+      if (!currentRefreshToken) {
+        console.error('No refresh token available');
+        return null;
+      }
+
+      const response = await authApi.refreshToken(currentRefreshToken);
+      const newAccessToken = response.access;
+
+      // Update access token in state and localStorage
+      setAccessToken(newAccessToken);
+      localStorage.setItem('accessToken', newAccessToken);
+
+      return newAccessToken;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      // If refresh fails, clear auth data and force re-login
+      clearAuthData();
+      return null;
     }
-    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    // Initialize the refresh token callback for the API client
+    setRefreshTokenCallback(refreshAccessToken);
+
+    // Check for saved tokens and user in localStorage
+    const initAuth = async () => {
+      const savedAccessToken = localStorage.getItem('accessToken');
+      const savedRefreshToken = localStorage.getItem('refreshToken');
+      const savedUser = localStorage.getItem('user');
+      const savedPlayer = localStorage.getItem('player');
+
+      if (savedAccessToken && savedRefreshToken && savedUser && savedPlayer) {
+        setAccessToken(savedAccessToken);
+        setRefreshToken(savedRefreshToken);
+        setUser(JSON.parse(savedUser));
+        setPlayer(JSON.parse(savedPlayer));
+
+        // Attempt to refresh the token on app load to ensure it's valid
+        // This prevents using an expired access token
+        try {
+          const response = await authApi.refreshToken(savedRefreshToken);
+          const newAccessToken = response.access;
+          setAccessToken(newAccessToken);
+          localStorage.setItem('accessToken', newAccessToken);
+        } catch (error) {
+          console.error('Token refresh failed on init:', error);
+          // If refresh fails, clear auth data
+          clearAuthData();
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveAuthData = (data: AuthResponse) => {
@@ -58,18 +118,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('refreshToken', data.refresh);
     localStorage.setItem('user', JSON.stringify(data.user));
     localStorage.setItem('player', JSON.stringify(data.player));
-  };
-
-  const clearAuthData = () => {
-    setUser(null);
-    setPlayer(null);
-    setAccessToken(null);
-    setRefreshToken(null);
-
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('player');
   };
 
   const login = async (data: LoginData): Promise<void> => {
@@ -127,6 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading,
     isAuthenticated: !!user && !!accessToken,
     getAuthToken,
+    refreshAccessToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
