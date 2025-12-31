@@ -82,30 +82,33 @@ async function apiRequest<T>(
  * HTTP method helpers
  */
 export const api = {
-  get: <T>(endpoint: string, token?: string) =>
-    apiRequest<T>(endpoint, { method: 'GET', token }),
+  get: <T>(endpoint: string, token?: string, skipRefresh?: boolean) =>
+    apiRequest<T>(endpoint, { method: 'GET', token, skipRefresh }),
 
-  post: <T>(endpoint: string, data: any, token?: string) =>
+  post: <T>(endpoint: string, data: any, token?: string, skipRefresh?: boolean) =>
     apiRequest<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
       token,
+      skipRefresh,
     }),
 
-  put: <T>(endpoint: string, data: any, token?: string) =>
+  put: <T>(endpoint: string, data: any, token?: string, skipRefresh?: boolean) =>
     apiRequest<T>(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),
       token,
+      skipRefresh,
     }),
 
-  patch: <T>(endpoint: string, data: any, token?: string) =>
+  patch: <T>(endpoint: string, data: any, token?: string, skipRefresh?: boolean) =>
     apiRequest<T>(endpoint, {
       method: 'PATCH',
       body: JSON.stringify(data),
       token,
+      skipRefresh,
     }),
 
-  delete: <T>(endpoint: string, token?: string) =>
-    apiRequest<T>(endpoint, { method: 'DELETE', token }),
+  delete: <T>(endpoint: string, token?: string, skipRefresh?: boolean) =>
+    apiRequest<T>(endpoint, { method: 'DELETE', token, skipRefresh }),
 };
