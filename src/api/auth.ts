@@ -51,7 +51,8 @@ export const authApi = {
 
   /**
    * Refresh access token using refresh token
+   * IMPORTANT: skipRefresh prevents infinite loop if refresh token is also expired
    */
   refreshToken: (refreshToken: string) =>
-    api.post<{ access: string }>('/auth/refresh/', { refresh: refreshToken }),
+    api.post<{ access: string }>('/auth/refresh/', { refresh: refreshToken }, undefined, true),
 };
