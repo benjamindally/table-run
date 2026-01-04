@@ -171,3 +171,23 @@ export const useImportSeasonCSV = () => {
     },
   });
 };
+
+/**
+ * Import schedule and match results from CSV files
+ */
+export const useImportSchedule = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ seasonId, files }: { seasonId: number; files: { schedule: File; standings: File } }) =>
+      seasonsApi.importSchedule(seasonId, files, getAuthToken() || undefined),
+    onSuccess: (_, variables) => {
+      // Invalidate season data to show newly imported matches
+      queryClient.invalidateQueries({ queryKey: seasonKeys.matches(variables.seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.teams(variables.seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.standings(variables.seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.players(variables.seasonId) });
+    },
+  });
+};
