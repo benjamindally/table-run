@@ -146,6 +146,7 @@ export interface SeasonParticipation {
 export interface Match {
   id: number;
   season: number;
+  week_number: number | null;
   home_team: number;
   home_team_detail?: TeamList;
   away_team: number;

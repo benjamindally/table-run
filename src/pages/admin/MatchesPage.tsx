@@ -155,6 +155,15 @@ const MatchesPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [matchToEdit, setMatchToEdit] = useState<Match | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    date: "",
+    homeScore: 0,
+    awayScore: 0,
+    location: "",
+    status: "" as "completed" | "upcoming" | "canceled",
+  });
 
   const itemsPerPage = 8;
 
@@ -193,6 +202,49 @@ const MatchesPage: React.FC = () => {
       setMatches(matches.filter((match) => match.id !== matchToDelete.id));
       setShowDeleteModal(false);
       setMatchToDelete(null);
+    }
+  };
+
+  const openEditModal = (match: Match) => {
+    setMatchToEdit(match);
+    setEditFormData({
+      date: match.date,
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
+      location: match.location,
+      status: match.status,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditFormChange = (
+    field: keyof typeof editFormData,
+    value: string | number
+  ) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const saveMatchEdit = () => {
+    if (matchToEdit) {
+      setMatches(
+        matches.map((match) =>
+          match.id === matchToEdit.id
+            ? {
+                ...match,
+                date: editFormData.date,
+                homeScore: editFormData.homeScore,
+                awayScore: editFormData.awayScore,
+                location: editFormData.location,
+                status: editFormData.status,
+              }
+            : match
+        )
+      );
+      setShowEditModal(false);
+      setMatchToEdit(null);
     }
   };
 
@@ -474,6 +526,7 @@ const MatchesPage: React.FC = () => {
                         <button
                           className="text-gray-600 hover:text-gray-800"
                           title="Edit match"
+                          onClick={() => openEditModal(match)}
                         >
                           <Edit className="h-5 w-5" />
                         </button>
@@ -559,6 +612,165 @@ const MatchesPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Edit match modal */}
+      {showEditModal && matchToEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 shadow-xl">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-lg font-medium">Edit Match</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {/* Match Info (Read-only) */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Home Team
+                    </label>
+                    <p className="text-gray-900 font-medium">
+                      {matchToEdit.homeTeam}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Away Team
+                    </label>
+                    <p className="text-gray-900 font-medium">
+                      {matchToEdit.awayTeam}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Editable Fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="edit-date"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Match Date
+                  </label>
+                  <input
+                    type="date"
+                    id="edit-date"
+                    className="form-input w-full"
+                    value={editFormData.date}
+                    onChange={(e) =>
+                      handleEditFormChange("date", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="edit-location"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    id="edit-location"
+                    className="form-input w-full"
+                    value={editFormData.location}
+                    onChange={(e) =>
+                      handleEditFormChange("location", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label
+                    htmlFor="edit-home-score"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Home Score
+                  </label>
+                  <input
+                    type="number"
+                    id="edit-home-score"
+                    className="form-input w-full"
+                    min="0"
+                    value={editFormData.homeScore}
+                    onChange={(e) =>
+                      handleEditFormChange("homeScore", parseInt(e.target.value) || 0)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="edit-away-score"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Away Score
+                  </label>
+                  <input
+                    type="number"
+                    id="edit-away-score"
+                    className="form-input w-full"
+                    min="0"
+                    value={editFormData.awayScore}
+                    onChange={(e) =>
+                      handleEditFormChange("awayScore", parseInt(e.target.value) || 0)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="edit-status"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Status
+                  </label>
+                  <select
+                    id="edit-status"
+                    className="form-input w-full"
+                    value={editFormData.status}
+                    onChange={(e) =>
+                      handleEditFormChange(
+                        "status",
+                        e.target.value as "completed" | "upcoming" | "canceled"
+                      )
+                    }
+                  >
+                    <option value="upcoming">Upcoming</option>
+                    <option value="completed">Completed</option>
+                    <option value="canceled">Canceled</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="btn btn-outline"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveMatchEdit}
+                className="btn btn-primary"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation modal */}
       {showDeleteModal && matchToDelete && (

@@ -87,6 +87,33 @@ export const seasonsApi = {
 
     return response.json();
   },
+
+  /**
+   * Import schedule and match results from CSV files
+   */
+  importSchedule: async (seasonId: number, files: { schedule: File; standings: File }, token?: string) => {
+    const formData = new FormData();
+    formData.append('schedule', files.schedule);
+    formData.append('standings', files.standings);
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/seasons/${seasonId}/import-schedule/`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Import failed: ${response.status}`);
+    }
+
+    return response.json();
+  },
 };
 
 export interface SeasonStandingsResponse {
