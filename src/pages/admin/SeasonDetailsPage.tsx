@@ -24,6 +24,7 @@ import {
   useSeasonPlayers,
   useImportSeasonCSV,
   useImportSchedule,
+  useUpdateSeason,
 } from "../../hooks/useSeasons";
 import { toast } from "react-toastify";
 import Modal from "../../components/Modal";
@@ -40,6 +41,7 @@ const SeasonDetailsPage: React.FC = () => {
   const { data: playersData } = useSeasonPlayers(seasonId);
   const importCSVMutation = useImportSeasonCSV();
   const importScheduleMutation = useImportSchedule();
+  const updateSeasonMutation = useUpdateSeason();
 
   const [teamStandingsFile, setTeamStandingsFile] = useState<File | null>(null);
   const [individualStandingsFile, setIndividualStandingsFile] =
@@ -188,10 +190,18 @@ const SeasonDetailsPage: React.FC = () => {
   };
 
   const saveSeasonEdit = async () => {
-    // TODO: Implement API call to update season
-    // For now, just show a toast
-    toast.success("Season updated successfully!");
-    setShowEditSeasonModal(false);
+    try {
+      await updateSeasonMutation.mutateAsync({
+        id: seasonId,
+        data: seasonFormData,
+      });
+      toast.success("Season updated successfully!");
+      setShowEditSeasonModal(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update season"
+      );
+    }
   };
 
   const handleImportCSV = async () => {
@@ -1491,11 +1501,23 @@ const SeasonDetailsPage: React.FC = () => {
               <button
                 onClick={() => setShowEditSeasonModal(false)}
                 className="btn btn-outline"
+                disabled={updateSeasonMutation.isPending}
               >
                 Cancel
               </button>
-              <button onClick={saveSeasonEdit} className="btn btn-primary">
-                Save Changes
+              <button
+                onClick={saveSeasonEdit}
+                className="btn btn-primary flex items-center"
+                disabled={updateSeasonMutation.isPending}
+              >
+                {updateSeasonMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
               </button>
             </div>
           </div>
