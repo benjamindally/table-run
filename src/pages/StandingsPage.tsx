@@ -13,7 +13,7 @@ interface League {
 
 export default function StandingsPage() {
   const navigate = useNavigate();
-  const { leagueId } = useParams<{ leagueId: string }>();
+  const { leagueId, seasonId } = useParams<{ leagueId: string; seasonId?: string }>();
   const [league, setLeague] = useState<League | null>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
@@ -51,8 +51,10 @@ export default function StandingsPage() {
         );
         setSeasons(leagueSeasons);
 
-        // Auto-select first active season
-        if (leagueSeasons.length > 0) {
+        // If seasonId is provided in URL, use that; otherwise auto-select first active season
+        if (seasonId) {
+          setSelectedSeasonId(Number(seasonId));
+        } else if (leagueSeasons.length > 0) {
           setSelectedSeasonId(leagueSeasons[0].id);
         }
       } catch (error) {
@@ -64,7 +66,7 @@ export default function StandingsPage() {
     };
 
     loadSeasons();
-  }, [leagueId]);
+  }, [leagueId, seasonId]);
 
   // Load standings when season changes
   useEffect(() => {
@@ -114,7 +116,7 @@ export default function StandingsPage() {
       {/* Header */}
       <div className="mb-8">
         <button
-          onClick={() => navigate("/standings")}
+          onClick={() => navigate("/leagues")}
           className="flex items-center gap-2 text-primary-600 hover:text-primary-700 mb-4"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -243,100 +245,100 @@ export default function StandingsPage() {
           {/* Desktop: Table View */}
           <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Rank
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Team
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Establishment
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Wins
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Losses
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Win %
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  GB
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {standings.map((standing, index) => (
-                <tr
-                  key={standing.team_id}
-                  onClick={() =>
-                    navigate(
-                      `/team/${standing.team_id}/stats?season=${selectedSeasonId}`
-                    )
-                  }
-                  className={`cursor-pointer transition-colors ${
-                    index < 3
-                      ? "bg-orange-50 hover:bg-primary-100"
-                      : "hover:bg-gray-50"
-                  }`}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      {index === 0 && (
-                        <Trophy className="h-5 w-5 text-yellow-500 mr-2" />
-                      )}
-                      {index === 1 && (
-                        <Trophy className="h-5 w-5 text-gray-400 mr-2" />
-                      )}
-                      {index === 2 && (
-                        <Trophy className="h-5 w-5 text-orange-400 mr-2" />
-                      )}
-                      <span className="text-sm font-medium text-gray-900">
-                        {standing.place}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium text-gray-900">
-                        {standing.team_name}
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-gray-400" />
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-600">
-                      {standing.establishment}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="text-sm font-semibold text-orange-600">
-                      {standing.wins}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="text-sm font-semibold text-red-600">
-                      {standing.losses}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="text-sm font-medium text-gray-900">
-                      {standing.win_percentage?.toFixed(1) || "0.0"}%
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="text-sm text-gray-600">
-                      {standing.games_behind || "-"}
-                    </span>
-                  </td>
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Rank
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Team
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Establishment
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Wins
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Losses
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Win %
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    GB
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {standings.map((standing, index) => (
+                  <tr
+                    key={standing.team_id}
+                    onClick={() =>
+                      navigate(
+                        `/team/${standing.team_id}/stats?season=${selectedSeasonId}`
+                      )
+                    }
+                    className={`cursor-pointer transition-colors ${
+                      index < 3
+                        ? "bg-orange-50 hover:bg-primary-100"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {index === 0 && (
+                          <Trophy className="h-5 w-5 text-yellow-500 mr-2" />
+                        )}
+                        {index === 1 && (
+                          <Trophy className="h-5 w-5 text-gray-400 mr-2" />
+                        )}
+                        {index === 2 && (
+                          <Trophy className="h-5 w-5 text-orange-400 mr-2" />
+                        )}
+                        <span className="text-sm font-medium text-gray-900">
+                          {standing.place}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium text-gray-900">
+                          {standing.team_name}
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-600">
+                        {standing.establishment}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="text-sm font-semibold text-orange-600">
+                        {standing.wins}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="text-sm font-semibold text-red-600">
+                        {standing.losses}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="text-sm font-medium text-gray-900">
+                        {standing.win_percentage?.toFixed(1) || "0.0"}%
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="text-sm text-gray-600">
+                        {standing.games_behind || "-"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
 
