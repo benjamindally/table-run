@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Menu, X } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -23,7 +23,11 @@ const Header: React.FC = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <span className="font-bold text-xl">League</span>
-            <img src="/league-genius-logo.png" alt="League Genius" className="h-[45px] w-[45px]" />
+            <img
+              src="/league-genius-logo.png"
+              alt="League Genius"
+              className="h-[45px] w-[45px]"
+            />
             <span className="font-bold text-xl">Genius</span>
           </Link>
 
@@ -32,23 +36,23 @@ const Header: React.FC = () => {
             <Link
               to="/"
               className={`hover:text-primary-300 transition-colors ${
-                isActive('/') ? 'text-primary font-medium' : ''
+                isActive("/") ? "text-primary font-medium" : ""
               }`}
             >
               Home
             </Link>
             <Link
-              to="/standings"
+              to="/leagues"
               className={`hover:text-primary-300 transition-colors ${
-                isActive('/standings') ? 'text-primary font-medium' : ''
+                isActive("/leagues") ? "text-primary font-medium" : ""
               }`}
             >
-              Standings
+              Leagues
             </Link>
             <Link
               to="/register"
               className={`hover:text-primary-300 transition-colors ${
-                isActive('/register') ? 'text-primary font-medium' : ''
+                isActive("/register") ? "text-primary font-medium" : ""
               }`}
             >
               Register Team
@@ -56,7 +60,7 @@ const Header: React.FC = () => {
             <Link
               to="/score-entry"
               className={`hover:text-primary-300 transition-colors ${
-                isActive('/score-entry') ? 'text-primary font-medium' : ''
+                isActive("/score-entry") ? "text-primary font-medium" : ""
               }`}
             >
               Submit Scores
@@ -80,7 +84,7 @@ const Header: React.FC = () => {
               <Link
                 to="/login"
                 className={`hover:text-primary-300 transition-colors ${
-                  isActive('/login') ? 'text-primary font-medium' : ''
+                  isActive("/login") ? "text-primary font-medium" : ""
                 }`}
               >
                 Login
@@ -107,16 +111,16 @@ const Header: React.FC = () => {
             <Link
               to="/"
               className={`block py-2 hover:text-primary-300 transition-colors ${
-                isActive('/') ? 'text-primary font-medium' : ''
+                isActive("/") ? "text-primary font-medium" : ""
               }`}
               onClick={toggleMenu}
             >
               Home
             </Link>
             <Link
-              to="/standings"
+              to="/leagues"
               className={`block py-2 hover:text-primary-300 transition-colors ${
-                isActive('/standings') ? 'text-primary font-medium' : ''
+                isActive("/leagues") ? "text-primary font-medium" : ""
               }`}
               onClick={toggleMenu}
             >
@@ -125,7 +129,7 @@ const Header: React.FC = () => {
             <Link
               to="/register"
               className={`block py-2 hover:text-primary-300 transition-colors ${
-                isActive('/register') ? 'text-primary font-medium' : ''
+                isActive("/register") ? "text-primary font-medium" : ""
               }`}
               onClick={toggleMenu}
             >
@@ -134,7 +138,7 @@ const Header: React.FC = () => {
             <Link
               to="/score-entry"
               className={`block py-2 hover:text-primary-300 transition-colors ${
-                isActive('/score-entry') ? 'text-primary font-medium' : ''
+                isActive("/score-entry") ? "text-primary font-medium" : ""
               }`}
               onClick={toggleMenu}
             >
@@ -163,7 +167,7 @@ const Header: React.FC = () => {
               <Link
                 to="/login"
                 className={`block py-2 hover:text-primary-300 transition-colors ${
-                  isActive('/login') ? 'text-primary font-medium' : ''
+                  isActive("/login") ? "text-primary font-medium" : ""
                 }`}
                 onClick={toggleMenu}
               >

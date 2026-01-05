@@ -1,21 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Calendar,
-  Users,
-  Trophy,
-  Target,
-  Edit,
-  Archive,
-  Upload,
-  Award,
-  Flame,
-  ChevronDown,
-  ChevronUp,
-  X,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, Upload, X, Trash2 } from "lucide-react";
 import {
   useSeason,
   useSeasonTeams,
@@ -28,6 +13,11 @@ import {
 } from "../../hooks/useSeasons";
 import { toast } from "react-toastify";
 import Modal from "../../components/Modal";
+import SeasonOverview from "../../components/seasons/SeasonOverview";
+import SeasonStandings from "../../components/seasons/SeasonStandings";
+import SeasonTeams from "../../components/seasons/SeasonTeams";
+import SeasonMatches from "../../components/seasons/SeasonMatches";
+import SeasonPlayerAnalytics from "../../components/seasons/SeasonPlayerAnalytics";
 
 const SeasonDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -79,17 +69,6 @@ const SeasonDetailsPage: React.FC = () => {
     is_archived: false,
   });
 
-  // State for collapsible sections
-  const [standingsCollapsed, setStandingsCollapsed] = useState(false);
-  const [teamsCollapsed, setTeamsCollapsed] = useState(false);
-  const [matchesCollapsed, setMatchesCollapsed] = useState(false);
-  const [playersCollapsed, setPlayersCollapsed] = useState(false);
-
-  // State for expanded sections (showing all items)
-  const [standingsExpanded, setStandingsExpanded] = useState(false);
-  const [teamsExpanded, setTeamsExpanded] = useState(false);
-  const [matchesExpanded, setMatchesExpanded] = useState(false);
-  const [playersExpanded, setPlayersExpanded] = useState(false);
 
   const teamStandingsInputRef = useRef<HTMLInputElement>(null);
   const individualStandingsInputRef = useRef<HTMLInputElement>(null);
@@ -291,643 +270,48 @@ const SeasonDetailsPage: React.FC = () => {
       </div>
 
       {/* Overview Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-dark">Overview</h2>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="btn btn-outline btn-sm flex items-center"
-            >
-              <Upload className="h-4 w-4 mr-1" />
-              Import CSV
-            </button>
-            <button
-              onClick={openEditSeasonModal}
-              className="btn btn-outline btn-sm flex items-center"
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              Edit Season
-            </button>
-            <button className="btn btn-outline btn-sm flex items-center">
-              <Archive className="h-4 w-4 mr-1" />
-              Archive
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <div className="flex items-center text-dark-300 mb-2">
-              <Calendar className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">Start Date</span>
-            </div>
-            <p className="text-lg font-semibold text-dark">
-              {new Date(season.start_date + "T00:00:00").toLocaleDateString(
-                "en-US",
-                {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                }
-              )}
-            </p>
-          </div>
-
-          {season.end_date && (
-            <div>
-              <div className="flex items-center text-dark-300 mb-2">
-                <Calendar className="h-5 w-5 mr-2" />
-                <span className="text-sm font-medium">End Date</span>
-              </div>
-              <p className="text-lg font-semibold text-dark">
-                {new Date(season.end_date + "T00:00:00").toLocaleDateString(
-                  "en-US",
-                  {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  }
-                )}
-              </p>
-            </div>
-          )}
-
-          <div>
-            <div className="flex items-center text-dark-300 mb-2">
-              <Users className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">Teams</span>
-            </div>
-            <p className="text-lg font-semibold text-dark">
-              {season.team_count || 0}
-            </p>
-          </div>
-
-          <div>
-            <div className="flex items-center text-dark-300 mb-2">
-              <Target className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">Invite Code</span>
-            </div>
-            <p className="text-lg font-semibold text-dark font-mono">
-              {season.invite_code}
-            </p>
-          </div>
-
-          <div>
-            <div className="flex items-center text-dark-300 mb-2">
-              <Trophy className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">Status</span>
-            </div>
-            <span
-              className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
-                season.is_active
-                  ? "bg-secondary-100 text-secondary-800"
-                  : season.is_archived
-                  ? "bg-cream-400 text-dark-400"
-                  : "bg-gray-100 text-gray-600"
-              }`}
-            >
-              {season.is_active
-                ? "Active"
-                : season.is_archived
-                ? "Archived"
-                : "Inactive"}
-            </span>
-          </div>
-        </div>
-      </div>
+      <SeasonOverview
+        season={season}
+        editable={true}
+        onEditSeason={openEditSeasonModal}
+        onArchive={() => {
+          // TODO: Implement archive functionality
+        }}
+        onImportCSV={() => setShowUploadModal(true)}
+      />
 
       {/* Standings Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-dark">Standings</h2>
-          <button
-            onClick={() => setStandingsCollapsed(!standingsCollapsed)}
-            className="text-dark-300 hover:text-dark transition-colors"
-          >
-            {standingsCollapsed ? (
-              <ChevronDown className="h-5 w-5" />
-            ) : (
-              <ChevronUp className="h-5 w-5" />
-            )}
-          </button>
-        </div>
-        {!standingsCollapsed && (
-          <>
-            {standings &&
-            standings.standings &&
-            standings.standings.length > 0 ? (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Rank
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Team
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          W
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          L
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          Win %
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          GB
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {(standingsExpanded
-                        ? standings.standings
-                        : standings.standings.slice(0, 5)
-                      ).map((standing, idx) => (
-                        <tr
-                          key={standing.team_id}
-                          className={idx < 3 ? "bg-orange-50" : ""}
-                        >
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="flex items-center">
-                              {idx === 0 && (
-                                <Trophy className="h-4 w-4 text-yellow-500 mr-1" />
-                              )}
-                              {idx === 1 && (
-                                <Trophy className="h-4 w-4 text-gray-400 mr-1" />
-                              )}
-                              {idx === 2 && (
-                                <Trophy className="h-4 w-4 text-orange-400 mr-1" />
-                              )}
-                              <span className="text-sm font-medium">
-                                {standing.place}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {standing.team_name}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {standing.establishment}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm font-semibold text-green-600">
-                            {standing.wins}
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm font-semibold text-red-600">
-                            {standing.losses}
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm">
-                            {standing.win_percentage?.toFixed(1)}%
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm text-gray-600">
-                            {standing.games_behind || "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {!standingsExpanded && standings.standings.length > 5 && (
-                  <div className="mt-4 text-center">
-                    <button
-                      onClick={() => setStandingsExpanded(true)}
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                    >
-                      View More ({standings.standings.length - 5} more)
-                    </button>
-                  </div>
-                )}
-                {standingsExpanded && standings.standings.length > 5 && (
-                  <div className="mt-4 text-center">
-                    <button
-                      onClick={() => setStandingsExpanded(false)}
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                    >
-                      Show Less
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-8 text-dark-300">
-                No standings data yet. Import CSV files to populate.
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      <SeasonStandings
+        standings={standings}
+        onViewTeam={(teamId) => navigate(`/team/${teamId}/stats`)}
+      />
 
       {/* Teams Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-dark">Teams</h2>
-          <div className="flex items-center space-x-2">
-            <button className="btn btn-primary btn-sm">Add Team</button>
-            <button
-              onClick={() => setTeamsCollapsed(!teamsCollapsed)}
-              className="text-dark-300 hover:text-dark transition-colors"
-            >
-              {teamsCollapsed ? (
-                <ChevronDown className="h-5 w-5" />
-              ) : (
-                <ChevronUp className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-        </div>
-        {!teamsCollapsed && (
-          <>
-            {teams && teams.length > 0 ? (
-              <>
-                <div className="space-y-2">
-                  {(teamsExpanded ? teams : teams.slice(0, 5)).map(
-                    (participation) => (
-                      <div
-                        key={participation.id}
-                        className="flex items-center justify-between p-4 border border-cream-400 rounded-lg"
-                      >
-                        <div>
-                          <h3 className="font-semibold text-dark">
-                            {participation.team_detail?.name}
-                          </h3>
-                          <p className="text-sm text-dark-300">
-                            {participation.team_detail?.establishment}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() =>
-                            navigate(`/admin/teams/${participation.team}`)
-                          }
-                          className="btn btn-outline btn-sm"
-                        >
-                          View Team
-                        </button>
-                      </div>
-                    )
-                  )}
-                </div>
-                {!teamsExpanded && teams.length > 5 && (
-                  <div className="mt-4 text-center">
-                    <button
-                      onClick={() => setTeamsExpanded(true)}
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                    >
-                      View More ({teams.length - 5} more)
-                    </button>
-                  </div>
-                )}
-                {teamsExpanded && teams.length > 5 && (
-                  <div className="mt-4 text-center">
-                    <button
-                      onClick={() => setTeamsExpanded(false)}
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                    >
-                      Show Less
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-8 text-dark-300">
-                No teams yet. Add teams to get started.
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      <SeasonTeams
+        teams={teams}
+        editable={true}
+        onAddTeam={() => {
+          // TODO: Implement add team functionality
+        }}
+        onViewTeam={(teamId) => navigate(`/admin/teams/${teamId}`)}
+      />
 
       {/* Matches Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-dark">Matches</h2>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowScheduleImportModal(true)}
-              className="btn btn-outline btn-sm flex items-center"
-            >
-              <Upload className="h-4 w-4 mr-1" />
-              Import Schedule
-            </button>
-            <button className="btn btn-primary btn-sm">Schedule Match</button>
-            <button
-              onClick={() => setMatchesCollapsed(!matchesCollapsed)}
-              className="text-dark-300 hover:text-dark transition-colors"
-            >
-              {matchesCollapsed ? (
-                <ChevronDown className="h-5 w-5" />
-              ) : (
-                <ChevronUp className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-        </div>
-        {!matchesCollapsed && (
-          <>
-            {matches && matches.length > 0 ? (
-              (() => {
-                // Group matches by week_number
-                const matchesByWeek = matches.reduce((acc, match) => {
-                  const week = match.week_number || 0;
-                  if (!acc[week]) {
-                    acc[week] = [];
-                  }
-                  acc[week].push(match);
-                  return acc;
-                }, {} as Record<number, typeof matches>);
-
-                // Sort weeks
-                const sortedWeeks = Object.keys(matchesByWeek)
-                  .map(Number)
-                  .sort((a, b) => a - b);
-
-                // Determine which weeks to show
-                const weeksToShow = matchesExpanded
-                  ? sortedWeeks
-                  : sortedWeeks.slice(0, 3);
-
-                return (
-                  <>
-                    <div className="space-y-6">
-                      {weeksToShow.map((weekNum) => (
-                        <div
-                          key={weekNum}
-                          className="border border-cream-400 rounded-lg p-4 bg-cream-50"
-                        >
-                          <h3 className="font-semibold text-lg text-dark mb-3">
-                            {weekNum === 0 ? "Unscheduled" : `Week ${weekNum}`}
-                          </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {matchesByWeek[weekNum].map((match) => (
-                              <div
-                                key={match.id}
-                                className="p-3 bg-white border border-cream-300 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
-                                onClick={() => openEditMatchModal(match)}
-                              >
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-medium text-sm text-dark truncate">
-                                        {match.home_team_detail?.name ||
-                                          `Team ${match.home_team}`}
-                                      </p>
-                                      <p className="font-medium text-sm text-dark truncate">
-                                        {match.away_team_detail?.name ||
-                                          `Team ${match.away_team}`}
-                                      </p>
-                                    </div>
-                                    {match.status === "completed" &&
-                                    match.home_score !== null &&
-                                    match.away_score !== null ? (
-                                      <div className="text-right">
-                                        <p className="text-lg font-bold text-dark">
-                                          {match.home_score}
-                                        </p>
-                                        <p className="text-lg font-bold text-dark">
-                                          {match.away_score}
-                                        </p>
-                                      </div>
-                                    ) : (
-                                      <span className="text-xs text-dark-300">
-                                        vs
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center justify-between text-xs text-dark-300">
-                                    <span>
-                                      {new Date(
-                                        match.date + "T00:00:00"
-                                      ).toLocaleDateString()}
-                                    </span>
-                                    {match.status === "completed" && (
-                                      <span className="px-1.5 py-0.5 bg-green-100 text-green-800 rounded">
-                                        ✓
-                                      </span>
-                                    )}
-                                    {match.status === "scheduled" && (
-                                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
-                                        Scheduled
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {!matchesExpanded && sortedWeeks.length > 3 && (
-                      <div className="mt-4 text-center">
-                        <button
-                          onClick={() => setMatchesExpanded(true)}
-                          className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                        >
-                          Show All Weeks ({sortedWeeks.length - 3} more)
-                        </button>
-                      </div>
-                    )}
-                    {matchesExpanded && sortedWeeks.length > 3 && (
-                      <div className="mt-4 text-center">
-                        <button
-                          onClick={() => setMatchesExpanded(false)}
-                          className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                        >
-                          Show Less
-                        </button>
-                      </div>
-                    )}
-                  </>
-                );
-              })()
-            ) : (
-              <div className="text-center py-8 text-dark-300">
-                No matches scheduled yet.
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      <SeasonMatches
+        matches={matches}
+        editable={true}
+        onScheduleMatch={() => {
+          // TODO: Implement schedule match functionality
+        }}
+        onImportSchedule={() => setShowScheduleImportModal(true)}
+        onEditMatch={openEditMatchModal}
+      />
 
       {/* Player Analytics Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-dark">Player Analytics</h2>
-          <div className="flex items-center space-x-3">
-            {playersData && (
-              <span className="text-sm text-dark-300">
-                {playersData.player_count}{" "}
-                {playersData.player_count === 1 ? "Player" : "Players"}
-              </span>
-            )}
-            <button
-              onClick={() => setPlayersCollapsed(!playersCollapsed)}
-              className="text-dark-300 hover:text-dark transition-colors"
-            >
-              {playersCollapsed ? (
-                <ChevronDown className="h-5 w-5" />
-              ) : (
-                <ChevronUp className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-        </div>
-        {!playersCollapsed && (
-          <>
-            {playersData &&
-            playersData.players &&
-            playersData.players.length > 0 ? (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Rank
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Player
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Team
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          W
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          L
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          Games
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          Win %
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          <div className="flex items-center justify-center">
-                            <Trophy className="h-3 w-3 mr-1" />
-                            Runs
-                          </div>
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          <div className="flex items-center justify-center">
-                            <Flame className="h-3 w-3 mr-1" />
-                            8-Breaks
-                          </div>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {(playersExpanded
-                        ? playersData.players
-                        : playersData.players.slice(0, 5)
-                      ).map((player, idx) => (
-                        <tr
-                          key={player.player_id}
-                          className={idx < 3 ? "bg-orange-50" : ""}
-                        >
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="flex items-center">
-                              {idx === 0 && (
-                                <Award className="h-4 w-4 text-yellow-500 mr-1" />
-                              )}
-                              {idx === 1 && (
-                                <Award className="h-4 w-4 text-gray-400 mr-1" />
-                              )}
-                              {idx === 2 && (
-                                <Award className="h-4 w-4 text-orange-400 mr-1" />
-                              )}
-                              <span className="text-sm font-medium">
-                                {idx + 1}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() =>
-                                navigate(`/admin/players/${player.player_id}`)
-                              }
-                              className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
-                            >
-                              {player.player_name}
-                            </button>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="text-sm text-gray-600">
-                              {player.team_name}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm font-semibold text-green-600">
-                            {player.total_wins}
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm font-semibold text-red-600">
-                            {player.total_losses}
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm">
-                            {player.total_games}
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm">
-                            {player.win_percentage.toFixed(1)}%
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm">
-                            {player.table_runs > 0 ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                {player.table_runs}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm">
-                            {player.eight_ball_breaks > 0 ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                {player.eight_ball_breaks}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {!playersExpanded && playersData.players.length > 5 && (
-                  <div className="mt-4 text-center">
-                    <button
-                      onClick={() => setPlayersExpanded(true)}
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                    >
-                      View More ({playersData.players.length - 5} more)
-                    </button>
-                  </div>
-                )}
-                {playersExpanded && playersData.players.length > 5 && (
-                  <div className="mt-4 text-center">
-                    <button
-                      onClick={() => setPlayersExpanded(false)}
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                    >
-                      Show Less
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-8 text-dark-300">
-                No player data yet. Import CSV files to populate.
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      <SeasonPlayerAnalytics
+        playersData={playersData}
+        onViewPlayer={(playerId) => navigate(`/admin/players/${playerId}`)}
+      />
 
       {/* CSV Upload Modal */}
       <Modal

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, ChevronRight } from 'lucide-react';
-import { api } from '../api';
-import { toast } from 'react-toastify';
+import { useEffect, useState } from "react";
+import { MapPin, Calendar } from "lucide-react";
+import { api } from "../api";
+import { toast } from "react-toastify";
+import SeasonsModal from "../components/SeasonsModal";
 
 interface League {
   id: number;
@@ -16,19 +16,20 @@ interface League {
 }
 
 export default function LeaguesPage() {
-  const navigate = useNavigate();
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const loadLeagues = async () => {
       try {
-        const response = await api.get<{ results: League[] }>('/leagues/');
-        const activeLeagues = response.results.filter(l => l.is_active);
+        const response = await api.get<{ results: League[] }>("/leagues/");
+        const activeLeagues = response.results.filter((l) => l.is_active);
         setLeagues(activeLeagues);
       } catch (error) {
-        console.error('Failed to load leagues:', error);
-        toast.error('Failed to load leagues');
+        console.error("Failed to load leagues:", error);
+        toast.error("Failed to load leagues");
       } finally {
         setLoading(false);
       }
@@ -50,16 +51,22 @@ export default function LeaguesPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <span className="material-symbols-outlined text-primary text-5xl">counter_8</span>
+          <span className="material-symbols-outlined text-primary text-5xl">
+            counter_8
+          </span>
           <h1 className="text-3xl font-bold text-gray-900">Pool Leagues</h1>
         </div>
-        <p className="text-gray-600">Select a league to view standings and statistics</p>
+        <p className="text-gray-600">
+          Select a league to view standings and statistics
+        </p>
       </div>
 
       {/* Leagues Grid */}
       {leagues.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow">
-          <span className="material-symbols-outlined text-gray-400 text-6xl mb-4">counter_8</span>
+          <span className="material-symbols-outlined text-gray-400 text-6xl mb-4">
+            counter_8
+          </span>
           <p className="text-gray-600">No active leagues found.</p>
         </div>
       ) : (
@@ -67,8 +74,7 @@ export default function LeaguesPage() {
           {leagues.map((league) => (
             <div
               key={league.id}
-              onClick={() => navigate(`/leagues/${league.id}/standings`)}
-              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-primary p-6"
+              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all border-2 border-transparent hover:border-primary p-6"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -81,7 +87,6 @@ export default function LeaguesPage() {
                     </p>
                   )}
                 </div>
-                <ChevronRight className="h-6 w-6 text-gray-400 flex-shrink-0 ml-2" />
               </div>
 
               <div className="space-y-2">
@@ -89,7 +94,7 @@ export default function LeaguesPage() {
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <MapPin className="h-4 w-4" />
                     <span>
-                      {[league.city, league.state].filter(Boolean).join(', ')}
+                      {[league.city, league.state].filter(Boolean).join(", ")}
                     </span>
                   </div>
                 )}
@@ -100,13 +105,32 @@ export default function LeaguesPage() {
               </div>
 
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <button className="w-full text-center text-sm font-medium text-primary hover:text-primary-600">
-                  View Standings →
+                <button
+                  onClick={() => {
+                    setSelectedLeague(league);
+                    setIsModalOpen(true);
+                  }}
+                  className="w-full text-center text-sm font-medium text-primary hover:text-primary-600"
+                >
+                  View Seasons →
                 </button>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Seasons Modal */}
+      {selectedLeague && (
+        <SeasonsModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedLeague(null);
+          }}
+          leagueId={selectedLeague.id}
+          leagueName={selectedLeague.name}
+        />
       )}
     </div>
   );

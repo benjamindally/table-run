@@ -1,33 +1,39 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Layouts
-import MainLayout from './layouts/MainLayout';
-import AdminLayout from './layouts/AdminLayout';
+import MainLayout from "./layouts/MainLayout";
+import AdminLayout from "./layouts/AdminLayout";
 
 // Pages
-import HomePage from './pages/HomePage';
-import TeamRegistrationPage from './pages/TeamRegistrationPage';
-import MatchScorePage from './pages/MatchScorePage';
-import ScoreEntryPage from './pages/ScoreEntryPage';
-import LeaguesPage from './pages/LeaguesPage';
-import StandingsPage from './pages/StandingsPage';
-import TeamStatsPage from './pages/TeamStatsPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import AdminDashboardPage from './pages/admin/DashboardPage';
-import AdminTeamsPage from './pages/admin/TeamsPage';
-import AdminMatchesPage from './pages/admin/MatchesPage';
-import AdminLeaguesPage from './pages/admin/LeaguesPage';
-import AdminLeagueDetailsPage from './pages/admin/LeagueDetailsPage';
-import AdminSeasonsPage from './pages/admin/SeasonsPage';
-import AdminSeasonDetailsPage from './pages/admin/SeasonDetailsPage';
-import AdminTeamDetailsPage from './pages/admin/TeamDetailsPage';
-import AdminPlayerDetailsPage from './pages/admin/PlayerDetailsPage';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import HomePage from "./pages/HomePage";
+import TeamRegistrationPage from "./pages/TeamRegistrationPage";
+import MatchScorePage from "./pages/MatchScorePage";
+import ScoreEntryPage from "./pages/ScoreEntryPage";
+import LeaguesPage from "./pages/LeaguesPage";
+import StandingsPage from "./pages/StandingsPage";
+import SeasonDetailsPage from "./pages/SeasonDetailsPage";
+import TeamStatsPage from "./pages/TeamStatsPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import AdminDashboardPage from "./pages/admin/DashboardPage";
+import AdminTeamsPage from "./pages/admin/TeamsPage";
+import AdminMatchesPage from "./pages/admin/MatchesPage";
+import AdminLeaguesPage from "./pages/admin/LeaguesPage";
+import AdminLeagueDetailsPage from "./pages/admin/LeagueDetailsPage";
+import AdminSeasonsPage from "./pages/admin/SeasonsPage";
+import AdminSeasonDetailsPage from "./pages/admin/SeasonDetailsPage";
+import AdminTeamDetailsPage from "./pages/admin/TeamDetailsPage";
+import AdminPlayerDetailsPage from "./pages/admin/PlayerDetailsPage";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
   return (
@@ -39,18 +45,32 @@ function App() {
             <Route path="register" element={<TeamRegistrationPage />} />
             <Route path="match-score" element={<MatchScorePage />} />
             <Route path="score-entry" element={<ScoreEntryPage />} />
-            <Route path="standings" element={<LeaguesPage />} />
-            <Route path="leagues/:leagueId/standings" element={<StandingsPage />} />
+            <Route path="leagues" element={<LeaguesPage />} />
+            <Route
+              path="leagues/:leagueId/standings"
+              element={<StandingsPage />}
+            />
+            <Route
+              path="leagues/:leagueId/seasons/:seasonId/standings"
+              element={<StandingsPage />}
+            />
+            <Route
+              path="leagues/:leagueId/seasons/:seasonId"
+              element={<SeasonDetailsPage />}
+            />
             <Route path="team/:teamId/stats" element={<TeamStatsPage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="signup" element={<RegisterPage />} />
           </Route>
-          
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="teams" element={<AdminTeamsPage />} />
