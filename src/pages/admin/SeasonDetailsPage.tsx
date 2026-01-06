@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, X, Trash2 } from "lucide-react";
+import { ArrowLeft, Upload, X } from "lucide-react";
 import {
   useSeason,
   useSeasonTeams,
@@ -18,6 +18,8 @@ import SeasonStandings from "../../components/seasons/SeasonStandings";
 import SeasonTeams from "../../components/seasons/SeasonTeams";
 import SeasonMatches from "../../components/seasons/SeasonMatches";
 import SeasonPlayerAnalytics from "../../components/seasons/SeasonPlayerAnalytics";
+import MatchForm from "../../components/matches/MatchForm";
+import type { Match } from "../../api/types";
 
 const SeasonDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,15 +51,7 @@ const SeasonDetailsPage: React.FC = () => {
 
   // Edit match modal state
   const [showEditMatchModal, setShowEditMatchModal] = useState(false);
-  const [matchToEdit, setMatchToEdit] = useState<any>(null);
-  const [editFormData, setEditFormData] = useState({
-    date: "",
-    homeScore: null as number | null,
-    awayScore: null as number | null,
-    weekNumber: null as number | null,
-    status: "" as "scheduled" | "completed" | "cancelled",
-  });
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [matchToEdit, setMatchToEdit] = useState<Match | null>(null);
 
   // Edit season modal state
   const [showEditSeasonModal, setShowEditSeasonModal] = useState(false);
@@ -102,47 +96,18 @@ const SeasonDetailsPage: React.FC = () => {
     }
   };
 
-  const openEditMatchModal = (match: any) => {
+  const openEditMatchModal = (match: Match) => {
     setMatchToEdit(match);
-    setEditFormData({
-      date: match.date,
-      homeScore: match.home_score,
-      awayScore: match.away_score,
-      weekNumber: match.week_number,
-      status: match.status,
-    });
     setShowEditMatchModal(true);
   };
 
-  const handleEditFormChange = (
-    field: keyof typeof editFormData,
-    value: string | number | null
-  ) => {
-    setEditFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const saveMatchEdit = async () => {
-    if (!matchToEdit) return;
-
-    // TODO: Implement API call to update match
-    // For now, just show a toast
-    toast.success("Match updated successfully!");
+  const handleMatchFormSuccess = () => {
     setShowEditMatchModal(false);
     setMatchToEdit(null);
-    setShowDeleteConfirmation(false);
   };
 
-  const handleDeleteMatch = async () => {
-    if (!matchToEdit) return;
-
-    // TODO: Implement API call to delete match
-    // For now, just show a toast
-    toast.success("Match deleted successfully!");
+  const handleMatchFormCancel = () => {
     setShowEditMatchModal(false);
-    setShowDeleteConfirmation(false);
     setMatchToEdit(null);
   };
 
@@ -554,233 +519,34 @@ const SeasonDetailsPage: React.FC = () => {
 
       {/* Edit Match Modal */}
       {showEditMatchModal && matchToEdit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-medium">Edit Match</h3>
-              <button
-                onClick={() => setShowEditMatchModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              {/* Match Info (Read-only) */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Home Team
-                    </label>
-                    <p className="text-gray-900 font-medium">
-                      {matchToEdit.home_team_detail?.name ||
-                        `Team ${matchToEdit.home_team}`}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Away Team
-                    </label>
-                    <p className="text-gray-900 font-medium">
-                      {matchToEdit.away_team_detail?.name ||
-                        `Team ${matchToEdit.away_team}`}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Editable Fields */}
-              <div className="grid grid-cols-2 gap-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-cream-200 rounded-lg max-w-4xl w-full shadow-xl max-h-[95vh] overflow-y-auto my-4">
+            <div className="sticky top-0 bg-primary text-white p-4 rounded-t-lg z-10 shadow-md">
+              <div className="flex justify-between items-start">
                 <div>
-                  <label
-                    htmlFor="edit-date"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Match Date
-                  </label>
-                  <input
-                    type="date"
-                    id="edit-date"
-                    className="form-input w-full"
-                    value={editFormData.date}
-                    onChange={(e) =>
-                      handleEditFormChange("date", e.target.value)
-                    }
-                  />
+                  <h3 className="text-lg font-medium">Edit Match</h3>
+                  <p className="text-sm text-cream-200 mt-1">
+                    {matchToEdit.home_team_detail?.name || `Team ${matchToEdit.home_team}`} vs{" "}
+                    {matchToEdit.away_team_detail?.name || `Team ${matchToEdit.away_team}`}
+                  </p>
                 </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-week"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Week Number
-                  </label>
-                  <input
-                    type="number"
-                    id="edit-week"
-                    className="form-input w-full"
-                    min="1"
-                    value={editFormData.weekNumber || ""}
-                    onChange={(e) =>
-                      handleEditFormChange(
-                        "weekNumber",
-                        parseInt(e.target.value) || null
-                      )
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label
-                    htmlFor="edit-home-score"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Home Score
-                  </label>
-                  <input
-                    type="number"
-                    id="edit-home-score"
-                    className="form-input w-full"
-                    min="0"
-                    value={editFormData.homeScore ?? ""}
-                    onChange={(e) =>
-                      handleEditFormChange(
-                        "homeScore",
-                        e.target.value ? parseInt(e.target.value) : null
-                      )
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-away-score"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Away Score
-                  </label>
-                  <input
-                    type="number"
-                    id="edit-away-score"
-                    className="form-input w-full"
-                    min="0"
-                    value={editFormData.awayScore ?? ""}
-                    onChange={(e) =>
-                      handleEditFormChange(
-                        "awayScore",
-                        e.target.value ? parseInt(e.target.value) : null
-                      )
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-status"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Status
-                  </label>
-                  <select
-                    id="edit-status"
-                    className="form-input w-full"
-                    value={editFormData.status}
-                    onChange={(e) =>
-                      handleEditFormChange(
-                        "status",
-                        e.target.value as
-                          | "scheduled"
-                          | "completed"
-                          | "cancelled"
-                      )
-                    }
-                  >
-                    <option value="scheduled">Scheduled</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              {/* Delete button on the left */}
-              <button
-                onClick={() => setShowDeleteConfirmation(true)}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-              </button>
-
-              {/* Cancel and Save on the right */}
-              <div className="flex space-x-3">
                 <button
-                  onClick={() => setShowEditMatchModal(false)}
-                  className="btn btn-outline"
+                  onClick={handleMatchFormCancel}
+                  className="text-white hover:text-cream-200 transition-colors"
                 >
-                  Cancel
-                </button>
-                <button onClick={saveMatchEdit} className="btn btn-primary">
-                  Save Changes
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            {/* Delete Confirmation Dialog */}
-            {showDeleteConfirmation && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-                <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-                  <div className="flex items-start mb-4">
-                    <div className="flex-shrink-0">
-                      <div className="flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                        <Trash2 className="h-6 w-6 text-red-600" />
-                      </div>
-                    </div>
-                    <div className="ml-4">
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Delete Match
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        Are you sure you want to delete this match between{" "}
-                        <strong>
-                          {matchToEdit.home_team_detail?.name ||
-                            `Team ${matchToEdit.home_team}`}
-                        </strong>{" "}
-                        and{" "}
-                        <strong>
-                          {matchToEdit.away_team_detail?.name ||
-                            `Team ${matchToEdit.away_team}`}
-                        </strong>
-                        ?
-                      </p>
-                      <p className="text-sm text-red-600 mt-2">
-                        This action cannot be undone. All match data will be
-                        permanently removed.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex justify-end space-x-3 mt-6">
-                    <button
-                      onClick={() => setShowDeleteConfirmation(false)}
-                      className="btn btn-outline"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleDeleteMatch}
-                      className="btn bg-red-600 hover:bg-red-700 text-white"
-                    >
-                      Delete Match
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div className="p-6">
+              <MatchForm
+                match={matchToEdit}
+                onSuccess={handleMatchFormSuccess}
+                onCancel={handleMatchFormCancel}
+                showCancelButton={true}
+              />
+            </div>
           </div>
         </div>
       )}

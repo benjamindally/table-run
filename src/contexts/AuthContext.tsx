@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authApi, type AuthResponse, type RegisterData, type LoginData, Player } from '../api';
+import { authApi, type AuthResponse, type RegisterData, type LoginData, Player, League, Match, leaguesApi } from '../api';
 import { setRefreshTokenCallback } from '../api/client';
+import * as permissions from '../utils/permissions';
 
 // Define user types
 export interface User {
@@ -10,10 +11,17 @@ export interface User {
   last_name: string;
 }
 
+interface LeagueData {
+  myLeagues: League[];
+  isLeagueOperator: (leagueId?: number) => boolean;
+  canEditMatch: (match: Match, leagueId?: number) => boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   player: Player | null;
   accessToken: string | null;
+  leagueData: LeagueData;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
@@ -32,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [player, setPlayer] = useState<Player | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [myLeagues, setMyLeagues] = useState<League[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const clearAuthData = () => {
@@ -39,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPlayer(null);
     setAccessToken(null);
     setRefreshToken(null);
+    setMyLeagues([]);
 
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -108,6 +118,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch user's league operatorships when authenticated
+  useEffect(() => {
+    const fetchMyLeagues = async () => {
+      if (accessToken) {
+        try {
+          const response = await leaguesApi.getMyLeagues(accessToken);
+          setMyLeagues(response.results || []);
+        } catch (error) {
+          console.error('Failed to fetch my leagues:', error);
+          setMyLeagues([]);
+        }
+      }
+    };
+
+    fetchMyLeagues();
+  }, [accessToken]);
+
   const saveAuthData = (data: AuthResponse) => {
     setUser(data.user);
     setPlayer(data.player);
@@ -165,10 +192,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return accessToken;
   };
 
+  // Helper function to check if user is a league operator
+  const isLeagueOperator = (leagueId?: number): boolean => {
+    return permissions.isLeagueOperator(myLeagues, leagueId);
+  };
+
+  // Helper function to check if user can edit a match
+  const canEditMatch = (match: Match, leagueId?: number): boolean => {
+    return permissions.canEditMatch(match, player, myLeagues, leagueId);
+  };
+
   const value = {
     user,
     player,
     accessToken,
+    leagueData: {
+      myLeagues,
+      isLeagueOperator,
+      canEditMatch,
+    },
     login,
     register,
     logout,

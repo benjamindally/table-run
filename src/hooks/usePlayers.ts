@@ -15,6 +15,7 @@ export const playerKeys = {
   details: () => [...playerKeys.all, 'detail'] as const,
   detail: (id: number) => [...playerKeys.details(), id] as const,
   teams: (id: number) => [...playerKeys.detail(id), 'teams'] as const,
+  currentTeams: () => [...playerKeys.all, 'current-teams'] as const,
   seasonStats: (id: number) => [...playerKeys.detail(id), 'season-stats'] as const,
 };
 
@@ -40,6 +41,18 @@ export const usePlayer = (playerId: number) => {
     queryKey: playerKeys.detail(playerId),
     queryFn: () => playersApi.getById(playerId, getAuthToken() || undefined),
     enabled: !!playerId,
+  });
+};
+
+/**
+ * Get current user's teams
+ */
+export const useCurrentTeams = () => {
+  const { getAuthToken } = useAuth();
+
+  return useQuery({
+    queryKey: playerKeys.currentTeams(),
+    queryFn: () => playersApi.getCurrentTeams(getAuthToken() || undefined),
   });
 };
 

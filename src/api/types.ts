@@ -25,6 +25,11 @@ export interface Player {
   skill_level: number | null;
   created_at: string;
   updated_at: string;
+  captain_of_teams: {
+    team_id: number;
+    team_name: string;
+    appointed_at: string;
+  }[];
 }
 
 export interface PlayerList {

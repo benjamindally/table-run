@@ -44,7 +44,7 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path="register" element={<TeamRegistrationPage />} />
             <Route path="match-score" element={<MatchScorePage />} />
-            <Route path="score-entry" element={<ScoreEntryPage />} />
+            <Route path="score-entry/:seasonId" element={<ScoreEntryPage />} />
             <Route path="leagues" element={<LeaguesPage />} />
             <Route
               path="leagues/:leagueId/standings"
@@ -76,7 +76,7 @@ function App() {
             <Route path="teams" element={<AdminTeamsPage />} />
             <Route path="teams/:id" element={<AdminTeamDetailsPage />} />
             <Route path="players/:id" element={<AdminPlayerDetailsPage />} />
-            <Route path="matches" element={<AdminMatchesPage />} />
+            {/* <Route path="matches" element={<AdminMatchesPage />} /> This is no longer needed */}
             <Route path="leagues" element={<AdminLeaguesPage />} />
             <Route path="leagues/:id" element={<AdminLeagueDetailsPage />} />
             <Route path="seasons" element={<AdminSeasonsPage />} />
