@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileEdit, X } from "lucide-react";
 import {
   useSeason,
   useSeasonTeams,
@@ -8,11 +8,16 @@ import {
   useSeasonStandings,
   useSeasonPlayers,
 } from "../hooks/useSeasons";
+import { useCurrentTeams } from "../hooks/usePlayers";
+import { useMyLeagues } from "../hooks/useLeagues";
+import { useAuth } from "../contexts/AuthContext";
 import SeasonOverview from "../components/seasons/SeasonOverview";
 import SeasonStandings from "../components/seasons/SeasonStandings";
 import SeasonTeams from "../components/seasons/SeasonTeams";
 import SeasonMatches from "../components/seasons/SeasonMatches";
 import SeasonPlayerAnalytics from "../components/seasons/SeasonPlayerAnalytics";
+import MatchForm from "../components/matches/MatchForm";
+import type { Match } from "../api/types";
 
 const SeasonDetailsPage: React.FC = () => {
   const { seasonId: seasonIdParam } = useParams<{
@@ -27,6 +32,46 @@ const SeasonDetailsPage: React.FC = () => {
   const { data: matches } = useSeasonMatches(seasonId);
   const { data: standings } = useSeasonStandings(seasonId);
   const { data: playersData } = useSeasonPlayers(seasonId);
+  const { data: currentTeams } = useCurrentTeams();
+  const { data: myLeaguesData } = useMyLeagues();
+  const { player } = useAuth();
+
+  // Edit match modal state
+  const [showEditMatchModal, setShowEditMatchModal] = useState(false);
+  const [matchToEdit, setMatchToEdit] = useState<Match | null>(null);
+
+  // Determine if user is a league operator
+  const isLeagueOperator = (myLeaguesData?.results?.length ?? 0) > 0;
+
+  // Determine if user can edit matches (league operator OR team captain)
+  const canEditMatches = useMemo(() => {
+    if (!player) return false;
+    if (isLeagueOperator) return true;
+
+    // Check if user is captain of any team in this season
+    if (!currentTeams || !teams) return false;
+
+    const userTeamIds = currentTeams.map(team => team.id);
+    const seasonTeamIds = teams.map(team => team.team);
+
+    // User can edit if they have at least one team in this season
+    return userTeamIds.some(id => seasonTeamIds.includes(id));
+  }, [player, isLeagueOperator, currentTeams, teams]);
+
+  const openEditMatchModal = (match: Match) => {
+    setMatchToEdit(match);
+    setShowEditMatchModal(true);
+  };
+
+  const handleMatchFormSuccess = () => {
+    setShowEditMatchModal(false);
+    setMatchToEdit(null);
+  };
+
+  const handleMatchFormCancel = () => {
+    setShowEditMatchModal(false);
+    setMatchToEdit(null);
+  };
 
   if (isLoading) {
     return (
@@ -50,7 +95,7 @@ const SeasonDetailsPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
-      {/* Header with Back Button */}
+      {/* Header with Back Button and Enter Scores Button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
@@ -67,6 +112,15 @@ const SeasonDetailsPage: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* Enter Match Scores Button */}
+        <button
+          onClick={() => navigate(`/score-entry/${seasonId}`)}
+          className="btn btn-primary flex items-center"
+        >
+          <FileEdit className="h-4 w-4 mr-2" />
+          Enter Match Scores
+        </button>
       </div>
 
       {/* Overview Section - Read Only */}
@@ -81,11 +135,49 @@ const SeasonDetailsPage: React.FC = () => {
       {/* Teams Section - Read Only */}
       <SeasonTeams teams={teams} editable={false} />
 
-      {/* Matches Section - Read Only */}
-      <SeasonMatches matches={matches} editable={false} />
+      {/* Matches Section - Editable based on authorization */}
+      <SeasonMatches
+        matches={matches}
+        editable={canEditMatches}
+        onEditMatch={canEditMatches ? openEditMatchModal : undefined}
+      />
 
       {/* Player Analytics Section - Read Only */}
       <SeasonPlayerAnalytics playersData={playersData} />
+
+      {/* Edit Match Modal */}
+      {showEditMatchModal && matchToEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-cream-200 rounded-lg max-w-4xl w-full shadow-xl max-h-[95vh] overflow-y-auto my-4">
+            <div className="sticky top-0 bg-primary text-white p-4 rounded-t-lg z-10 shadow-md">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-medium">Edit Match</h3>
+                  <p className="text-sm text-cream-200 mt-1">
+                    {matchToEdit.home_team_detail?.name || `Team ${matchToEdit.home_team}`} vs{" "}
+                    {matchToEdit.away_team_detail?.name || `Team ${matchToEdit.away_team}`}
+                  </p>
+                </div>
+                <button
+                  onClick={handleMatchFormCancel}
+                  className="text-white hover:text-cream-200 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <MatchForm
+                match={matchToEdit}
+                onSuccess={handleMatchFormSuccess}
+                onCancel={handleMatchFormCancel}
+                showCancelButton={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,26 +1,10 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Upload } from "lucide-react";
-
-interface Match {
-  id: number;
-  home_team: number;
-  away_team: number;
-  home_team_detail?: {
-    name: string;
-  };
-  away_team_detail?: {
-    name: string;
-  };
-  date: string;
-  week_number?: number | null;
-  status: "scheduled" | "completed" | "cancelled";
-  home_score?: number | null;
-  away_score?: number | null;
-}
+import type { Match } from "../../api/types";
 
 interface SeasonMatchesProps {
   matches?: Match[];
-  editable?: boolean;
+  editable?: boolean | ((match: Match) => boolean);
   onScheduleMatch?: () => void;
   onImportSchedule?: () => void;
   onEditMatch?: (match: Match) => void;
@@ -53,11 +37,14 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
                 Import Schedule
               </button>
             )}
-            {editable && onScheduleMatch && (
-              <button onClick={onScheduleMatch} className="btn btn-primary btn-sm">
+            {/* {editable && onScheduleMatch && (
+              <button
+                onClick={onScheduleMatch}
+                className="btn btn-primary btn-sm"
+              >
                 Schedule Match
               </button>
-            )}
+            )} */}
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="text-dark-300 hover:text-dark transition-colors"
@@ -99,12 +86,23 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
     ? sortedWeeks
     : sortedWeeks.slice(0, initialWeeksToShow);
 
+  // Helper to check if a match is editable
+  const isMatchEditable = (match: Match): boolean => {
+    if (typeof editable === 'function') {
+      return editable(match);
+    }
+    return !!editable;
+  };
+
+  // Show admin controls if any match is editable (for league operators)
+  const hasEditableMatches = typeof editable === 'boolean' ? editable : matches.some(isMatchEditable);
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-dark">Matches</h2>
         <div className="flex items-center space-x-2">
-          {editable && onImportSchedule && (
+          {hasEditableMatches && onImportSchedule && (
             <button
               onClick={onImportSchedule}
               className="btn btn-outline btn-sm flex items-center"
@@ -113,11 +111,11 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
               Import Schedule
             </button>
           )}
-          {editable && onScheduleMatch && (
+          {/* {hasEditableMatches && onScheduleMatch && (
             <button onClick={onScheduleMatch} className="btn btn-primary btn-sm">
               Schedule Match
             </button>
-          )}
+          )} */}
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="text-dark-300 hover:text-dark transition-colors"
@@ -142,67 +140,70 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
                   {weekNum === 0 ? "Unscheduled" : `Week ${weekNum}`}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {matchesByWeek[weekNum].map((match) => (
-                    <div
-                      key={match.id}
-                      className={`p-3 bg-white border border-cream-300 rounded-lg transition-shadow ${
-                        editable && onEditMatch
-                          ? "hover:shadow-md cursor-pointer"
-                          : ""
-                      }`}
-                      onClick={
-                        editable && onEditMatch
-                          ? () => onEditMatch(match)
-                          : undefined
-                      }
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-dark truncate">
-                              {match.home_team_detail?.name ||
-                                `Team ${match.home_team}`}
-                            </p>
-                            <p className="font-medium text-sm text-dark truncate">
-                              {match.away_team_detail?.name ||
-                                `Team ${match.away_team}`}
-                            </p>
-                          </div>
-                          {match.status === "completed" &&
-                          match.home_score !== null &&
-                          match.away_score !== null ? (
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-dark">
-                                {match.home_score}
+                  {matchesByWeek[weekNum].map((match) => {
+                    const matchEditable = isMatchEditable(match);
+                    return (
+                      <div
+                        key={match.id}
+                        className={`p-3 bg-white border border-cream-300 rounded-lg transition-shadow ${
+                          matchEditable && onEditMatch
+                            ? "hover:shadow-md cursor-pointer"
+                            : ""
+                        }`}
+                        onClick={
+                          matchEditable && onEditMatch
+                            ? () => onEditMatch(match)
+                            : undefined
+                        }
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm text-dark truncate">
+                                {match.home_team_detail?.name ||
+                                  `Team ${match.home_team}`}
                               </p>
-                              <p className="text-lg font-bold text-dark">
-                                {match.away_score}
+                              <p className="font-medium text-sm text-dark truncate">
+                                {match.away_team_detail?.name ||
+                                  `Team ${match.away_team}`}
                               </p>
                             </div>
-                          ) : (
-                            <span className="text-xs text-dark-300">vs</span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-dark-300">
-                          <span>
-                            {new Date(
-                              match.date + "T00:00:00"
-                            ).toLocaleDateString()}
-                          </span>
-                          {match.status === "completed" && (
-                            <span className="px-1.5 py-0.5 bg-green-100 text-green-800 rounded">
-                              ✓
+                            {match.status === "completed" &&
+                            match.home_score !== null &&
+                            match.away_score !== null ? (
+                              <div className="text-right">
+                                <p className="text-lg font-bold text-dark">
+                                  {match.home_score}
+                                </p>
+                                <p className="text-lg font-bold text-dark">
+                                  {match.away_score}
+                                </p>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-dark-300">vs</span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-dark-300">
+                            <span>
+                              {new Date(
+                                match.date + "T00:00:00"
+                              ).toLocaleDateString()}
                             </span>
-                          )}
-                          {match.status === "scheduled" && (
-                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
-                              Scheduled
-                            </span>
-                          )}
+                            {match.status === "completed" && (
+                              <span className="px-1.5 py-0.5 bg-green-100 text-green-800 rounded">
+                                ✓
+                              </span>
+                            )}
+                            {match.status === "scheduled" && (
+                              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
+                                Scheduled
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
