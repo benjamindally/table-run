@@ -49,22 +49,22 @@ const Header: React.FC = () => {
             >
               Leagues
             </Link>
-            <Link
+            {/* <Link
               to="/register"
               className={`hover:text-primary-300 transition-colors ${
                 isActive("/register") ? "text-primary font-medium" : ""
               }`}
             >
               Register Team
-            </Link>
-            <Link
+            </Link> */}
+            {/* <Link
               to="/score-entry"
               className={`hover:text-primary-300 transition-colors ${
                 isActive("/score-entry") ? "text-primary font-medium" : ""
               }`}
             >
               Submit Scores
-            </Link>
+            </Link> */}
             {user ? (
               <>
                 <Link
@@ -124,9 +124,9 @@ const Header: React.FC = () => {
               }`}
               onClick={toggleMenu}
             >
-              Standings
+              Leagues
             </Link>
-            <Link
+            {/* <Link
               to="/register"
               className={`block py-2 hover:text-primary-300 transition-colors ${
                 isActive("/register") ? "text-primary font-medium" : ""
@@ -134,8 +134,8 @@ const Header: React.FC = () => {
               onClick={toggleMenu}
             >
               Register Team
-            </Link>
-            <Link
+            </Link> */}
+            {/* <Link
               to="/score-entry"
               className={`block py-2 hover:text-primary-300 transition-colors ${
                 isActive("/score-entry") ? "text-primary font-medium" : ""
@@ -143,7 +143,7 @@ const Header: React.FC = () => {
               onClick={toggleMenu}
             >
               Submit Scores
-            </Link>
+            </Link> */}
             {user ? (
               <>
                 <Link
