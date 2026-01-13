@@ -30,6 +30,26 @@ export interface LoginData {
   password: string;
 }
 
+export interface PasswordResetValidateRequest {
+  uid: string;
+  token: string;
+}
+
+export interface PasswordResetValidateResponse {
+  valid: boolean;
+  email: string;
+}
+
+export interface PasswordResetConfirmRequest {
+  uid: string;
+  token: string;
+  password: string;
+}
+
+export interface PasswordResetConfirmResponse {
+  message: string;
+}
+
 export const authApi = {
   /**
    * Register a new user
@@ -55,4 +75,16 @@ export const authApi = {
    */
   refreshToken: (refreshToken: string) =>
     api.post<{ access: string }>('/auth/refresh/', { refresh: refreshToken }, undefined, true),
+
+  /**
+   * Validate password reset token before showing form
+   */
+  validatePasswordReset: (data: PasswordResetValidateRequest) =>
+    api.post<PasswordResetValidateResponse>('/auth/password-reset/validate/', data),
+
+  /**
+   * Confirm password reset and set new password
+   */
+  confirmPasswordReset: (data: PasswordResetConfirmRequest) =>
+    api.post<PasswordResetConfirmResponse>('/auth/password-reset/confirm/', data),
 };

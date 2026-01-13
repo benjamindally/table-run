@@ -1,45 +1,45 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, AlertCircle, User, Phone } from 'lucide-react';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { AlertCircle } from "lucide-react";
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { register, isLoading } = useAuth();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    first_name: '',
-    last_name: '',
-    phone: '',
+    email: "",
+    password: "",
+    confirmPassword: "",
+    first_name: "",
+    last_name: "",
+    phone: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     // Validation
     if (!formData.email || !formData.password) {
-      setError('Email and password are required');
+      setError("Email and password are required");
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+      setError("Password must be at least 8 characters long");
       return;
     }
 
@@ -51,9 +51,13 @@ const RegisterPage: React.FC = () => {
         last_name: formData.last_name,
         phone: formData.phone,
       });
-      navigate('/admin/dashboard');
+      navigate("/admin/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Registration failed. Please try again."
+      );
     }
   };
 
@@ -82,9 +86,11 @@ const RegisterPage: React.FC = () => {
                 Email Address *
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
+                {/* {!formData.email && (
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                )} */}
                 <input
                   type="email"
                   id="email"
@@ -104,9 +110,11 @@ const RegisterPage: React.FC = () => {
                 First Name
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
-                </div>
+                {/* {!formData.first_name && (
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" />
+                  </div>
+                )} */}
                 <input
                   type="text"
                   id="first_name"
@@ -125,9 +133,11 @@ const RegisterPage: React.FC = () => {
                 Last Name
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
-                </div>
+                {/* {!formData.last_name && (
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" />
+                  </div>
+                )} */}
                 <input
                   type="text"
                   id="last_name"
@@ -146,9 +156,11 @@ const RegisterPage: React.FC = () => {
                 Phone Number
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-5 w-5 text-gray-400" />
-                </div>
+                {/* {!formData.phone && (
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-gray-400" />
+                  </div>
+                )} */}
                 <input
                   type="tel"
                   id="phone"
@@ -167,9 +179,9 @@ const RegisterPage: React.FC = () => {
                 Password *
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                {/* <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
-                </div>
+                </div> */}
                 <input
                   type="password"
                   id="password"
@@ -192,9 +204,9 @@ const RegisterPage: React.FC = () => {
                 Confirm Password *
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                {/* <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
-                </div>
+                </div> */}
                 <input
                   type="password"
                   id="confirmPassword"
@@ -219,7 +231,7 @@ const RegisterPage: React.FC = () => {
                   Creating account...
                 </div>
               ) : (
-                'Create Account'
+                "Create Account"
               )}
             </button>
           </div>
@@ -228,8 +240,11 @@ const RegisterPage: React.FC = () => {
 
       <div className="text-center mt-6">
         <p className="text-gray-600 text-sm">
-          Already have an account?{' '}
-          <Link to="/login" className="text-orange-500 hover:text-orange-600 font-medium">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="text-orange-500 hover:text-orange-600 font-medium"
+          >
             Sign in
           </Link>
         </p>

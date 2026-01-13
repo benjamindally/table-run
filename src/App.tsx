@@ -6,6 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { MatchScoringProvider } from "./contexts/MatchScoringContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -24,6 +25,10 @@ import SeasonDetailsPage from "./pages/SeasonDetailsPage";
 import TeamStatsPage from "./pages/TeamStatsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import PlayerPage from "./pages/PlayerPage";
+import ClaimPlayerPage from "./pages/ClaimPlayerPage";
+import ActivatePlayerPage from "./pages/ActivatePlayerPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AdminDashboardPage from "./pages/admin/DashboardPage";
 import AdminTeamsPage from "./pages/admin/TeamsPage";
 import AdminMatchesPage from "./pages/admin/MatchesPage";
@@ -33,14 +38,16 @@ import AdminSeasonsPage from "./pages/admin/SeasonsPage";
 import AdminSeasonDetailsPage from "./pages/admin/SeasonDetailsPage";
 import AdminTeamDetailsPage from "./pages/admin/TeamDetailsPage";
 import AdminPlayerDetailsPage from "./pages/admin/PlayerDetailsPage";
+import AdminPlayersPage from "./pages/admin/AdminPlayersPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
+      <MatchScoringProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<MainLayout />}>
             <Route index element={<HomePage />} />
             <Route path="register" element={<TeamRegistrationPage />} />
             <Route path="match-score" element={<MatchScorePage />} />
@@ -61,6 +68,10 @@ function App() {
             <Route path="team/:teamId/stats" element={<TeamStatsPage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="signup" element={<RegisterPage />} />
+            <Route path="players" element={<PlayerPage />} />
+            <Route path="claim-player/:token" element={<ClaimPlayerPage />} />
+            <Route path="activate-player/:token" element={<ActivatePlayerPage />} />
+            <Route path="reset-password/:uid/:token" element={<ResetPasswordPage />} />
           </Route>
 
           <Route
@@ -75,6 +86,7 @@ function App() {
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="teams" element={<AdminTeamsPage />} />
             <Route path="teams/:id" element={<AdminTeamDetailsPage />} />
+            <Route path="players" element={<AdminPlayersPage />} />
             <Route path="players/:id" element={<AdminPlayerDetailsPage />} />
             {/* <Route path="matches" element={<AdminMatchesPage />} /> This is no longer needed */}
             <Route path="leagues" element={<AdminLeaguesPage />} />
@@ -85,6 +97,7 @@ function App() {
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} />
       </Router>
+      </MatchScoringProvider>
     </AuthProvider>
   );
 }

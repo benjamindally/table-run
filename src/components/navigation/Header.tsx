@@ -49,6 +49,14 @@ const Header: React.FC = () => {
             >
               Leagues
             </Link>
+            <Link
+              to="/players"
+              className={`hover:text-primary-300 transition-colors ${
+                isActive("/players") ? "text-primary font-medium" : ""
+              }`}
+            >
+              Players
+            </Link>
             {/* <Link
               to="/register"
               className={`hover:text-primary-300 transition-colors ${
@@ -125,6 +133,15 @@ const Header: React.FC = () => {
               onClick={toggleMenu}
             >
               Leagues
+            </Link>
+            <Link
+              to="/players"
+              className={`block py-2 hover:text-primary-300 transition-colors ${
+                isActive("/players") ? "text-primary font-medium" : ""
+              }`}
+              onClick={toggleMenu}
+            >
+              Players
             </Link>
             {/* <Link
               to="/register"
