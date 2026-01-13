@@ -21,8 +21,15 @@ export interface Player {
   };
   user_id?: number;
   full_name: string;
+  first_name: string;
+  last_name: string;
+  email: string;
   phone: string;
   skill_level: number | null;
+  is_claimed: boolean;
+  needs_activation: boolean;
+  invite_token: string | null;
+  invite_sent_at: string | null;
   created_at: string;
   updated_at: string;
   captain_of_teams: {
@@ -159,7 +166,7 @@ export interface Match {
   date: string;
   home_score: number | null;
   away_score: number | null;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled';
 }
 
 export interface TeamMembership {
@@ -210,6 +217,7 @@ export interface MatchScoreSubmission {
 }
 
 export interface PlayerUpdateData {
+  username?: string;
   first_name?: string;
   last_name?: string;
   email?: string;

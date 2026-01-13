@@ -1,15 +1,19 @@
 /**
  * MVP Score Entry Page - Mobile-first score sheet entry
  * Single-page flow that progressively reveals sections
+ * Now with WebSocket support for real-time collaborative scoring
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSeasonMatches, useSeason } from "../hooks/useSeasons";
 import { useCurrentTeams } from "../hooks/usePlayers";
 import { useAuth } from "../contexts/AuthContext";
-import { X, ArrowLeft } from "lucide-react";
+import { useMatchScoring } from "../contexts/MatchScoringContext";
+import { useMatchWebSocket } from "../hooks/useMatchWebSocket";
+import { X, ArrowLeft, Wifi, WifiOff } from "lucide-react";
 import type { Match } from "../api/types";
+import type { IncomingMessage, TeamSide } from "../types/websocket";
 import SeasonMatches from "../components/seasons/SeasonMatches";
 import MatchForm from "../components/matches/MatchForm";
 
@@ -25,7 +29,61 @@ const ScoreEntryPage: React.FC = () => {
   const { data: season } = useSeason(seasonId);
   const { data: matchesData, isLoading: matchesLoading } = useSeasonMatches(seasonId);
   const { data: currentTeams } = useCurrentTeams();
-  const { leagueData } = useAuth();
+  const { leagueData, player } = useAuth();
+
+  // Match scoring context
+  const { initializeMatch } = useMatchScoring();
+
+  // Determine captain role (home or away)
+  const captainRole: TeamSide | null = useMemo(() => {
+    if (!selectedMatch || !currentTeams) return null;
+
+    // Check if user's player is a captain of either team
+    const isHomeCaptain = currentTeams.some(
+      (team) => team.id === selectedMatch.home_team
+    );
+    const isAwayCaptain = currentTeams.some(
+      (team) => team.id === selectedMatch.away_team
+    );
+
+    if (isHomeCaptain) return 'home';
+    if (isAwayCaptain) return 'away';
+    return null;
+  }, [selectedMatch, currentTeams]);
+
+  // WebSocket message handler
+  const handleWebSocketMessage = useCallback((message: IncomingMessage) => {
+    console.log('WebSocket message received:', message);
+    // Message handling will be implemented in MatchForm
+  }, []);
+
+  // Get games count from league settings
+  const gamesCount = useMemo(() => {
+    if (!season) return null;
+
+    // Try to get from league settings
+    // Note: league_detail should include sets_per_match and games_per_set
+    const league = season.league_detail as { sets_per_match?: number; games_per_set?: number } | undefined;
+    if (league?.sets_per_match && league?.games_per_set) {
+      return league.sets_per_match * league.games_per_set;
+    }
+
+    return null;
+  }, [season]);
+
+  // WebSocket connection (only enable if we have valid game configuration)
+  const { status: wsStatus, isConnected } = useMatchWebSocket({
+    matchId: selectedMatch?.id || 0,
+    enabled: !!selectedMatch && gamesCount !== null,
+    onMessage: handleWebSocketMessage,
+  });
+
+  // Initialize match state when match is selected
+  useEffect(() => {
+    if (selectedMatch && gamesCount !== null) {
+      initializeMatch(selectedMatch.id, gamesCount);
+    }
+  }, [selectedMatch, gamesCount, initializeMatch]);
 
   // Determine if user is a league operator for this season's league
   const isLeagueOperator = season?.league ? leagueData.isLeagueOperator(season.league) : false;
@@ -125,10 +183,29 @@ const ScoreEntryPage: React.FC = () => {
       <div className="bg-primary text-white p-4 sticky top-0 z-10 shadow-md">
         <div className="flex items-center justify-between max-w-2xl mx-auto">
           <div className="flex-1">
-            <h1 className="text-xl font-bold">Score Sheet Entry</h1>
-            <p className="text-sm text-cream-200 mt-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-xl font-bold">Score Sheet Entry</h1>
+              {isConnected && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500 text-white text-xs font-semibold rounded-full">
+                  <Wifi className="h-3 w-3" />
+                  LIVE
+                </span>
+              )}
+              {!isConnected && selectedMatch && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-500 text-white text-xs font-semibold rounded-full">
+                  <WifiOff className="h-3 w-3" />
+                  {wsStatus === 'connecting' ? 'CONNECTING...' : 'OFFLINE'}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-cream-200">
               {homeTeam?.name || "Home"} vs {awayTeam?.name || "Away"}
             </p>
+            {captainRole && (
+              <p className="text-xs text-cream-300 mt-0.5">
+                You are the {captainRole} captain
+              </p>
+            )}
           </div>
           <button
             onClick={handleCancel}
@@ -141,12 +218,24 @@ const ScoreEntryPage: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-4 py-6 max-w-2xl">
-        <MatchForm
-          match={selectedMatch}
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-          showCancelButton={false}
-        />
+        {gamesCount === null ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-800 font-semibold mb-2">
+              League Configuration Error
+            </p>
+            <p className="text-red-600 text-sm">
+              This season's league is missing required configuration (sets per match and games per set).
+              Please contact your league operator to fix this before entering scores.
+            </p>
+          </div>
+        ) : (
+          <MatchForm
+            match={selectedMatch}
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
+            showCancelButton={false}
+          />
+        )}
       </div>
     </div>
   );

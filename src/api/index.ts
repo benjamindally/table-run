@@ -16,3 +16,19 @@ export { leaguesApi } from './leagues';
 export { captainRequestsApi } from './captainRequests';
 export { statsApi } from './stats';
 export type { LeagueStats } from './stats';
+export { playerClaimsApi } from './playerClaims';
+export type {
+  UnclaimedPlayer,
+  PlayerNeedingActivation,
+  PlayerClaimRequest,
+  SendInviteResponse,
+  SendActivationResponse,
+  ValidateInviteResponse,
+  ValidateActivationResponse,
+  ClaimedPlayer,
+  CreateClaimRequestData,
+  PlayerSearchResult,
+  PlayerSearchResponse,
+  BulkInviteResponse,
+  BulkInvitePlayer,
+} from './playerClaims';
