@@ -182,14 +182,15 @@ export const playerClaimsApi = {
    * Search for players by name (server-side search)
    * @param query - Search query (min 2 chars, max 50 chars)
    * @param limit - Max results (default 50, max 100)
+   * @param token - Optional auth token for authenticated search
    */
-  searchPlayers: (query: string, limit: number = 50) => {
+  searchPlayers: (query: string, limit: number = 50, token?: string) => {
     const endpoint = `/players/search/?q=${encodeURIComponent(
       query
     )}&limit=${limit}`;
 
     console.log("searchPlayers", query);
-    return api.get<PlayerSearchResponse>(endpoint);
+    return api.get<PlayerSearchResponse>(endpoint, token);
   },
 
   /**

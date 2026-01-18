@@ -1,14 +1,27 @@
-import React, { useState } from 'react';
-import { Menu, X, Bell, User, LayoutDashboard, Users, ClipboardList, LogOut } from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState } from "react";
+import {
+  Menu,
+  X,
+  Bell,
+  User,
+  LayoutDashboard,
+  Users,
+  ClipboardList,
+  LogOut,
+} from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import NotificationsDropdown from "../NotificationsDropdown";
+import { useNotifications } from "../../hooks/useNotifications";
 
 const AdminHeader: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { unreadCount, refresh: refreshNotifications } = useNotifications();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -18,25 +31,35 @@ const AdminHeader: React.FC = () => {
     setIsProfileOpen(!isProfileOpen);
   };
 
+  const toggleNotifications = () => {
+    setIsNotificationsOpen(!isNotificationsOpen);
+  };
+
+  const handleNotificationsClose = () => {
+    setIsNotificationsOpen(false);
+    // Refresh to sync unread count when dropdown closes
+    refreshNotifications();
+  };
+
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const menuItems = [
     {
-      name: 'Dashboard',
-      path: '/admin/dashboard',
+      name: "Dashboard",
+      path: "/admin/dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-      name: 'Teams',
-      path: '/admin/teams',
+      name: "Teams",
+      path: "/admin/teams",
       icon: <Users className="h-5 w-5" />,
     },
     {
-      name: 'Matches',
-      path: '/admin/matches',
+      name: "Matches",
+      path: "/admin/matches",
       icon: <ClipboardList className="h-5 w-5" />,
     },
   ];
@@ -61,10 +84,24 @@ const AdminHeader: React.FC = () => {
 
         {/* Right side elements */}
         <div className="flex items-center space-x-4">
-          <button className="text-dark hover:text-primary transition-colors relative">
-            <Bell className="h-6 w-6" />
-            <span className="absolute top-0 right-0 h-2 w-2 bg-accent rounded-full"></span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={toggleNotifications}
+              className="text-dark hover:text-primary transition-colors relative"
+              aria-label="Notifications"
+            >
+              <Bell className="h-6 w-6" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 h-2 w-2 bg-accent rounded-full"></span>
+              )}
+            </button>
+
+            {/* Notifications Dropdown */}
+            <NotificationsDropdown
+              isOpen={isNotificationsOpen}
+              onClose={handleNotificationsClose}
+            />
+          </div>
 
           <div className="relative">
             <button
@@ -75,7 +112,7 @@ const AdminHeader: React.FC = () => {
                 <User className="h-5 w-5 text-dark" />
               </div>
               <span className="text-sm font-medium text-dark hidden md:block">
-                {user?.first_name || 'Admin'}
+                {user?.first_name || "Admin"}
               </span>
             </button>
 
@@ -117,8 +154,8 @@ const AdminHeader: React.FC = () => {
                   to={item.path}
                   className={`flex items-center space-x-3 px-4 py-2 rounded-md transition-colors ${
                     location.pathname === item.path
-                      ? 'bg-primary text-white'
-                      : 'text-cream-400 hover:bg-dark-400'
+                      ? "bg-primary text-white"
+                      : "text-cream-400 hover:bg-dark-400"
                   }`}
                   onClick={toggleMenu}
                 >

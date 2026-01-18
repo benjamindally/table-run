@@ -29,6 +29,12 @@ const AdminPlayersPage: React.FC = () => {
     handleBulkInvite,
     handleApproveClaim,
     handleDenyClaim,
+    // Search state
+    searchTerm,
+    setSearchTerm,
+    searchResults,
+    isSearching,
+    searchResultCount,
   } = usePlayerManagement({ accessToken, canManagePlayers });
 
   if (isLoading) {
@@ -73,12 +79,6 @@ const AdminPlayersPage: React.FC = () => {
         onDeny={handleDenyClaim}
       />
 
-      {/* Players Needing Activation */}
-      <PlayersNeedingActivation
-        players={playersNeedingActivation}
-        onSendActivation={handleSendActivation}
-      />
-
       {/* All Players List */}
       <PlayersList
         players={allPlayers}
@@ -90,6 +90,11 @@ const AdminPlayersPage: React.FC = () => {
         onSendInvite={handleSendInvite}
         onSendEmail={handleSendEmail}
         onBulkInvite={handleBulkInvite}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        searchResults={searchResults}
+        isSearching={isSearching}
+        searchResultCount={searchResultCount}
       />
     </div>
   );

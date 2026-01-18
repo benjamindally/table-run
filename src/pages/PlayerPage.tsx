@@ -29,7 +29,6 @@ const PlayerPage: React.FC = () => {
   // Use player management hook for admin functionality
   const {
     allPlayers,
-    playersNeedingActivation,
     pendingReviews,
     isLoading,
     isLoadingMore,
@@ -38,10 +37,15 @@ const PlayerPage: React.FC = () => {
     loadMorePlayers,
     handleSendInvite,
     handleSendEmail,
-    handleSendActivation,
     handleBulkInvite,
     handleApproveClaim,
     handleDenyClaim,
+    // Search state from hook
+    searchTerm: adminSearchTerm,
+    setSearchTerm: setAdminSearchTerm,
+    searchResults: adminSearchResults,
+    isSearching: isAdminSearching,
+    searchResultCount: adminSearchResultCount,
   } = usePlayerManagement({ accessToken, canManagePlayers });
 
   // Server-side search with debouncing (for everyone, including unauthenticated users)
@@ -64,7 +68,8 @@ const PlayerPage: React.FC = () => {
       try {
         const response = await playerClaimsApi.searchPlayers(
           searchTerm.trim(),
-          50
+          50,
+          accessToken || undefined
         );
         console.log(response);
         setSearchResults(response.results);
@@ -78,7 +83,7 @@ const PlayerPage: React.FC = () => {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timer);
-  }, [searchTerm, hasPlayer]);
+  }, [searchTerm, hasPlayer, accessToken]);
 
   const handleManualSearch = () => {
     if (!searchTerm.trim()) {
@@ -179,7 +184,7 @@ const PlayerPage: React.FC = () => {
                 <h2 className="text-2xl font-bold text-gray-900">
                   {player.full_name}
                 </h2>
-                <p className="text-gray-600">{player.user.email}</p>
+                <p className="text-gray-600">{player?.user?.email || ""}</p>
                 {player.phone && (
                   <p className="text-gray-600 text-sm">{player.phone}</p>
                 )}
@@ -215,11 +220,6 @@ const PlayerPage: React.FC = () => {
               onDeny={handleDenyClaim}
             />
 
-            <PlayersNeedingActivation
-              players={playersNeedingActivation}
-              onSendActivation={handleSendActivation}
-            />
-
             <PlayersList
               players={allPlayers}
               isLeagueOp={isLeagueOp}
@@ -230,6 +230,11 @@ const PlayerPage: React.FC = () => {
               onSendInvite={handleSendInvite}
               onSendEmail={handleSendEmail}
               onBulkInvite={handleBulkInvite}
+              searchTerm={adminSearchTerm}
+              setSearchTerm={setAdminSearchTerm}
+              searchResults={adminSearchResults}
+              isSearching={isAdminSearching}
+              searchResultCount={adminSearchResultCount}
             />
           </div>
         )}

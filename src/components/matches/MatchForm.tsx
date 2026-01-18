@@ -1,35 +1,22 @@
 /**
- * MatchForm Component - Reusable match score entry form
- * Can be used for both entering new match scores and editing existing matches
+ * MatchForm Component - Reusable match score entry form with real-time collaboration
+ * Uses MatchScoringContext and WebSocket for real-time updates between captains
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTeamRoster } from "../../hooks/useTeams";
 import { matchesApi } from "../../api";
 import { toast } from "react-toastify";
-import { Calendar, MapPin, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, MapPin, Check, ChevronDown, ChevronUp, Wifi, WifiOff, AlertCircle } from "lucide-react";
 import type { Match } from "../../api/types";
 import { formatLocalDate } from "../../utils/dateUtils";
-
-interface PlayerAttendance {
-  playerId: number;
-  playerName: string;
-  present: boolean;
-}
-
-interface GameResult {
-  gameNumber: number;
-  homePlayerId: number | null;
-  awayPlayerId: number | null;
-  winner: "home" | "away" | null;
-  homeTableRun: boolean;
-  awayTableRun: boolean;
-  home8Ball: boolean;
-  away8Ball: boolean;
-}
+import { useMatchScoring } from "../../contexts/MatchScoringContext";
+import { useMatchWebSocket } from "../../hooks/useMatchWebSocket";
+import type { IncomingMessage, TeamSide } from "../../types/websocket";
 
 interface MatchFormProps {
   match: Match;
+  userTeamSide: TeamSide | null; // Which team is this user captain of (null = viewer only)
   onSuccess?: () => void;
   onCancel?: () => void;
   showCancelButton?: boolean;
@@ -37,28 +24,36 @@ interface MatchFormProps {
 
 const MatchForm: React.FC<MatchFormProps> = ({
   match,
+  userTeamSide,
   onSuccess,
   onCancel,
   showCancelButton = false,
 }) => {
-  const [homeRoster, setHomeRoster] = useState<PlayerAttendance[]>([]);
-  const [awayRoster, setAwayRoster] = useState<PlayerAttendance[]>([]);
+  // Get context state and actions
+  const {
+    state,
+    initializeMatch,
+    setHomeRoster,
+    setAwayRoster,
+    toggleHomeAttendance,
+    toggleAwayAttendance,
+    updateGame,
+    setSubmittedBy,
+    homeScore,
+    awayScore,
+    presentHomePlayers,
+    presentAwayPlayers,
+  } = useMatchScoring();
+
+  // Local UI state
   const [attendanceCollapsed, setAttendanceCollapsed] = useState(false);
   const [collapsedSets, setCollapsedSets] = useState<Set<number>>(new Set());
 
-  // Initialize 16 games (4 sets × 4 games)
-  const [games, setGames] = useState<GameResult[]>(
-    Array.from({ length: 16 }, (_, i) => ({
-      gameNumber: i + 1,
-      homePlayerId: null,
-      awayPlayerId: null,
-      winner: null,
-      homeTableRun: false,
-      awayTableRun: false,
-      home8Ball: false,
-      away8Ball: false,
-    }))
-  );
+  // Get state values with defaults
+  const homeRoster = state?.homeRoster || [];
+  const awayRoster = state?.awayRoster || [];
+  const games = state?.games || [];
+  const submittedBy = state?.submittedBy || null;
 
   // Fetch rosters
   const { data: homeRosterData, isLoading: homeRosterLoading } = useTeamRoster(
@@ -71,9 +66,15 @@ const MatchForm: React.FC<MatchFormProps> = ({
   const homeTeam = match.home_team_detail;
   const awayTeam = match.away_team_detail;
 
-  // Initialize rosters when data loads
-  React.useEffect(() => {
-    if (homeRosterData) {
+  // Initialize match state when component mounts
+  useEffect(() => {
+    // TODO: Get games count from backend match format instead of hardcoding 16
+    initializeMatch(match.id, 16);
+  }, [match.id, initializeMatch]);
+
+  // Initialize rosters when data loads (only if empty)
+  useEffect(() => {
+    if (homeRosterData && state?.homeRoster.length === 0) {
       setHomeRoster(
         homeRosterData.map((member) => ({
           playerId: member.player,
@@ -82,10 +83,10 @@ const MatchForm: React.FC<MatchFormProps> = ({
         }))
       );
     }
-  }, [homeRosterData]);
+  }, [homeRosterData, setHomeRoster, state?.homeRoster.length]);
 
-  React.useEffect(() => {
-    if (awayRosterData) {
+  useEffect(() => {
+    if (awayRosterData && state?.awayRoster.length === 0) {
       setAwayRoster(
         awayRosterData.map((member) => ({
           playerId: member.player,
@@ -94,61 +95,114 @@ const MatchForm: React.FC<MatchFormProps> = ({
         }))
       );
     }
-  }, [awayRosterData]);
+  }, [awayRosterData, setAwayRoster, state?.awayRoster.length]);
 
-  const toggleHomeAttendance = (playerId: number) => {
-    setHomeRoster((prev) =>
-      prev.map((p) =>
-        p.playerId === playerId ? { ...p, present: !p.present } : p
-      )
-    );
-  };
+  // WebSocket message handler
+  const handleWebSocketMessage = useCallback(
+    (message: IncomingMessage) => {
+      console.log("Received WebSocket message:", message);
 
-  const toggleAwayAttendance = (playerId: number) => {
-    setAwayRoster((prev) =>
-      prev.map((p) =>
-        p.playerId === playerId ? { ...p, present: !p.present } : p
-      )
-    );
-  };
+      switch (message.type) {
+        case "player_assignment":
+          // Update player assignment
+          updateGame(message.game_id - 1, {
+            [message.team_side === "home" ? "homePlayerId" : "awayPlayerId"]:
+              message.player_id,
+          });
+          break;
 
-  const updateGame = (gameIndex: number, updates: Partial<GameResult>) => {
-    setGames((prev) =>
-      prev.map((game, idx) =>
-        idx === gameIndex ? { ...game, ...updates } : game
-      )
-    );
-  };
+        case "game_update":
+          // Update game data
+          updateGame(message.game_id - 1, {
+            winner: message.game_data.winner,
+            homeTableRun: message.game_data.home_table_run,
+            awayTableRun: message.game_data.away_table_run,
+            home8Ball: message.game_data.home_8ball_break,
+            away8Ball: message.game_data.away_8ball_break,
+          });
+          break;
 
-  const setWinner = (gameIndex: number, winner: "home" | "away") => {
-    updateGame(gameIndex, { winner });
-  };
+        case "scorecard_submitted":
+          // Other captain submitted
+          setSubmittedBy(message.submitted_by);
+          toast.info(
+            `${message.submitted_by === "home" ? homeTeam?.name : awayTeam?.name} captain submitted scorecard (${message.home_score}-${message.away_score})`
+          );
+          break;
 
-  const toggleTableRun = (gameIndex: number, team: "home" | "away") => {
-    const game = games[gameIndex];
-    if (team === "home") {
-      updateGame(gameIndex, { homeTableRun: !game.homeTableRun });
-    } else {
-      updateGame(gameIndex, { awayTableRun: !game.awayTableRun });
+        case "match_finalized":
+          // Match finalized by home captain
+          if (message.success) {
+            toast.success("Match finalized successfully!");
+            if (onSuccess) onSuccess();
+          }
+          break;
+
+        default:
+          console.warn("Unknown WebSocket message type:", message);
+      }
+    },
+    [updateGame, setSubmittedBy, homeTeam, awayTeam, onSuccess]
+  );
+
+  // Initialize WebSocket connection
+  const { send: sendWebSocket, status } = useMatchWebSocket({
+    matchId: match.id,
+    enabled: true,
+    onMessage: handleWebSocketMessage,
+  });
+
+  // Determine if user is in read-only mode
+  const isReadOnly = userTeamSide === null;
+
+  // Determine submit button text and state
+  const getSubmitButtonConfig = () => {
+    // Viewers cannot submit
+    if (isReadOnly) {
+      return {
+        text: "View Only - Captain Access Required",
+        disabled: true,
+        className: "bg-gray-400 text-white cursor-not-allowed",
+        hidden: true, // Hide submit button for viewers
+      };
     }
-  };
 
-  const toggle8Ball = (gameIndex: number, team: "home" | "away") => {
-    const game = games[gameIndex];
-    if (team === "home") {
-      updateGame(gameIndex, { home8Ball: !game.home8Ball });
-    } else {
-      updateGame(gameIndex, { away8Ball: !game.away8Ball });
+    if (userTeamSide === "away") {
+      if (submittedBy === "away") {
+        return {
+          text: "Submitted - Waiting for Home Captain",
+          disabled: true,
+          className: "bg-gray-400 text-white cursor-not-allowed",
+          hidden: false,
+        };
+      }
+      return {
+        text: `Submit Scorecard (${homeScore} - ${awayScore})`,
+        disabled: false,
+        className: "bg-blue-600 text-white hover:bg-blue-700",
+        hidden: false,
+      };
     }
+
+    // Home captain
+    if (submittedBy === "away") {
+      return {
+        text: `Confirm & Finalize Match (${homeScore} - ${awayScore})`,
+        disabled: false,
+        className: "bg-green-600 text-white hover:bg-green-700",
+        hidden: false,
+      };
+    }
+
+    return {
+      text: `Finalize Match (${homeScore} - ${awayScore})`,
+      disabled: false,
+      className: "bg-green-600 text-white hover:bg-green-700",
+      hidden: false,
+    };
   };
 
-  const setGamePlayers = (
-    gameIndex: number,
-    homePlayerId: number,
-    awayPlayerId: number
-  ) => {
-    updateGame(gameIndex, { homePlayerId, awayPlayerId });
-  };
+  const submitConfig = getSubmitButtonConfig();
 
   // Check if a matchup has already been used
   const hasMatchupBeenUsed = (
@@ -183,9 +237,59 @@ const MatchForm: React.FC<MatchFormProps> = ({
     });
   };
 
+  // Wrapper functions that update context + send WebSocket messages
+  const handlePlayerChange = useCallback(
+    (gameIndex: number, teamSide: TeamSide, playerId: number | null) => {
+      // Update context
+      updateGame(gameIndex, {
+        [teamSide === "home" ? "homePlayerId" : "awayPlayerId"]: playerId,
+      });
+
+      // Send WebSocket message
+      if (playerId !== null) {
+        sendWebSocket({
+          type: "player_assignment",
+          game_id: gameIndex + 1,
+          player_id: playerId,
+          team_side: teamSide,
+        });
+      }
+    },
+    [updateGame, sendWebSocket]
+  );
+
+  const handleGameDataChange = useCallback(
+    (
+      gameIndex: number,
+      updates: {
+        winner?: TeamSide | null;
+        homeTableRun?: boolean;
+        awayTableRun?: boolean;
+        home8Ball?: boolean;
+        away8Ball?: boolean;
+      }
+    ) => {
+      // Update context
+      updateGame(gameIndex, updates);
+
+      // Send WebSocket message
+      sendWebSocket({
+        type: "game_update",
+        game_id: gameIndex + 1,
+        game_data: {
+          winner: updates.winner,
+          home_table_run: updates.homeTableRun,
+          away_table_run: updates.awayTableRun,
+          home_8ball_break: updates.home8Ball,
+          away_8ball_break: updates.away8Ball,
+        },
+      });
+    },
+    [updateGame, sendWebSocket]
+  );
+
   // Auto-assign players to games
   const autoAssignPlayers = () => {
-    const newGames = [...games];
     const homePlayers = presentHomePlayers.map((p) => p.playerId);
     const awayPlayers = presentAwayPlayers.map((p) => p.playerId);
 
@@ -227,16 +331,11 @@ const MatchForm: React.FC<MatchFormProps> = ({
 
         // If we found a valid matchup, assign it
         if (awayPlayerId) {
-          newGames[gameIndex] = {
-            ...newGames[gameIndex],
-            homePlayerId,
-            awayPlayerId,
-          };
+          handlePlayerChange(gameIndex, "home", homePlayerId);
+          handlePlayerChange(gameIndex, "away", awayPlayerId);
         }
       }
     }
-
-    setGames(newGames);
   };
 
   // Toggle set collapse state
@@ -254,45 +353,73 @@ const MatchForm: React.FC<MatchFormProps> = ({
 
   // Handle match submission
   const handleSubmit = async () => {
-    // Transform games data to match API format
-    const gamesData = games.map((game) => ({
-      game_number: game.gameNumber,
-      home_player_id: game.homePlayerId,
-      away_player_id: game.awayPlayerId,
-      winner: game.winner,
-      home_table_run: game.homeTableRun,
-      away_table_run: game.awayTableRun,
-      home_8ball_break: game.home8Ball,
-      away_8ball_break: game.away8Ball,
-    }));
+    // Away captain submits first
+    if (userTeamSide === "away" && submittedBy === null) {
+      // Away captain is submitting for the first time
+      setSubmittedBy("away");
+      toast.success("Scorecard submitted! Waiting for home captain to confirm.");
 
-    const payload = {
-      date: match.date,
-      home_team_id: match.home_team,
-      away_team_id: match.away_team,
-      games: gamesData,
-    };
+      // Send WebSocket notification to home captain
+      sendWebSocket({
+        type: "score_update",
+        home_score: homeScore,
+        away_score: awayScore,
+      });
 
-    try {
-      await matchesApi.submitMatch(payload);
-      toast.success(
-        `Match submitted! Final score: ${homeScore} - ${awayScore}`
-      );
+      return;
+    }
 
-      if (onSuccess) {
-        onSuccess();
+    // Home captain confirms and finalizes
+    if (userTeamSide === "home") {
+      // If away hasn't submitted yet, show warning
+      if (submittedBy === null) {
+        toast.warning(
+          "The away team captain hasn't submitted their scorecard yet. You can still submit, but it's better to wait for both captains to agree."
+        );
       }
-    } catch (error: any) {
-      console.error("Failed to submit match:", error);
-      toast.error(error.response?.data?.error || "Failed to submit match");
+
+      // Transform games data to match API format
+      const gamesData = games.map((game) => ({
+        game_number: game.gameNumber,
+        home_player_id: game.homePlayerId,
+        away_player_id: game.awayPlayerId,
+        winner: game.winner,
+        home_table_run: game.homeTableRun,
+        away_table_run: game.awayTableRun,
+        home_8ball_break: game.home8Ball,
+        away_8ball_break: game.away8Ball,
+      }));
+
+      const payload = {
+        date: match.date,
+        home_team_id: match.home_team,
+        away_team_id: match.away_team,
+        games: gamesData,
+      };
+
+      try {
+        await matchesApi.submitMatch(payload);
+        toast.success(
+          `Match finalized! Final score: ${homeScore} - ${awayScore}`
+        );
+
+        // Notify via WebSocket
+        sendWebSocket({
+          type: "score_update",
+          home_score: homeScore,
+          away_score: awayScore,
+        });
+
+        if (onSuccess) {
+          onSuccess();
+        }
+      } catch (error: any) {
+        console.error("Failed to submit match:", error);
+        toast.error(error.response?.data?.error || "Failed to submit match");
+      }
     }
   };
 
-  // Calculate scores
-  const presentHomePlayers = homeRoster.filter((p) => p.present);
-  const presentAwayPlayers = awayRoster.filter((p) => p.present);
-  const homeScore = games.filter((g) => g.winner === "home").length;
-  const awayScore = games.filter((g) => g.winner === "away").length;
   const attendanceComplete =
     presentHomePlayers.length > 0 && presentAwayPlayers.length > 0;
 
@@ -300,10 +427,31 @@ const MatchForm: React.FC<MatchFormProps> = ({
     <div className="space-y-4">
       {/* Match Info Card */}
       <div className="bg-white rounded-lg shadow-md p-4">
-        <div className="flex items-center gap-2 text-sm text-dark-500 mb-2">
-          <Calendar className="h-4 w-4" />
-          <span>{formatLocalDate(match.date)}</span>
-          {match.week_number && <span>• Week {match.week_number}</span>}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-sm text-dark-500">
+            <Calendar className="h-4 w-4" />
+            <span>{formatLocalDate(match.date)}</span>
+            {match.week_number && <span>• Week {match.week_number}</span>}
+          </div>
+          {/* WebSocket Connection Status */}
+          <div className="flex items-center gap-2 text-xs">
+            {status === "connected" ? (
+              <>
+                <Wifi className="h-4 w-4 text-green-600" />
+                <span className="text-green-600">Live</span>
+              </>
+            ) : status === "connecting" ? (
+              <>
+                <WifiOff className="h-4 w-4 text-yellow-600" />
+                <span className="text-yellow-600">Connecting...</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-4 w-4 text-red-600" />
+                <span className="text-red-600">Disconnected</span>
+              </>
+            )}
+          </div>
         </div>
         {homeTeam?.establishment && (
           <div className="flex items-center gap-2 text-sm text-dark-600">
@@ -312,6 +460,19 @@ const MatchForm: React.FC<MatchFormProps> = ({
           </div>
         )}
       </div>
+
+      {/* Read-Only Banner */}
+      {isReadOnly && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="font-semibold text-blue-900">Viewing Match in Real-Time</h4>
+            <p className="text-sm text-blue-700 mt-1">
+              You're viewing this match as it's being scored. Only team captains can enter or modify scores.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Section 1: Rosters */}
       <div className="bg-white rounded-lg shadow-md">
@@ -353,12 +514,13 @@ const MatchForm: React.FC<MatchFormProps> = ({
                   {homeRoster.map((player) => (
                     <button
                       key={player.playerId}
-                      onClick={() => toggleHomeAttendance(player.playerId)}
+                      onClick={() => !isReadOnly && toggleHomeAttendance(player.playerId)}
+                      disabled={isReadOnly}
                       className={`w-full p-3 rounded-md border-2 transition-all text-left flex items-center gap-3 ${
                         player.present
                           ? "border-primary bg-primary-50"
                           : "border-dark-200 bg-white hover:border-dark-300"
-                      }`}
+                      } ${isReadOnly ? "cursor-not-allowed opacity-60" : ""}`}
                     >
                       <div
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
@@ -399,12 +561,13 @@ const MatchForm: React.FC<MatchFormProps> = ({
                   {awayRoster.map((player) => (
                     <button
                       key={player.playerId}
-                      onClick={() => toggleAwayAttendance(player.playerId)}
+                      onClick={() => !isReadOnly && toggleAwayAttendance(player.playerId)}
+                      disabled={isReadOnly}
                       className={`w-full p-3 rounded-md border-2 transition-all text-left flex items-center gap-3 ${
                         player.present
                           ? "border-primary bg-primary-50"
                           : "border-dark-200 bg-white hover:border-dark-300"
-                      }`}
+                      } ${isReadOnly ? "cursor-not-allowed opacity-60" : ""}`}
                     >
                       <div
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
@@ -429,10 +592,14 @@ const MatchForm: React.FC<MatchFormProps> = ({
               <button
                 onClick={autoAssignPlayers}
                 disabled={
-                  presentHomePlayers.length < 4 || presentAwayPlayers.length < 4
+                  isReadOnly ||
+                  presentHomePlayers.length < 4 ||
+                  presentAwayPlayers.length < 4
                 }
                 className={`px-6 py-3 font-semibold rounded-lg shadow-md transition-colors flex items-center gap-2 ${
-                  presentHomePlayers.length < 4 || presentAwayPlayers.length < 4
+                  isReadOnly ||
+                  presentHomePlayers.length < 4 ||
+                  presentAwayPlayers.length < 4
                     ? "bg-dark-200 text-dark-400 cursor-not-allowed"
                     : "bg-primary text-white hover:bg-primary-600"
                 }`}
@@ -543,19 +710,12 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                       const homePlayerId = Number(
                                         e.target.value
                                       );
-                                      if (game.awayPlayerId) {
-                                        setGamePlayers(
-                                          gameIndex,
-                                          homePlayerId,
-                                          game.awayPlayerId
-                                        );
-                                      } else {
-                                        updateGame(gameIndex, {
-                                          homePlayerId,
-                                        });
-                                      }
+                                      handlePlayerChange(gameIndex, "home", homePlayerId);
                                     }}
-                                    className="w-full px-2 py-2 text-sm border border-dark-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                    disabled={isReadOnly}
+                                    className={`w-full px-2 py-2 text-sm border border-dark-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                                      isReadOnly ? "bg-gray-100 cursor-not-allowed" : ""
+                                    }`}
                                   >
                                     <option value="">Select player...</option>
                                     {presentHomePlayers.map((player) => {
@@ -601,19 +761,12 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                       const awayPlayerId = Number(
                                         e.target.value
                                       );
-                                      if (game.homePlayerId) {
-                                        setGamePlayers(
-                                          gameIndex,
-                                          game.homePlayerId,
-                                          awayPlayerId
-                                        );
-                                      } else {
-                                        updateGame(gameIndex, {
-                                          awayPlayerId,
-                                        });
-                                      }
+                                      handlePlayerChange(gameIndex, "away", awayPlayerId);
                                     }}
-                                    className="w-full px-2 py-2 text-sm border border-dark-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                    disabled={isReadOnly}
+                                    className={`w-full px-2 py-2 text-sm border border-dark-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                                      isReadOnly ? "bg-gray-100 cursor-not-allowed" : ""
+                                    }`}
                                   >
                                     <option value="">Select player...</option>
                                     {presentAwayPlayers.map((player) => {
@@ -655,25 +808,27 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                   <div className="grid grid-cols-2 gap-2 mb-3">
                                     <button
                                       onClick={() =>
-                                        setWinner(gameIndex, "home")
+                                        !isReadOnly && handleGameDataChange(gameIndex, { winner: "home" })
                                       }
+                                      disabled={isReadOnly}
                                       className={`py-2 px-3 rounded-md font-medium text-sm transition-all ${
                                         game.winner === "home"
                                           ? "bg-primary text-white shadow-md"
                                           : "bg-cream-200 text-dark-700 hover:bg-cream-300"
-                                      }`}
+                                      } ${isReadOnly ? "cursor-not-allowed opacity-60" : ""}`}
                                     >
                                       WIN
                                     </button>
                                     <button
                                       onClick={() =>
-                                        setWinner(gameIndex, "away")
+                                        !isReadOnly && handleGameDataChange(gameIndex, { winner: "away" })
                                       }
+                                      disabled={isReadOnly}
                                       className={`py-2 px-3 rounded-md font-medium text-sm transition-all ${
                                         game.winner === "away"
                                           ? "bg-primary text-white shadow-md"
                                           : "bg-cream-200 text-dark-700 hover:bg-cream-300"
-                                      }`}
+                                      } ${isReadOnly ? "cursor-not-allowed opacity-60" : ""}`}
                                     >
                                       WIN
                                     </button>
@@ -687,9 +842,13 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                           type="checkbox"
                                           checked={game.homeTableRun}
                                           onChange={() =>
-                                            toggleTableRun(gameIndex, "home")
+                                            !isReadOnly &&
+                                            handleGameDataChange(gameIndex, {
+                                              homeTableRun: !game.homeTableRun,
+                                            })
                                           }
-                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary"
+                                          disabled={isReadOnly}
+                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                                         />
                                         <span>Table Run</span>
                                       </label>
@@ -698,9 +857,13 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                           type="checkbox"
                                           checked={game.home8Ball}
                                           onChange={() =>
-                                            toggle8Ball(gameIndex, "home")
+                                            !isReadOnly &&
+                                            handleGameDataChange(gameIndex, {
+                                              home8Ball: !game.home8Ball,
+                                            })
                                           }
-                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary"
+                                          disabled={isReadOnly}
+                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                                         />
                                         <span>8-Ball break</span>
                                       </label>
@@ -711,9 +874,13 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                           type="checkbox"
                                           checked={game.awayTableRun}
                                           onChange={() =>
-                                            toggleTableRun(gameIndex, "away")
+                                            !isReadOnly &&
+                                            handleGameDataChange(gameIndex, {
+                                              awayTableRun: !game.awayTableRun,
+                                            })
                                           }
-                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary"
+                                          disabled={isReadOnly}
+                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                                         />
                                         <span>Table Run</span>
                                       </label>
@@ -722,9 +889,13 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                           type="checkbox"
                                           checked={game.away8Ball}
                                           onChange={() =>
-                                            toggle8Ball(gameIndex, "away")
+                                            !isReadOnly &&
+                                            handleGameDataChange(gameIndex, {
+                                              away8Ball: !game.away8Ball,
+                                            })
                                           }
-                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary"
+                                          disabled={isReadOnly}
+                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                                         />
                                         <span>8-Ball break</span>
                                       </label>
@@ -742,25 +913,47 @@ const MatchForm: React.FC<MatchFormProps> = ({
               })}
             </div>
 
-            {/* Submit button */}
-            <div className="flex gap-3 mt-6">
-              {showCancelButton && onCancel && (
+            {/* Submission Status Banner */}
+            {submittedBy === "away" && userTeamSide === "home" && (
+              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-blue-900">
+                    Away Team Submitted Scorecard
+                  </h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    {awayTeam?.name} captain has submitted their scorecard showing{" "}
+                    {homeScore}-{awayScore}. Review the scores and click confirm to
+                    finalize the match.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Submit button - hidden for viewers */}
+            {!submitConfig.hidden && (
+              <div className="flex gap-3 mt-6">
+                {showCancelButton && onCancel && (
+                  <button
+                    onClick={onCancel}
+                    className="flex-1 bg-gray-200 text-dark py-4 rounded-md font-bold text-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
                 <button
-                  onClick={onCancel}
-                  className="flex-1 bg-gray-200 text-dark py-4 rounded-md font-bold text-lg hover:bg-gray-300 transition-colors"
+                  onClick={handleSubmit}
+                  disabled={submitConfig.disabled}
+                  className={`${
+                    showCancelButton ? "flex-1" : "w-full"
+                  } py-4 rounded-md font-bold text-lg transition-colors ${
+                    submitConfig.className
+                  }`}
                 >
-                  Cancel
+                  {submitConfig.text}
                 </button>
-              )}
-              <button
-                onClick={handleSubmit}
-                className={`${
-                  showCancelButton ? "flex-1" : "w-full"
-                } bg-green-600 text-white py-4 rounded-md font-bold text-lg hover:bg-green-700 transition-colors`}
-              >
-                Submit Match ({homeScore} - {awayScore})
-              </button>
-            </div>
+              </div>
+            )}
           </div>
         )}
     </div>

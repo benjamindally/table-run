@@ -205,6 +205,13 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+export interface NotificationsPaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  notifications: T[];
+}
+
 export interface TeamRegistrationData {
   name: string;
   establishment: string;
