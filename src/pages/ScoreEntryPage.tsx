@@ -231,6 +231,7 @@ const ScoreEntryPage: React.FC = () => {
         ) : (
           <MatchForm
             match={selectedMatch}
+            userTeamSide={captainRole}
             onSuccess={handleSuccess}
             onCancel={handleCancel}
             showCancelButton={false}

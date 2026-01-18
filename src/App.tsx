@@ -29,6 +29,7 @@ import PlayerPage from "./pages/PlayerPage";
 import ClaimPlayerPage from "./pages/ClaimPlayerPage";
 import ActivatePlayerPage from "./pages/ActivatePlayerPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import WebSocketTest from "./pages/WebSocketTest";
 import AdminDashboardPage from "./pages/admin/DashboardPage";
 import AdminTeamsPage from "./pages/admin/TeamsPage";
 import AdminMatchesPage from "./pages/admin/MatchesPage";
@@ -72,6 +73,7 @@ function App() {
             <Route path="claim-player/:token" element={<ClaimPlayerPage />} />
             <Route path="activate-player/:token" element={<ActivatePlayerPage />} />
             <Route path="reset-password/:uid/:token" element={<ResetPasswordPage />} />
+            <Route path="websocket-test" element={<WebSocketTest />} />
           </Route>
 
           <Route
@@ -88,7 +90,7 @@ function App() {
             <Route path="teams/:id" element={<AdminTeamDetailsPage />} />
             <Route path="players" element={<AdminPlayersPage />} />
             <Route path="players/:id" element={<AdminPlayerDetailsPage />} />
-            {/* <Route path="matches" element={<AdminMatchesPage />} /> This is no longer needed */}
+            <Route path="matches" element={<AdminMatchesPage />} />
             <Route path="leagues" element={<AdminLeaguesPage />} />
             <Route path="leagues/:id" element={<AdminLeagueDetailsPage />} />
             <Route path="seasons" element={<AdminSeasonsPage />} />

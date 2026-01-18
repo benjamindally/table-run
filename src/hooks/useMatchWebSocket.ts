@@ -5,6 +5,7 @@
 
 import { useCallback, useMemo } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
+import { useAuth } from '../contexts/AuthContext';
 import type {
   OutgoingMessage,
   IncomingMessage,
@@ -29,9 +30,11 @@ export function useMatchWebSocket({
   enabled,
   onMessage,
 }: UseMatchWebSocketOptions): UseMatchWebSocketReturn {
+  const { accessToken } = useAuth();
+
   // Get WebSocket URL from API base URL
   const socketUrl = useMemo(() => {
-    if (!enabled) return null;
+    if (!enabled || !accessToken) return null;
 
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -42,8 +45,8 @@ export function useMatchWebSocket({
     const urlWithoutProtocol = apiBaseUrl.replace(/^https?:\/\//, '');
     const host = urlWithoutProtocol.replace(/\/api$/, '');
 
-    return `${wsProtocol}://${host}/ws/8ball-match/${matchId}/`;
-  }, [matchId, enabled]);
+    return `${wsProtocol}://${host}/ws/8ball-match/${matchId}/?token=${accessToken}`;
+  }, [matchId, enabled, accessToken]);
 
   // Handle incoming messages
   const handleMessage = useCallback(

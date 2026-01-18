@@ -49,6 +49,7 @@ const Header: React.FC = () => {
             >
               Leagues
             </Link>
+            {/* 
             <Link
               to="/players"
               className={`hover:text-primary-300 transition-colors ${
@@ -56,7 +57,7 @@ const Header: React.FC = () => {
               }`}
             >
               Players
-            </Link>
+            </Link> */}
             {/* <Link
               to="/register"
               className={`hover:text-primary-300 transition-colors ${
@@ -68,7 +69,8 @@ const Header: React.FC = () => {
             {/* <Link
               to="/score-entry"
               className={`hover:text-primary-300 transition-colors ${
-                isActive("/score-entry") ? "text-primary font-medium" : ""
+                isActive("/score-e
+                ntry") ? "text-primary font-medium" : ""
               }`}
             >
               Submit Scores

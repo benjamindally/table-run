@@ -174,6 +174,7 @@ const PlayerDetailsPage: React.FC = () => {
     );
   }
 
+  console.log("Player: ", player);
   if (error || !player) {
     return (
       <div className="space-y-6">
@@ -198,7 +199,9 @@ const PlayerDetailsPage: React.FC = () => {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-dark">{player.full_name}</h1>
-            <p className="text-sm text-dark-300 mt-1">{player.user.email}</p>
+            <p className="text-sm text-dark-300 mt-1">
+              {player.user ? player.user.email : ""}
+            </p>
           </div>
         </div>
         <button

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Player } from "../../api/types";
-import { Users, Mail, Copy, Search, CheckCircle } from "lucide-react";
+import { Users, Mail, Copy, Search, CheckCircle, X } from "lucide-react";
 import BulkInviteModal from "../BulkInviteModal";
 import SendEmailConfirmModal from "../SendEmailConfirmModal";
 
@@ -14,6 +15,12 @@ interface PlayersListProps {
   onSendInvite: (playerId: number, playerName: string) => void;
   onSendEmail: (playerId: number, playerName: string) => Promise<void>;
   onBulkInvite: () => Promise<void>;
+  // Search props
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  searchResults: Player[];
+  isSearching: boolean;
+  searchResultCount: number;
 }
 
 const PlayersList: React.FC<PlayersListProps> = ({
@@ -26,8 +33,13 @@ const PlayersList: React.FC<PlayersListProps> = ({
   onSendInvite,
   onSendEmail,
   onBulkInvite,
+  searchTerm,
+  setSearchTerm,
+  searchResults,
+  isSearching,
+  searchResultCount,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
   const [showBulkInviteModal, setShowBulkInviteModal] = useState(false);
   const [isSendingBulkInvites, setIsSendingBulkInvites] = useState(false);
   const [showSendEmailModal, setShowSendEmailModal] = useState(false);
@@ -69,19 +81,16 @@ const PlayersList: React.FC<PlayersListProps> = ({
     }
   };
 
-  // Filter players by search term
-  const filteredPlayers = searchTerm.trim()
-    ? players.filter((player: Player) => {
-        const searchLower = searchTerm.toLowerCase().trim();
-        const [firstName = "", lastName = ""] = player.full_name.split(" ");
-        return (
-          firstName.toLowerCase().startsWith(searchLower) ||
-          lastName.toLowerCase().startsWith(searchLower)
-        );
-      })
-    : players;
+  // Determine if we're in search mode
+  const safeSearchTerm = searchTerm || "";
+  const isSearchMode = safeSearchTerm.trim().length >= 2;
+  const isSearchActive = safeSearchTerm.trim().length > 0;
 
-  // Count unclaimed players for bulk invite button
+  // Use search results when searching, otherwise use paginated players
+  const displayPlayers = isSearchMode ? searchResults : players;
+  const displayCount = isSearchMode ? searchResultCount : totalCount;
+
+  // Count unclaimed players for bulk invite button (only from paginated list, not search)
   const unclaimedCount = players.filter((p) => !p.is_claimed).length;
 
   // For the bulk invite modal, we only want unclaimed players
@@ -108,14 +117,22 @@ const PlayersList: React.FC<PlayersListProps> = ({
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <Users className="h-5 w-5 text-orange-500" />
-              All Players ({players.length} of {totalCount})
-              {unclaimedCount > 0 && (
-                <span className="text-sm font-normal text-gray-600">
-                  • {unclaimedCount} unclaimed
-                </span>
+              {isSearchMode ? (
+                <>
+                  Search Results ({displayPlayers.length} of {displayCount})
+                </>
+              ) : (
+                <>
+                  All Players ({players.length} of {totalCount})
+                  {unclaimedCount > 0 && (
+                    <span className="text-sm font-normal text-gray-600">
+                      • {unclaimedCount} unclaimed
+                    </span>
+                  )}
+                </>
               )}
             </h2>
-            {isLeagueOp && unclaimedCount > 0 && (
+            {isLeagueOp && unclaimedCount > 0 && !isSearchMode && (
               <button
                 onClick={() => setShowBulkInviteModal(true)}
                 className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2"
@@ -129,26 +146,53 @@ const PlayersList: React.FC<PlayersListProps> = ({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Filter by name..."
-              value={searchTerm}
+              placeholder="Search all players by name..."
+              value={safeSearchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
+            {safeSearchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                title="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
+          {isSearchMode && (
+            <p className="text-sm text-gray-600 mt-2">
+              {isSearching ? (
+                <span className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500"></div>
+                  Searching all players...
+                </span>
+              ) : (
+                `Showing results for "${safeSearchTerm}"`
+              )}
+            </p>
+          )}
         </div>
 
-        {filteredPlayers.length === 0 ? (
+        {isSearching ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+            <p className="mt-3 text-gray-600">Searching...</p>
+          </div>
+        ) : displayPlayers.length === 0 ? (
           <p className="text-gray-600 text-center py-8">
-            {searchTerm
-              ? "No players found matching your filter"
+            {isSearchMode
+              ? `No players found matching "${safeSearchTerm}"`
               : "No players available"}
           </p>
         ) : (
           <div className="space-y-3">
-            {filteredPlayers.map((player) => (
+            {displayPlayers.map((player: Player) => (
               <div
                 key={player.id}
-                className="border border-gray-200 rounded-lg p-4 flex items-center justify-between"
+                onClick={() => navigate(`/admin/players/${player.id}`)}
+                className="border border-gray-200 rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -183,16 +227,20 @@ const PlayersList: React.FC<PlayersListProps> = ({
                 {!player.is_claimed && (
                   <div className="flex gap-2">
                     <button
-                      onClick={() => onSendInvite(player.id, player.full_name)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSendInvite(player.id, player.full_name);
+                      }}
                       className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2"
                     >
                       <Copy className="h-4 w-4" />
                       Copy Invite Link
                     </button>
                     <button
-                      onClick={() =>
-                        handleOpenEmailModal(player.id, player.full_name)
-                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEmailModal(player.id, player.full_name);
+                      }}
                       className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
                     >
                       <Mail className="h-4 w-4" />
@@ -205,8 +253,8 @@ const PlayersList: React.FC<PlayersListProps> = ({
           </div>
         )}
 
-        {/* Load More Button */}
-        {hasMorePlayers && !searchTerm && (
+        {/* Load More Button - only in browse mode */}
+        {!isSearchMode && hasMorePlayers && (
           <div className="mt-4 flex justify-center">
             <button
               onClick={onLoadMore}

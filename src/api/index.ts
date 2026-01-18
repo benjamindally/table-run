@@ -32,3 +32,10 @@ export type {
   BulkInviteResponse,
   BulkInvitePlayer,
 } from './playerClaims';
+export { announcementsApi, notificationsApi } from './notifications';
+export type {
+  Announcement,
+  CreateAnnouncementData,
+  Notification,
+  UnreadCount
+} from './notifications';

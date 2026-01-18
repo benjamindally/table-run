@@ -5,15 +5,26 @@ import {
   Plus,
   UserPlus,
   Building2,
+  Megaphone,
 } from "lucide-react";
 import { useMyLeagues } from "../../hooks/useLeagues";
 import CreateLeagueModal from "../../components/CreateLeagueModal";
+import CreateAnnouncementModal from "../../components/CreateAnnouncementModal";
+import { useAuth } from "../../contexts/AuthContext";
 
 const DashboardPage: React.FC = () => {
   const { data: leaguesData, isLoading } = useMyLeagues();
+  const { leagueData } = useAuth();
   const leagues = leaguesData?.results || [];
   const hasLeagues = leagues.length > 0;
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [selectedLeague, setSelectedLeague] = useState<{ id: number; name: string } | null>(null);
+
+  const handleAnnouncementClick = (leagueId: number, leagueName: string) => {
+    setSelectedLeague({ id: leagueId, name: leagueName });
+    setShowAnnouncementModal(true);
+  };
 
   // Loading state
   if (isLoading) {
@@ -102,22 +113,38 @@ const DashboardPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-lg font-semibold text-dark mb-4">Your Leagues ({leagues.length})</h2>
         <div className="space-y-3">
-          {leagues.map((league) => (
-            <div key={league.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-              <div className="flex items-center space-x-3">
-                <div className="bg-primary-100 p-2 rounded-lg">
-                  <Building2 className="h-5 w-5 text-primary-600" />
+          {leagues.map((league) => {
+            const isOperator = leagueData.isLeagueOperator(league.id);
+
+            return (
+              <div key={league.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-primary-100 p-2 rounded-lg">
+                    <Building2 className="h-5 w-5 text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-dark">{league.name}</h3>
+                    <p className="text-sm text-dark-300">{league.city}, {league.state}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-dark">{league.name}</h3>
-                  <p className="text-sm text-dark-300">{league.city}, {league.state}</p>
+                <div className="flex items-center space-x-2">
+                  {isOperator && (
+                    <button
+                      onClick={() => handleAnnouncementClick(league.id, league.name)}
+                      className="btn btn-secondary btn-sm flex items-center"
+                      title="Send announcement to all league members"
+                    >
+                      <Megaphone className="h-4 w-4 mr-1" />
+                      Announce
+                    </button>
+                  )}
+                  <Link to="/admin/leagues" className="btn btn-outline btn-sm">
+                    Manage
+                  </Link>
                 </div>
               </div>
-              <Link to="/admin/leagues" className="btn btn-outline btn-sm">
-                Manage
-              </Link>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -134,6 +161,19 @@ const DashboardPage: React.FC = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
       />
+
+      {/* Create Announcement Modal */}
+      {selectedLeague && (
+        <CreateAnnouncementModal
+          isOpen={showAnnouncementModal}
+          onClose={() => {
+            setShowAnnouncementModal(false);
+            setSelectedLeague(null);
+          }}
+          leagueId={selectedLeague.id}
+          leagueName={selectedLeague.name}
+        />
+      )}
     </div>
   );
 };

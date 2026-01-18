@@ -6,6 +6,7 @@ import {
   LogOut,
   Calendar,
   CircleUser,
+  Trophy,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -37,6 +38,11 @@ const AdminSidebar: React.FC = () => {
       name: "Players",
       path: "/admin/players",
       icon: <CircleUser className="h-5 w-5" />,
+    },
+    {
+      name: "Matches",
+      path: "/admin/matches",
+      icon: <Trophy className="h-5 w-5" />,
     },
   ];
 

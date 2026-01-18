@@ -4,6 +4,7 @@ import {
   playerClaimsApi,
   PlayerNeedingActivation,
   PlayerClaimRequest,
+  PlayerSearchResult,
 } from "../api";
 import { playersApi } from "../api/players";
 import { Player } from "../api/types";
@@ -28,6 +29,12 @@ export const usePlayerManagement = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
+
+  // Search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<Player[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResultCount, setSearchResultCount] = useState(0);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -64,13 +71,13 @@ export const usePlayerManagement = ({
       // Make request to the next page URL
       const response = await fetch(nextPageUrl, {
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to load more players');
+        throw new Error("Failed to load more players");
       }
 
       const data = await response.json();
@@ -88,6 +95,54 @@ export const usePlayerManagement = ({
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, canManagePlayers]);
+
+  // Server-side search with debouncing
+  useEffect(() => {
+    // Don't search if query is empty or too short
+    if (!searchTerm.trim() || searchTerm.trim().length < 2) {
+      setSearchResults([]);
+      setSearchResultCount(0);
+      return;
+    }
+
+    // Don't search if user doesn't have permission
+    if (!canManagePlayers || !accessToken) {
+      return;
+    }
+
+    console.log(searchTerm);
+    // Debounce the API call
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+
+      try {
+        const response = await playerClaimsApi.searchPlayers(
+          searchTerm.trim(),
+          100, // Search up to 100 players
+          accessToken || undefined
+        );
+        console.log("response ", response);
+        // Fetch full player details for each search result
+        const playerDetailsPromises = response.results.map((result) =>
+          playersApi.getById(result.id, accessToken)
+        );
+
+        const playerDetails = await Promise.all(playerDetailsPromises);
+        setSearchResults(playerDetails);
+        setSearchResultCount(response.count);
+      } catch (err: unknown) {
+        console.error("Search error:", err);
+        const error = err as { message?: string };
+        toast.error(error.message || "Search failed");
+        setSearchResults([]);
+        setSearchResultCount(0);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, canManagePlayers, accessToken]);
 
   const handleSendInvite = async (playerId: number, playerName: string) => {
     if (!accessToken) return;
@@ -223,5 +278,11 @@ export const usePlayerManagement = ({
     handleBulkInvite,
     handleApproveClaim,
     handleDenyClaim,
+    // Search state and methods
+    searchTerm,
+    setSearchTerm,
+    searchResults,
+    isSearching,
+    searchResultCount,
   };
 };
