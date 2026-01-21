@@ -38,22 +38,26 @@ export const usePlayerManagement = ({
 
   const loadData = async () => {
     setIsLoading(true);
+
     try {
-      if (canManagePlayers && accessToken) {
-        // Fetch all players
+      // All logged-in users can browse the player directory
+      if (accessToken) {
         const playersResponse = await playersApi.getAll(accessToken);
         setAllPlayers(playersResponse.results);
         setNextPageUrl(playersResponse.next);
         setTotalCount(playersResponse.count);
 
-        // Fetch players needing activation
-        const needsActivation =
-          await playerClaimsApi.getPlayersNeedingActivation();
-        setPlayersNeedingActivation(needsActivation);
+        // Only managers need activation and review data
+        if (canManagePlayers) {
+          // Fetch players needing activation
+          const needsActivation =
+            await playerClaimsApi.getPlayersNeedingActivation();
+          setPlayersNeedingActivation(needsActivation);
 
-        // Fetch pending reviews
-        const reviews = await playerClaimsApi.getPendingReviews(accessToken);
-        setPendingReviews(reviews);
+          // Fetch pending reviews
+          const reviews = await playerClaimsApi.getPendingReviews(accessToken);
+          setPendingReviews(reviews);
+        }
       }
     } catch (err: any) {
       console.error("Error loading player data:", err);
@@ -105,12 +109,11 @@ export const usePlayerManagement = ({
       return;
     }
 
-    // Don't search if user doesn't have permission
-    if (!canManagePlayers || !accessToken) {
+    // Need access token to search
+    if (!accessToken) {
       return;
     }
 
-    console.log(searchTerm);
     // Debounce the API call
     const timer = setTimeout(async () => {
       setIsSearching(true);
@@ -119,9 +122,8 @@ export const usePlayerManagement = ({
         const response = await playerClaimsApi.searchPlayers(
           searchTerm.trim(),
           100, // Search up to 100 players
-          accessToken || undefined
+          accessToken
         );
-        console.log("response ", response);
         // Fetch full player details for each search result
         const playerDetailsPromises = response.results.map((result) =>
           playersApi.getById(result.id, accessToken)
@@ -142,7 +144,7 @@ export const usePlayerManagement = ({
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timer);
-  }, [searchTerm, canManagePlayers, accessToken]);
+  }, [searchTerm, accessToken]);
 
   const handleSendInvite = async (playerId: number, playerName: string) => {
     if (!accessToken) return;

@@ -39,3 +39,11 @@ export type {
   Notification,
   UnreadCount
 } from './notifications';
+export { meApi } from './me';
+export type {
+  MeResponse,
+  MePlayer,
+  MeTeam,
+  MeSeason,
+  MeLeague,
+} from './me';

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, AlertCircle, MapPin, Users, Edit2 } from "lucide-react";
-import { useMyLeagues } from "../../hooks/useLeagues";
+import { useMe } from "../../hooks/useMe";
 import { useSeasons } from "../../hooks/useSeasons";
 import { useSeasonMatches } from "../../hooks/useSeasons";
 import { useCurrentTeams } from "../../hooks/usePlayers";
@@ -12,12 +12,12 @@ import type { Match } from "../../api/types";
 
 const MatchesPage: React.FC = () => {
   const navigate = useNavigate();
-  const { data: myLeaguesData, isLoading: leaguesLoading } = useMyLeagues();
+  const { data: meData, isLoading: meLoading } = useMe();
   const { data: allSeasonsData, isLoading: seasonsLoading } = useSeasons();
   const { data: currentTeams } = useCurrentTeams();
   const { leagueData } = useAuth();
 
-  const myLeagues = myLeaguesData?.results || [];
+  const myLeagues = meData?.leagues || [];
   const allSeasons = allSeasonsData?.results || [];
 
   // State for selected league and season
@@ -71,23 +71,12 @@ const MatchesPage: React.FC = () => {
     return currentTeams?.map((team) => team.id) || [];
   }, [currentTeams]);
 
-  // Filter and sort matches based on user role
+  // Sort matches by date (everyone can see all matches, editing is permission-based)
   const displayMatches = useMemo(() => {
     if (!matchesData) return [];
 
-    let filtered = [...matchesData];
-
-    // If not a league operator, filter by user's teams
-    if (!isLeagueOperator && userTeamIds.length > 0) {
-      filtered = filtered.filter(
-        (match: Match) =>
-          userTeamIds.includes(match.home_team) ||
-          userTeamIds.includes(match.away_team)
-      );
-    }
-
     // Sort by date (upcoming first, then by week_number)
-    return filtered.sort((a: Match, b: Match) => {
+    return [...matchesData].sort((a: Match, b: Match) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
 
@@ -97,7 +86,13 @@ const MatchesPage: React.FC = () => {
       // Then by week number
       return (a.week_number || 0) - (b.week_number || 0);
     });
-  }, [matchesData, isLeagueOperator, userTeamIds]);
+  }, [matchesData]);
+
+  // Check if a match involves one of the user's teams (for highlighting)
+  const isUserTeamMatch = (match: Match): boolean => {
+    if (userTeamIds.length === 0) return false;
+    return userTeamIds.includes(match.home_team) || userTeamIds.includes(match.away_team);
+  };
 
   // Determine which matches are editable based on role
   const getMatchEditable = (match: Match): boolean => {
@@ -124,7 +119,7 @@ const MatchesPage: React.FC = () => {
   };
 
   // Loading state
-  if (leaguesLoading || seasonsLoading) {
+  if (meLoading || seasonsLoading) {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-dark">Matches</h1>
@@ -149,8 +144,8 @@ const MatchesPage: React.FC = () => {
               No Leagues Found
             </h2>
             <p className="text-dark-300 text-center max-w-md mb-6">
-              You need to be a league operator or team captain to view matches.
-              Contact your league operator to get access.
+              You're not associated with any leagues yet. Join a team or contact
+              your league operator to get access.
             </p>
           </div>
         </div>
@@ -202,9 +197,9 @@ const MatchesPage: React.FC = () => {
               </div>
               <div className="flex items-center text-sm">
                 <Calendar className="h-4 w-4 mr-2 text-dark-300" />
-                <span className="text-dark-300 mr-2">Seasons:</span>
+                <span className="text-dark-300 mr-2">Active Seasons:</span>
                 <span className="font-medium text-dark">
-                  {selectedLeague.season_count || 0}
+                  {filteredSeasons.length}
                 </span>
               </div>
             </div>
@@ -315,6 +310,7 @@ const MatchesPage: React.FC = () => {
               editable={getMatchEditable}
               onEditMatch={handleMatchClick}
               initialWeeksToShow={4}
+              isUserTeamMatch={isUserTeamMatch}
             />
           )}
         </>

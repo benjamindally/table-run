@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, AlertCircle } from 'lucide-react';
-import { useLeague, useUpdateLeague, useDeleteLeague } from '../../hooks/useLeagues';
+import { useLeague, useUpdateLeague, useDeleteLeague, useMyLeagues } from '../../hooks/useLeagues';
 import { toast } from 'react-toastify';
 import Modal from '../../components/Modal';
 
@@ -11,8 +11,12 @@ const LeagueDetailsPage: React.FC = () => {
   const leagueId = parseInt(id || '0');
 
   const { data: league, isLoading, error } = useLeague(leagueId);
+  const { data: myLeaguesData } = useMyLeagues();
   const updateLeagueMutation = useUpdateLeague();
   const deleteLeagueMutation = useDeleteLeague();
+
+  // Check if user is a league operator for this specific league
+  const isOperator = myLeaguesData?.results?.some(l => l.id === leagueId) ?? false;
 
   const [formData, setFormData] = useState({
     name: league?.name || '',
@@ -156,7 +160,9 @@ const LeagueDetailsPage: React.FC = () => {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-dark">League Details</h1>
-            <p className="text-sm text-dark-300 mt-1">Edit league information</p>
+            <p className="text-sm text-dark-300 mt-1">
+              {isOperator ? 'Edit league information' : 'View league information'}
+            </p>
           </div>
         </div>
       </div>
@@ -171,10 +177,11 @@ const LeagueDetailsPage: React.FC = () => {
               type="text"
               id="name"
               name="name"
-              className={`form-input ${errors.name ? 'border-red-500' : ''}`}
+              className={`form-input ${errors.name ? 'border-red-500' : ''} ${!isOperator ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               value={formData.name}
               onChange={handleChange}
               placeholder="e.g., Downtown Pool League"
+              disabled={!isOperator}
             />
             {errors.name && (
               <p className="text-red-500 text-sm mt-1 flex items-center">
@@ -190,11 +197,12 @@ const LeagueDetailsPage: React.FC = () => {
             <textarea
               id="description"
               name="description"
-              className="form-input"
+              className={`form-input ${!isOperator ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               rows={3}
               value={formData.description}
               onChange={handleChange}
               placeholder="Optional description of your league"
+              disabled={!isOperator}
             />
           </div>
 
@@ -206,10 +214,11 @@ const LeagueDetailsPage: React.FC = () => {
                 type="text"
                 id="city"
                 name="city"
-                className={`form-input ${errors.city ? 'border-red-500' : ''}`}
+                className={`form-input ${errors.city ? 'border-red-500' : ''} ${!isOperator ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 value={formData.city}
                 onChange={handleChange}
                 placeholder="e.g., Portland"
+                disabled={!isOperator}
               />
               {errors.city && (
                 <p className="text-red-500 text-sm mt-1 flex items-center">
@@ -225,10 +234,11 @@ const LeagueDetailsPage: React.FC = () => {
                 type="text"
                 id="state"
                 name="state"
-                className={`form-input ${errors.state ? 'border-red-500' : ''}`}
+                className={`form-input ${errors.state ? 'border-red-500' : ''} ${!isOperator ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 value={formData.state}
                 onChange={handleChange}
                 placeholder="e.g., OR"
+                disabled={!isOperator}
               />
               {errors.state && (
                 <p className="text-red-500 text-sm mt-1 flex items-center">
@@ -245,9 +255,10 @@ const LeagueDetailsPage: React.FC = () => {
             <select
               id="country"
               name="country"
-              className={`form-input ${errors.country ? 'border-red-500' : ''}`}
+              className={`form-input ${errors.country ? 'border-red-500' : ''} ${!isOperator ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               value={formData.country}
               onChange={handleChange}
+              disabled={!isOperator}
             >
               <option value="USA">United States</option>
               <option value="Canada">Canada</option>
@@ -274,10 +285,11 @@ const LeagueDetailsPage: React.FC = () => {
                   type="number"
                   id="sets_per_match"
                   name="sets_per_match"
-                  className={`form-input ${errors.sets_per_match ? 'border-red-500' : ''}`}
+                  className={`form-input ${errors.sets_per_match ? 'border-red-500' : ''} ${!isOperator ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   value={formData.sets_per_match}
                   onChange={handleChange}
                   min="1"
+                  disabled={!isOperator}
                 />
                 {errors.sets_per_match && (
                   <p className="text-red-500 text-sm mt-1">{errors.sets_per_match}</p>
@@ -290,10 +302,11 @@ const LeagueDetailsPage: React.FC = () => {
                   type="number"
                   id="games_per_set"
                   name="games_per_set"
-                  className={`form-input ${errors.games_per_set ? 'border-red-500' : ''}`}
+                  className={`form-input ${errors.games_per_set ? 'border-red-500' : ''} ${!isOperator ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   value={formData.games_per_set}
                   onChange={handleChange}
                   min="1"
+                  disabled={!isOperator}
                 />
                 {errors.games_per_set && (
                   <p className="text-red-500 text-sm mt-1">{errors.games_per_set}</p>
@@ -306,10 +319,11 @@ const LeagueDetailsPage: React.FC = () => {
                   type="number"
                   id="points_per_win"
                   name="points_per_win"
-                  className={`form-input ${errors.points_per_win ? 'border-red-500' : ''}`}
+                  className={`form-input ${errors.points_per_win ? 'border-red-500' : ''} ${!isOperator ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   value={formData.points_per_win}
                   onChange={handleChange}
                   min="1"
+                  disabled={!isOperator}
                 />
                 {errors.points_per_win && (
                   <p className="text-red-500 text-sm mt-1">{errors.points_per_win}</p>
@@ -318,43 +332,51 @@ const LeagueDetailsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t">
-            <button
-              type="button"
-              onClick={() => setShowDeleteModal(true)}
-              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Delete league"
-            >
-              <Trash2 className="h-5 w-5" />
-            </button>
+          {/* Actions - Only visible to league operators */}
+          {isOperator ? (
+            <div className="flex items-center justify-between pt-4 border-t">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Delete league"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
 
-            <div className="flex space-x-3">
-              <button
-                type="button"
-                onClick={handleArchive}
-                className="btn btn-outline"
-                disabled={updateLeagueMutation.isPending || deleteLeagueMutation.isPending}
-              >
-                {updateLeagueMutation.isPending ? 'Archiving...' : 'Archive'}
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                className="btn btn-primary"
-                disabled={!hasChanges || updateLeagueMutation.isPending || deleteLeagueMutation.isPending}
-              >
-                {updateLeagueMutation.isPending ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                    Saving...
-                  </div>
-                ) : (
-                  'Save Changes'
-                )}
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={handleArchive}
+                  className="btn btn-outline"
+                  disabled={updateLeagueMutation.isPending || deleteLeagueMutation.isPending}
+                >
+                  {updateLeagueMutation.isPending ? 'Archiving...' : 'Archive'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="btn btn-primary"
+                  disabled={!hasChanges || updateLeagueMutation.isPending || deleteLeagueMutation.isPending}
+                >
+                  {updateLeagueMutation.isPending ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </div>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="pt-4 border-t">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-600">
+                You are viewing this league in read-only mode. Only league operators can edit league details.
+              </div>
+            </div>
+          )}
         </form>
       </div>
 
