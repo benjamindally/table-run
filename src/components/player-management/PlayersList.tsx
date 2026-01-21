@@ -21,6 +21,8 @@ interface PlayersListProps {
   searchResults: Player[];
   isSearching: boolean;
   searchResultCount: number;
+  // Permission check for editing individual players (team captains can edit their team's players)
+  canEditPlayer?: (player: Player) => boolean;
 }
 
 const PlayersList: React.FC<PlayersListProps> = ({
@@ -38,6 +40,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
   searchResults,
   isSearching,
   searchResultCount,
+  canEditPlayer,
 }) => {
   const navigate = useNavigate();
   const [showBulkInviteModal, setShowBulkInviteModal] = useState(false);
@@ -124,7 +127,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
               ) : (
                 <>
                   All Players ({players.length} of {totalCount})
-                  {unclaimedCount > 0 && (
+                  {isLeagueOp && unclaimedCount > 0 && (
                     <span className="text-sm font-normal text-gray-600">
                       • {unclaimedCount} unclaimed
                     </span>
@@ -215,7 +218,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
                       User: {player.user.email}
                     </p>
                   )}
-                  {!player.is_claimed && player.invite_sent_at && (
+                  {isLeagueOp && !player.is_claimed && player.invite_sent_at && (
                     <p className="text-xs text-gray-500 mt-1">
                       Invite sent:{" "}
                       {new Date(player.invite_sent_at).toLocaleDateString()}
@@ -223,31 +226,32 @@ const PlayersList: React.FC<PlayersListProps> = ({
                   )}
                 </div>
 
-                {/* Only show invite buttons for unclaimed players */}
-                {!player.is_claimed && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSendInvite(player.id, player.full_name);
-                      }}
-                      className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy Invite Link
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenEmailModal(player.id, player.full_name);
-                      }}
-                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
-                    >
-                      <Mail className="h-4 w-4" />
-                      Send Email
-                    </button>
-                  </div>
-                )}
+                {/* Only show invite buttons for unclaimed players if user has edit permission */}
+                {!player.is_claimed &&
+                  (canEditPlayer ? canEditPlayer(player) : isLeagueOp) && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSendInvite(player.id, player.full_name);
+                        }}
+                        className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy Invite Link
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEmailModal(player.id, player.full_name);
+                        }}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
+                      >
+                        <Mail className="h-4 w-4" />
+                        Send Email
+                      </button>
+                    </div>
+                  )}
               </div>
             ))}
           </div>

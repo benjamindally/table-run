@@ -1,21 +1,29 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Building2,
   MapPin,
-  Users,
-  Trophy,
   Calendar,
   Plus,
   ArrowRight,
 } from "lucide-react";
-import { useMyLeagues } from "../../hooks/useLeagues";
-import { useSeasons } from "../../hooks/useSeasons";
+import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import CreateSeasonModal from "../../components/CreateSeasonModal";
 import CreateLeagueModal from "../../components/CreateLeagueModal";
 
 const LeaguesPage: React.FC = () => {
   const navigate = useNavigate();
+  const {
+    leagues,
+    seasons,
+    isLoading,
+    error,
+    currentLeagueId,
+    currentSeasonId,
+    setCurrentLeague,
+    setLeagueAndSeason,
+  } = useLeagueSeason();
+
   const [showAllLeagues, setShowAllLeagues] = useState(false);
   const [showAllSeasons, setShowAllSeasons] = useState(false);
   const [selectedLeagueForSeason, setSelectedLeagueForSeason] = useState<
@@ -23,31 +31,36 @@ const LeaguesPage: React.FC = () => {
   >(null);
   const [showCreateLeagueModal, setShowCreateLeagueModal] = useState(false);
 
-  // Fetch leagues where current user is an operator
-  const { data: leaguesData, isLoading, error } = useMyLeagues();
-  const { data: seasonsData, isLoading: seasonsLoading } = useSeasons();
-
-  const leagues = leaguesData?.results || [];
-  const allSeasons = seasonsData?.results || [];
-
-  // Filter seasons to only show those from leagues the user operates
-  const mySeasons = useMemo(() => {
-    const myLeagueIds = leagues.map((l) => l.id);
-    return allSeasons
-      .filter((season) => myLeagueIds.includes(season.league))
-      .sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-  }, [allSeasons, leagues]);
-
   // Show only the 3 most recent leagues by default
-  const displayedLeagues = showAllLeagues ? leagues : leagues.slice(0, 3);
+  const displayedLeagues = showAllLeagues
+    ? leagues
+    : leagues.slice(0, 3);
   const hasMoreLeagues = leagues.length > 3;
 
   // Show only the 3 most recent seasons by default
-  const displayedSeasons = showAllSeasons ? mySeasons : mySeasons.slice(0, 3);
-  const hasMoreSeasons = mySeasons.length > 3;
+  const displayedSeasons = showAllSeasons ? seasons : seasons.slice(0, 3);
+  const hasMoreSeasons = seasons.length > 3;
+
+  // Auto-expand if selected league/season is outside the initial slice
+  useEffect(() => {
+    if (currentLeagueId && leagues.length > 3) {
+      const selectedIndex = leagues.findIndex(
+        (l) => l.id === currentLeagueId
+      );
+      if (selectedIndex >= 3) {
+        setShowAllLeagues(true);
+      }
+    }
+  }, [currentLeagueId, leagues]);
+
+  useEffect(() => {
+    if (currentSeasonId && seasons.length > 3) {
+      const selectedIndex = seasons.findIndex((s) => s.id === currentSeasonId);
+      if (selectedIndex >= 3) {
+        setShowAllSeasons(true);
+      }
+    }
+  }, [currentSeasonId, seasons]);
 
   if (error) {
     return (
@@ -90,7 +103,9 @@ const LeaguesPage: React.FC = () => {
             {displayedLeagues.map((league) => (
               <div
                 key={league.id}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                className={`bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow ${
+                  currentLeagueId === league.id ? "ring-2 ring-primary-500" : ""
+                }`}
               >
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
@@ -108,71 +123,45 @@ const LeaguesPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        league.is_active
-                          ? "bg-secondary-100 text-secondary-800"
-                          : "bg-cream-400 text-dark-400"
-                      }`}
-                    >
-                      {league.is_active ? "Active" : "Inactive"}
-                    </span>
+                    {league.role && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-800">
+                        {league.role}
+                      </span>
+                    )}
                   </div>
 
-                  {league.description && (
-                    <p className="text-sm text-dark-300 mb-4 line-clamp-2">
-                      {league.description}
-                    </p>
-                  )}
-
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-dark-300">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        <span>Seasons</span>
-                      </div>
-                      <span className="font-semibold text-dark">
-                        {league.season_count || 0}
-                      </span>
+                  {league.is_operator ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setSelectedLeagueForSeason(league.id)}
+                        className="btn btn-primary text-sm flex items-center justify-center"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Season
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCurrentLeague(league.id);
+                          navigate(`/admin/leagues/${league.id}`);
+                        }}
+                        className="btn btn-outline text-sm flex items-center justify-center"
+                      >
+                        Edit League
+                        <ArrowRight className="h-4 w-4 ml-1" />
+                      </button>
                     </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-dark-300">
-                        <Trophy className="h-4 w-4 mr-2" />
-                        <span>Games per Match</span>
-                      </div>
-                      <span className="font-semibold text-dark">
-                        {league.total_games || 0}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-dark-300">
-                        <Users className="h-4 w-4 mr-2" />
-                        <span>Sets per Match</span>
-                      </div>
-                      <span className="font-semibold text-dark">
-                        {league.sets_per_match}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
+                  ) : (
                     <button
-                      onClick={() => setSelectedLeagueForSeason(league.id)}
-                      className="btn btn-primary text-sm flex items-center justify-center"
+                      onClick={() => {
+                        setCurrentLeague(league.id);
+                        navigate(`/admin/leagues/${league.id}`);
+                      }}
+                      className="btn btn-outline w-full text-sm flex items-center justify-center"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Season
-                    </button>
-                    <button
-                      onClick={() => navigate(`/admin/leagues/${league.id}`)}
-                      className="btn btn-outline text-sm flex items-center justify-center"
-                    >
-                      Edit League
+                      View League
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </button>
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -212,17 +201,21 @@ const LeaguesPage: React.FC = () => {
             <h2 className="text-xl font-bold text-dark mb-4">Seasons</h2>
           </div>
 
-          {seasonsLoading ? (
+          {isLoading ? (
             <div className="bg-white rounded-lg shadow-sm p-8 text-center">
               <div className="text-gray-500">Loading seasons...</div>
             </div>
-          ) : mySeasons.length > 0 ? (
+          ) : seasons.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {displayedSeasons.map((season) => (
                   <div
                     key={season.id}
-                    className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                    className={`bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow ${
+                      currentSeasonId === season.id
+                        ? "ring-2 ring-primary-500"
+                        : ""
+                    }`}
                   >
                     <div className="p-6">
                       <div className="flex justify-between items-start mb-4">
@@ -231,23 +224,17 @@ const LeaguesPage: React.FC = () => {
                             {season.name}
                           </h3>
                           <p className="text-sm text-dark-300 mt-1">
-                            {season.league_detail?.name}
+                            {season.league_name}
                           </p>
                         </div>
                         <span
                           className={`px-2 py-1 text-xs font-medium rounded-full ${
                             season.is_active
                               ? "bg-secondary-100 text-secondary-800"
-                              : season.is_archived
-                              ? "bg-cream-400 text-dark-400"
                               : "bg-gray-100 text-gray-600"
                           }`}
                         >
-                          {season.is_active
-                            ? "Active"
-                            : season.is_archived
-                            ? "Archived"
-                            : "Inactive"}
+                          {season.is_active ? "Active" : "Inactive"}
                         </span>
                       </div>
 
@@ -273,20 +260,13 @@ const LeaguesPage: React.FC = () => {
                             </span>
                           </div>
                         )}
-
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center text-dark-300">
-                            <Users className="h-4 w-4 mr-2" />
-                            <span>Teams</span>
-                          </div>
-                          <span className="font-semibold text-dark">
-                            {season.team_count || 0}
-                          </span>
-                        </div>
                       </div>
 
                       <button
-                        onClick={() => navigate(`/admin/seasons/${season.id}`)}
+                        onClick={() => {
+                          setLeagueAndSeason(season.league_id, season.id);
+                          navigate(`/admin/seasons/${season.id}`);
+                        }}
                         className="btn btn-outline w-full text-sm flex items-center justify-center"
                       >
                         View Season

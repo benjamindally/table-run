@@ -1,11 +1,19 @@
 import React, { useState, useMemo } from "react";
-import { X, ArrowLeft, Calendar, Users, MapPin } from "lucide-react";
-import type { League, Season } from "../api/types";
+import { X, ArrowLeft, Calendar, MapPin, Users } from "lucide-react";
+import type { Season } from "../api/types";
+
+// Minimal league type for the selector - works with both League and MeLeague
+interface LeagueOption {
+  id: number;
+  name: string;
+  city: string;
+  state: string;
+}
 
 interface LeagueSeasonSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  leagues: League[];
+  leagues: LeagueOption[];
   allSeasons: Season[];
   currentLeagueId?: number | null;
   currentSeasonId?: number | null;
@@ -126,23 +134,11 @@ const LeagueSeasonSelectorModal: React.FC<LeagueSeasonSelectorModalProps> = ({
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm text-dark-300">
-                        <MapPin className="h-4 w-4 mr-2" />
-                        <span>
-                          {league.city}, {league.state}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center text-sm text-dark-300">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        <span>{league.season_count || 0} seasons</span>
-                      </div>
-
-                      <div className="flex items-center text-sm text-dark-300">
-                        <Users className="h-4 w-4 mr-2" />
-                        <span>{league.total_games || 0} games played</span>
-                      </div>
+                    <div className="flex items-center text-sm text-dark-300">
+                      <MapPin className="h-4 w-4 mr-2" />
+                      <span>
+                        {league.city}, {league.state}
+                      </span>
                     </div>
                   </button>
                 ))}

@@ -9,6 +9,7 @@ interface SeasonMatchesProps {
   onImportSchedule?: () => void;
   onEditMatch?: (match: Match) => void;
   initialWeeksToShow?: number;
+  isUserTeamMatch?: (match: Match) => boolean;
 }
 
 const SeasonMatches: React.FC<SeasonMatchesProps> = ({
@@ -18,6 +19,7 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
   onImportSchedule,
   onEditMatch,
   initialWeeksToShow = 3,
+  isUserTeamMatch,
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -142,10 +144,15 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {matchesByWeek[weekNum].map((match) => {
                     const matchEditable = isMatchEditable(match);
+                    const isUserMatch = isUserTeamMatch?.(match) ?? false;
                     return (
                       <div
                         key={match.id}
-                        className={`p-3 bg-white border border-cream-300 rounded-lg transition-shadow ${
+                        className={`p-3 rounded-lg transition-shadow ${
+                          isUserMatch
+                            ? "bg-primary-50 border-2 border-primary-200"
+                            : "bg-white border border-cream-300"
+                        } ${
                           matchEditable && onEditMatch
                             ? "hover:shadow-md cursor-pointer"
                             : ""

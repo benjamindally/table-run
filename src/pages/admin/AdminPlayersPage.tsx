@@ -4,6 +4,7 @@ import { usePlayerManagement } from "../../hooks/usePlayerManagement";
 import PendingClaimReviews from "../../components/player-management/PendingClaimReviews";
 import PlayersNeedingActivation from "../../components/player-management/PlayersNeedingActivation";
 import PlayersList from "../../components/player-management/PlayersList";
+import type { Player } from "../../api/types";
 
 const AdminPlayersPage: React.FC = () => {
   const { accessToken, player, leagueData } = useAuth();
@@ -13,6 +14,18 @@ const AdminPlayersPage: React.FC = () => {
   const isCaptain = hasPlayer && player.captain_of_teams.length > 0;
   const isLeagueOp = hasPlayer && leagueData.myLeagues.length > 0;
   const canManagePlayers = isCaptain || isLeagueOp;
+
+  // Check if user can edit a specific player
+  // League ops can edit all players
+  // Team captains would need team membership data on Player type to check (future enhancement)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const canEditPlayer = (playerToEdit: Player): boolean => {
+    // League operators can edit all players
+    if (isLeagueOp) return true;
+    // For now, only league ops can edit - team captain editing requires
+    // team membership info on the Player type
+    return false;
+  };
 
   const {
     allPlayers,
@@ -48,12 +61,14 @@ const AdminPlayersPage: React.FC = () => {
     );
   }
 
-  if (!canManagePlayers) {
+  // Anyone with a player profile can view players in their league (read-only)
+  // Only league ops and team captains can edit
+  if (!hasPlayer) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <p className="text-gray-600">
-            You don't have permission to manage players.
+            You need a player profile to view players.
           </p>
         </div>
       </div>
@@ -65,19 +80,23 @@ const AdminPlayersPage: React.FC = () => {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Manage Players
+          {canManagePlayers ? "Manage Players" : "Player Directory"}
         </h1>
         <p className="text-gray-600">
-          Manage player invites, activations, and claim requests
+          {canManagePlayers
+            ? "Manage player invites, activations, and claim requests"
+            : "Browse players in your league"}
         </p>
       </div>
 
-      {/* Pending Claim Reviews */}
-      <PendingClaimReviews
-        pendingReviews={pendingReviews}
-        onApprove={handleApproveClaim}
-        onDeny={handleDenyClaim}
-      />
+      {/* Pending Claim Reviews - Only for managers */}
+      {canManagePlayers && (
+        <PendingClaimReviews
+          pendingReviews={pendingReviews}
+          onApprove={handleApproveClaim}
+          onDeny={handleDenyClaim}
+        />
+      )}
 
       {/* All Players List */}
       <PlayersList
@@ -95,6 +114,7 @@ const AdminPlayersPage: React.FC = () => {
         searchResults={searchResults}
         isSearching={isSearching}
         searchResultCount={searchResultCount}
+        canEditPlayer={canEditPlayer}
       />
     </div>
   );

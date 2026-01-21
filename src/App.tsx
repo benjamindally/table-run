@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { MatchScoringProvider } from "./contexts/MatchScoringContext";
+import { LeagueSeasonProvider } from "./contexts/LeagueSeasonContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -30,6 +31,7 @@ import ClaimPlayerPage from "./pages/ClaimPlayerPage";
 import ActivatePlayerPage from "./pages/ActivatePlayerPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import WebSocketTest from "./pages/WebSocketTest";
+import MatchWebSocketTest from "./pages/MatchWebSocketTest";
 import AdminDashboardPage from "./pages/admin/DashboardPage";
 import AdminTeamsPage from "./pages/admin/TeamsPage";
 import AdminMatchesPage from "./pages/admin/MatchesPage";
@@ -74,13 +76,16 @@ function App() {
             <Route path="activate-player/:token" element={<ActivatePlayerPage />} />
             <Route path="reset-password/:uid/:token" element={<ResetPasswordPage />} />
             <Route path="websocket-test" element={<WebSocketTest />} />
+            <Route path="match-websocket-test" element={<MatchWebSocketTest />} />
           </Route>
 
           <Route
             path="/admin"
             element={
               <ProtectedRoute>
-                <AdminLayout />
+                <LeagueSeasonProvider>
+                  <AdminLayout />
+                </LeagueSeasonProvider>
               </ProtectedRoute>
             }
           >
