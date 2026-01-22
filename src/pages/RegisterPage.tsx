@@ -64,10 +64,7 @@ const RegisterPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">Create Your Account</h1>
-        <p className="text-gray-600">
-          Join the league and start managing your team
-        </p>
+        <h1 className="text-3xl font-bold mb-2">Become a League Genius</h1>
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-8">

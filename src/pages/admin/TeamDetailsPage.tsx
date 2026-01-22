@@ -1,17 +1,27 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Users, Trophy, Calendar, Mail, MapPin, X, Check } from 'lucide-react';
-import { useTeam, useTeamRoster, useTeamSeasons } from '../../hooks/useTeams';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { teamsApi } from '../../api/teams';
-import { useAuth } from '../../contexts/AuthContext';
-import { toast } from 'react-toastify';
-import { teamsKeys } from '../../hooks/useTeams';
+import React, { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Edit,
+  Users,
+  Trophy,
+  Calendar,
+  Mail,
+  MapPin,
+  X,
+  Check,
+} from "lucide-react";
+import { useTeam, useTeamRoster, useTeamSeasons } from "../../hooks/useTeams";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { teamsApi } from "../../api/teams";
+import { useAuth } from "../../contexts/AuthContext";
+import { toast } from "react-toastify";
+import { teamsKeys } from "../../hooks/useTeams";
 
 const TeamDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const teamId = parseInt(id || '0');
+  const teamId = parseInt(id || "0");
   const { getAuthToken } = useAuth();
   const queryClient = useQueryClient();
 
@@ -20,22 +30,25 @@ const TeamDetailsPage: React.FC = () => {
   const { data: seasons } = useTeamSeasons(teamId);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState('');
-  const [editedEstablishment, setEditedEstablishment] = useState('');
+  const [editedName, setEditedName] = useState("");
+  const [editedEstablishment, setEditedEstablishment] = useState("");
   const [editedActive, setEditedActive] = useState(true);
   const [showCaptainModal, setShowCaptainModal] = useState(false);
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: (data: { name: string; establishment: string; active: boolean }) =>
-      teamsApi.update(teamId, data, getAuthToken() || undefined),
+    mutationFn: (data: {
+      name: string;
+      establishment: string;
+      active: boolean;
+    }) => teamsApi.update(teamId, data, getAuthToken() || undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teamsKeys.detail(teamId) });
-      toast.success('Team updated successfully!');
+      toast.success("Team updated successfully!");
       setIsEditing(false);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update team');
+      toast.error(error.message || "Failed to update team");
     },
   });
 
@@ -48,7 +61,7 @@ const TeamDetailsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: teamsKeys.roster(teamId) });
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to add captain');
+      toast.error(error.message || "Failed to add captain");
     },
   });
 
@@ -61,7 +74,7 @@ const TeamDetailsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: teamsKeys.roster(teamId) });
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to remove captain');
+      toast.error(error.message || "Failed to remove captain");
     },
   });
 
@@ -89,19 +102,20 @@ const TeamDetailsPage: React.FC = () => {
   const handleToggleCaptain = async (playerId: number, isCaptain: boolean) => {
     if (isCaptain) {
       // Removing captain - show confirmation
-      const playerName = roster?.find(m => m.player === playerId)?.player_detail?.full_name;
+      const playerName = roster?.find((m) => m.player === playerId)
+        ?.player_detail?.full_name;
       const confirmed = window.confirm(
         `Remove ${playerName} as captain? They will no longer be able to enter scores during matches or manage team settings.`
       );
 
       if (confirmed) {
         await removeCaptainMutation.mutateAsync(playerId);
-        toast.success('Captain removed successfully!');
+        toast.success("Captain removed successfully!");
       }
     } else {
       // Adding captain
       await addCaptainMutation.mutateAsync(playerId);
-      toast.success('Captain added successfully!');
+      toast.success("Captain added successfully!");
     }
   };
 
@@ -177,10 +191,14 @@ const TeamDetailsPage: React.FC = () => {
 
       {/* Team Overview */}
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-dark mb-4">Team Information</h2>
+        <h2 className="text-xl font-semibold text-dark mb-4">
+          Team Information
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">Team Name</label>
+            <label className="block text-sm font-medium text-dark-300 mb-1">
+              Team Name
+            </label>
             {isEditing ? (
               <input
                 type="text"
@@ -193,7 +211,9 @@ const TeamDetailsPage: React.FC = () => {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">Establishment</label>
+            <label className="block text-sm font-medium text-dark-300 mb-1">
+              Establishment
+            </label>
             {isEditing ? (
               <input
                 type="text"
@@ -202,37 +222,45 @@ const TeamDetailsPage: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             ) : (
-              <p className="text-lg font-semibold text-dark">{team.establishment}</p>
+              <p className="text-lg font-semibold text-dark">
+                {team.establishment}
+              </p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">Status</label>
+            <label className="block text-sm font-medium text-dark-300 mb-1">
+              Status
+            </label>
             {isEditing ? (
               <select
-                value={editedActive ? 'active' : 'inactive'}
-                onChange={(e) => setEditedActive(e.target.value === 'active')}
+                value={editedActive ? "active" : "inactive"}
+                onChange={(e) => setEditedActive(e.target.value === "active")}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
             ) : (
-              <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
-                team.active
-                  ? 'bg-secondary-100 text-secondary-800'
-                  : 'bg-gray-100 text-gray-600'
-              }`}>
-                {team.active ? 'Active' : 'Inactive'}
+              <span
+                className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
+                  team.active
+                    ? "bg-secondary-100 text-secondary-800"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {team.active ? "Active" : "Inactive"}
               </span>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">Created</label>
+            <label className="block text-sm font-medium text-dark-300 mb-1">
+              Created
+            </label>
             <p className="text-lg font-semibold text-dark">
-              {new Date(team.created_at).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric'
+              {new Date(team.created_at).toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
               })}
             </p>
           </div>
@@ -253,7 +281,10 @@ const TeamDetailsPage: React.FC = () => {
         {team.captains_detail && team.captains_detail.length > 0 ? (
           <div className="space-y-3">
             {team.captains_detail.map((captain) => (
-              <div key={captain.id} className="flex items-center justify-between p-4 border border-cream-400 rounded-lg">
+              <div
+                key={captain.id}
+                className="flex items-center justify-between p-4 border border-cream-400 rounded-lg"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
                     <Users className="h-5 w-5 text-primary-600" />
@@ -266,7 +297,8 @@ const TeamDetailsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-sm text-dark-300">
-                  Appointed {new Date(captain.appointed_at).toLocaleDateString()}
+                  Appointed{" "}
+                  {new Date(captain.appointed_at).toLocaleDateString()}
                 </div>
               </div>
             ))}
@@ -284,11 +316,10 @@ const TeamDetailsPage: React.FC = () => {
           <h2 className="text-xl font-semibold text-dark">Team Roster</h2>
           <div className="flex items-center space-x-2">
             <span className="text-sm text-dark-300">
-              {roster?.length || 0} {roster?.length === 1 ? 'Player' : 'Players'}
+              {roster?.length || 0}{" "}
+              {roster?.length === 1 ? "Player" : "Players"}
             </span>
-            <button className="btn btn-primary btn-sm">
-              Add Player
-            </button>
+            <button className="btn btn-primary btn-sm">Add Player</button>
           </div>
         </div>
         {roster && roster.length > 0 ? (
@@ -296,11 +327,21 @@ const TeamDetailsPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Player</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Joined</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Player
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Email
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    Joined
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -310,7 +351,10 @@ const TeamDetailsPage: React.FC = () => {
                       <div className="flex items-center space-x-3">
                         <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
                           <span className="text-sm font-semibold text-primary-600">
-                            {membership.player_detail?.full_name?.split(' ').map(n => n[0]).join('')}
+                            {membership.player_detail?.full_name
+                              ?.split(" ")
+                              .map((n) => n[0])
+                              .join("")}
                           </span>
                         </div>
                         <div>
@@ -333,17 +377,21 @@ const TeamDetailsPage: React.FC = () => {
                       {new Date(membership.joined_at).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                        membership.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {membership.is_active ? 'Active' : 'Inactive'}
+                      <span
+                        className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                          membership.is_active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {membership.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => navigate(`/admin/players/${membership.player}`)}
+                        onClick={() =>
+                          navigate(`/admin/players/${membership.player}`)
+                        }
                         className="btn btn-outline btn-sm"
                       >
                         View Player
@@ -367,7 +415,7 @@ const TeamDetailsPage: React.FC = () => {
           <h2 className="text-xl font-semibold text-dark">Season History</h2>
           {seasons && (
             <span className="text-sm text-dark-300">
-              {seasons.length} {seasons.length === 1 ? 'Season' : 'Seasons'}
+              {seasons.length} {seasons.length === 1 ? "Season" : "Seasons"}
             </span>
           )}
         </div>
@@ -376,17 +424,31 @@ const TeamDetailsPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Season</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">League</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">W</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">L</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Win %</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Season
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    League
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    W
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    L
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    Win %
+                  </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
                     <Trophy className="h-3 w-3 inline mr-1" />
                     Place
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -395,7 +457,9 @@ const TeamDetailsPage: React.FC = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-dark-300" />
-                        <span className="font-medium text-dark">{participation.season_detail?.name}</span>
+                        <span className="font-medium text-dark">
+                          {participation.season_detail?.name}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-dark-300">
@@ -414,17 +478,21 @@ const TeamDetailsPage: React.FC = () => {
                       <span className="text-gray-400">-</span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                        participation.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {participation.is_active ? 'Active' : 'Completed'}
+                      <span
+                        className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                          participation.is_active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {participation.is_active ? "Active" : "Completed"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => navigate(`/admin/seasons/${participation.season}`)}
+                        onClick={() =>
+                          navigate(`/admin/seasons/${participation.season}`)
+                        }
                         className="btn btn-outline btn-sm"
                       >
                         View Season
@@ -437,7 +505,7 @@ const TeamDetailsPage: React.FC = () => {
           </div>
         ) : (
           <div className="text-center py-8 text-dark-300">
-            This team hasn't participated in any seasons yet.
+            This team hasn't completed in any seasons of record.
           </div>
         )}
       </div>
@@ -447,7 +515,9 @@ const TeamDetailsPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-dark">Manage Team Captains</h3>
+              <h3 className="text-lg font-semibold text-dark">
+                Manage Team Captains
+              </h3>
               <button
                 onClick={() => setShowCaptainModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -458,14 +528,16 @@ const TeamDetailsPage: React.FC = () => {
 
             <div className="p-6 overflow-y-auto flex-1">
               <p className="text-sm text-dark-300 mb-4">
-                Select team members to promote to captain. Captains can enter scores during matches and manage team settings.
+                Select team members to promote to captain. Captains can enter
+                scores during matches and manage team settings.
               </p>
 
               <div className="space-y-2">
                 {roster.map((membership) => {
-                  const isCaptain = team.captains_detail?.some(
-                    c => c.player === membership.player
-                  ) || false;
+                  const isCaptain =
+                    team.captains_detail?.some(
+                      (c) => c.player === membership.player
+                    ) || false;
 
                   return (
                     <div
@@ -475,7 +547,10 @@ const TeamDetailsPage: React.FC = () => {
                       <div className="flex items-center space-x-3">
                         <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
                           <span className="text-sm font-semibold text-primary-600">
-                            {membership.player_detail?.full_name?.split(' ').map(n => n[0]).join('')}
+                            {membership.player_detail?.full_name
+                              ?.split(" ")
+                              .map((n) => n[0])
+                              .join("")}
                           </span>
                         </div>
                         <div>
@@ -492,12 +567,17 @@ const TeamDetailsPage: React.FC = () => {
                         <input
                           type="checkbox"
                           checked={isCaptain}
-                          onChange={() => handleToggleCaptain(membership.player, isCaptain)}
-                          disabled={addCaptainMutation.isPending || removeCaptainMutation.isPending}
+                          onChange={() =>
+                            handleToggleCaptain(membership.player, isCaptain)
+                          }
+                          disabled={
+                            addCaptainMutation.isPending ||
+                            removeCaptainMutation.isPending
+                          }
                           className="h-5 w-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer"
                         />
                         <span className="ml-2 text-sm text-dark">
-                          {isCaptain ? 'Captain' : 'Make Captain'}
+                          {isCaptain ? "Captain" : "Make Captain"}
                         </span>
                       </label>
                     </div>
