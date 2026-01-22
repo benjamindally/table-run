@@ -43,20 +43,26 @@ const SeasonDetailsPage: React.FC = () => {
   // Determine if user is a league operator
   const isLeagueOperator = (myLeaguesData?.results?.length ?? 0) > 0;
 
-  // Determine if user can edit matches (league operator OR team captain)
-  const canEditMatches = useMemo(() => {
-    if (!player) return false;
-    if (isLeagueOperator) return true;
+  // Get user's team IDs for permission checks
+  const userTeamIds = useMemo(() => {
+    return currentTeams?.map(team => team.id) || [];
+  }, [currentTeams]);
 
-    // Check if user is captain of any team in this season
-    if (!currentTeams || !teams) return false;
+  // Determine if user can edit a specific match
+  // - League operators can edit any match
+  // - Captains can only edit non-completed matches involving their team
+  const canEditMatch = useMemo(() => {
+    return (match: Match): boolean => {
+      if (!player) return false;
+      if (isLeagueOperator) return true;
 
-    const userTeamIds = currentTeams.map(team => team.id);
-    const seasonTeamIds = teams.map(team => team.team);
+      // Captains cannot edit completed matches
+      if (match.status === 'completed') return false;
 
-    // User can edit if they have at least one team in this season
-    return userTeamIds.some(id => seasonTeamIds.includes(id));
-  }, [player, isLeagueOperator, currentTeams, teams]);
+      // Check if user's team is involved in this match
+      return userTeamIds.includes(match.home_team) || userTeamIds.includes(match.away_team);
+    };
+  }, [player, isLeagueOperator, userTeamIds]);
 
   const openEditMatchModal = (match: Match) => {
     setMatchToEdit(match);
@@ -138,8 +144,11 @@ const SeasonDetailsPage: React.FC = () => {
       {/* Matches Section - Editable based on authorization */}
       <SeasonMatches
         matches={matches}
-        editable={canEditMatches}
-        onEditMatch={canEditMatches ? openEditMatchModal : undefined}
+        editable={canEditMatch}
+        onEditMatch={openEditMatchModal}
+        isUserTeamMatch={(match) =>
+          userTeamIds.includes(match.home_team) || userTeamIds.includes(match.away_team)
+        }
       />
 
       {/* Player Analytics Section - Read Only */}
@@ -170,6 +179,13 @@ const SeasonDetailsPage: React.FC = () => {
             <div className="p-6">
               <MatchForm
                 match={matchToEdit}
+                userTeamSide={
+                  userTeamIds.includes(matchToEdit.home_team)
+                    ? "home"
+                    : userTeamIds.includes(matchToEdit.away_team)
+                    ? "away"
+                    : null
+                }
                 onSuccess={handleMatchFormSuccess}
                 onCancel={handleMatchFormCancel}
                 showCancelButton={true}

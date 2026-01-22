@@ -57,18 +57,10 @@ const Footer: React.FC = () => {
               </li>
               <li>
                 <Link
-                  to="/register"
+                  to="/leagues"
                   className="text-cream hover:text-primary transition-colors"
                 >
-                  Register Team
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/match-score"
-                  className="text-cream hover:text-primary transition-colors"
-                >
-                  Submit Scores
+                  Leagues
                 </Link>
               </li>
               <li>
@@ -77,6 +69,14 @@ const Footer: React.FC = () => {
                   className="text-cream hover:text-primary transition-colors"
                 >
                   Login
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/signup"
+                  className="text-cream hover:text-primary transition-colors"
+                >
+                  Sign Up
                 </Link>
               </li>
             </ul>

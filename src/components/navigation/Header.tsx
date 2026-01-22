@@ -81,7 +81,7 @@ const Header: React.FC = () => {
                   to="/admin/dashboard"
                   className="hover:text-primary-300 transition-colors"
                 >
-                  Admin
+                  Dashboard
                 </Link>
                 <button
                   onClick={logout}
@@ -170,7 +170,7 @@ const Header: React.FC = () => {
                   className="block py-2 hover:text-primary-300 transition-colors"
                   onClick={toggleMenu}
                 >
-                  Admin
+                  Dashboard
                 </Link>
                 <button
                   onClick={() => {

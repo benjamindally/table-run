@@ -1,3 +1,20 @@
+/**
+ * SeasonDetailsPage - Admin page for viewing and managing a single season
+ *
+ * This page displays comprehensive season information including:
+ * - Season overview (name, dates, status)
+ * - Team standings
+ * - Teams participating in the season
+ * - Match schedule and results
+ * - Player analytics
+ *
+ * It also provides functionality to:
+ * - Edit season details (name, dates)
+ * - Import season data via CSV files
+ * - Import match schedules
+ * - Edit individual match details
+ */
+
 import React, { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Upload, X } from "lucide-react";
@@ -22,19 +39,35 @@ import MatchForm from "../../components/matches/MatchForm";
 import type { Match } from "../../api/types";
 
 const SeasonDetailsPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  // ============================================================================
+  // ROUTING & NAVIGATION
+  // ============================================================================
+  const { id } = useParams<{ id: string }>(); // Get season ID from URL params
   const navigate = useNavigate();
   const seasonId = parseInt(id || "0");
 
-  const { data: season, isLoading, error } = useSeason(seasonId);
-  const { data: teams } = useSeasonTeams(seasonId);
-  const { data: matches } = useSeasonMatches(seasonId);
-  const { data: standings } = useSeasonStandings(seasonId);
-  const { data: playersData } = useSeasonPlayers(seasonId);
-  const importCSVMutation = useImportSeasonCSV();
-  const importScheduleMutation = useImportSchedule();
-  const updateSeasonMutation = useUpdateSeason();
+  // ============================================================================
+  // DATA FETCHING HOOKS
+  // Fetches all season-related data from the API using React Query hooks
+  // ============================================================================
+  const { data: season, isLoading, error } = useSeason(seasonId); // Core season info
+  const { data: teams } = useSeasonTeams(seasonId); // Teams in this season
+  const { data: matches } = useSeasonMatches(seasonId); // All matches for season
+  const { data: standings } = useSeasonStandings(seasonId); // Team standings/rankings
+  const { data: playersData } = useSeasonPlayers(seasonId); // Player stats for season
 
+  // ============================================================================
+  // MUTATION HOOKS
+  // Handles data modifications (imports, updates)
+  // ============================================================================
+  const importCSVMutation = useImportSeasonCSV(); // Import team/individual/weekly standings
+  const importScheduleMutation = useImportSchedule(); // Import match schedule
+  const updateSeasonMutation = useUpdateSeason(); // Update season details
+
+  // ============================================================================
+  // CSV IMPORT MODAL STATE
+  // For importing team standings, individual standings, and weekly standings
+  // ============================================================================
   const [teamStandingsFile, setTeamStandingsFile] = useState<File | null>(null);
   const [individualStandingsFile, setIndividualStandingsFile] =
     useState<File | null>(null);
@@ -43,17 +76,26 @@ const SeasonDetailsPage: React.FC = () => {
   );
   const [showUploadModal, setShowUploadModal] = useState(false);
 
-  // Schedule import state
+  // ============================================================================
+  // SCHEDULE IMPORT MODAL STATE
+  // For importing match schedules with a separate schedule + standings file
+  // ============================================================================
   const [scheduleFile, setScheduleFile] = useState<File | null>(null);
   const [scheduleStandingsFile, setScheduleStandingsFile] =
     useState<File | null>(null);
   const [showScheduleImportModal, setShowScheduleImportModal] = useState(false);
 
-  // Edit match modal state
+  // ============================================================================
+  // EDIT MATCH MODAL STATE
+  // For editing individual match details (scores, players, etc.)
+  // ============================================================================
   const [showEditMatchModal, setShowEditMatchModal] = useState(false);
   const [matchToEdit, setMatchToEdit] = useState<Match | null>(null);
 
-  // Edit season modal state
+  // ============================================================================
+  // EDIT SEASON MODAL STATE
+  // For editing season name, dates, and viewing status
+  // ============================================================================
   const [showEditSeasonModal, setShowEditSeasonModal] = useState(false);
   const [seasonFormData, setSeasonFormData] = useState({
     name: "",
@@ -63,13 +105,24 @@ const SeasonDetailsPage: React.FC = () => {
     is_archived: false,
   });
 
-
+  // ============================================================================
+  // FILE INPUT REFS
+  // References to file inputs (currently unused but available for programmatic access)
+  // ============================================================================
   const teamStandingsInputRef = useRef<HTMLInputElement>(null);
   const individualStandingsInputRef = useRef<HTMLInputElement>(null);
   const weeklyStandingsInputRef = useRef<HTMLInputElement>(null);
   const scheduleInputRef = useRef<HTMLInputElement>(null);
   const scheduleStandingsInputRef = useRef<HTMLInputElement>(null);
 
+  // ============================================================================
+  // HANDLER FUNCTIONS
+  // ============================================================================
+
+  /**
+   * Handles importing schedule and match results from CSV files
+   * Requires both schedule worksheet and standings worksheet files
+   */
   const handleImportSchedule = async () => {
     if (!scheduleFile || !scheduleStandingsFile) {
       toast.error("Please select both CSV files");
@@ -85,6 +138,7 @@ const SeasonDetailsPage: React.FC = () => {
         },
       });
       toast.success("Schedule and match results imported successfully!");
+      // Reset modal and file state on success
       setShowScheduleImportModal(false);
       setScheduleFile(null);
       setScheduleStandingsFile(null);
@@ -96,23 +150,36 @@ const SeasonDetailsPage: React.FC = () => {
     }
   };
 
+  /**
+   * Opens the edit match modal with the selected match data
+   */
   const openEditMatchModal = (match: Match) => {
     setMatchToEdit(match);
     setShowEditMatchModal(true);
   };
 
+  /**
+   * Callback when match form is successfully submitted - closes modal and clears state
+   */
   const handleMatchFormSuccess = () => {
     setShowEditMatchModal(false);
     setMatchToEdit(null);
   };
 
+  /**
+   * Callback when match form is cancelled - closes modal and clears state
+   */
   const handleMatchFormCancel = () => {
     setShowEditMatchModal(false);
     setMatchToEdit(null);
   };
 
+  /**
+   * Opens the edit season modal and populates form with current season data
+   */
   const openEditSeasonModal = () => {
     if (!season) return;
+    // Pre-populate form with existing season data
     setSeasonFormData({
       name: season.name,
       start_date: season.start_date,
@@ -123,6 +190,10 @@ const SeasonDetailsPage: React.FC = () => {
     setShowEditSeasonModal(true);
   };
 
+  /**
+   * Generic handler for season form field changes
+   * Updates the corresponding field in seasonFormData state
+   */
   const handleSeasonFormChange = (
     field: keyof typeof seasonFormData,
     value: string | boolean
@@ -133,6 +204,9 @@ const SeasonDetailsPage: React.FC = () => {
     }));
   };
 
+  /**
+   * Saves the edited season data to the API
+   */
   const saveSeasonEdit = async () => {
     try {
       await updateSeasonMutation.mutateAsync({
@@ -148,7 +222,17 @@ const SeasonDetailsPage: React.FC = () => {
     }
   };
 
+  /**
+   * Handles importing season data from three CSV files:
+   * - Team standings (team rankings, wins/losses)
+   * - Individual standings (player stats)
+   * - Weekly standings (per-week breakdowns)
+   *
+   * Note: The `files` object built incrementally below is unused -
+   * the actual mutation uses the three files directly
+   */
   const handleImportCSV = async () => {
+    // Validate all three files are selected
     if (
       !teamStandingsFile ||
       !individualStandingsFile ||
@@ -158,6 +242,8 @@ const SeasonDetailsPage: React.FC = () => {
       return;
     }
 
+    // Note: This files object construction is redundant - could be removed
+    // The mutation below constructs its own object with all three files
     let files = {};
 
     if (teamStandingsFile) {
@@ -181,6 +267,7 @@ const SeasonDetailsPage: React.FC = () => {
         },
       });
       toast.success("CSV files imported successfully!");
+      // Reset modal and file state on success
       setShowUploadModal(false);
       setTeamStandingsFile(null);
       setIndividualStandingsFile(null);
@@ -193,6 +280,9 @@ const SeasonDetailsPage: React.FC = () => {
     }
   };
 
+  // ============================================================================
+  // RENDER: LOADING STATE
+  // ============================================================================
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -203,6 +293,9 @@ const SeasonDetailsPage: React.FC = () => {
     );
   }
 
+  // ============================================================================
+  // RENDER: ERROR STATE
+  // ============================================================================
   if (error || !season) {
     return (
       <div className="space-y-6">
@@ -213,9 +306,15 @@ const SeasonDetailsPage: React.FC = () => {
     );
   }
 
+  // ============================================================================
+  // RENDER: MAIN CONTENT
+  // ============================================================================
   return (
     <div className="space-y-6">
-      {/* Header with Back Button */}
+      {/* =====================================================================
+          HEADER SECTION
+          Contains back navigation button, season name, and league name
+          ===================================================================== */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
@@ -234,7 +333,10 @@ const SeasonDetailsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Overview Section */}
+      {/* =====================================================================
+          SEASON OVERVIEW SECTION
+          Displays season info card with edit, archive, and import buttons
+          ===================================================================== */}
       <SeasonOverview
         season={season}
         editable={true}
@@ -245,13 +347,19 @@ const SeasonDetailsPage: React.FC = () => {
         onImportCSV={() => setShowUploadModal(true)}
       />
 
-      {/* Standings Section */}
+      {/* =====================================================================
+          STANDINGS SECTION
+          Shows team rankings table with W/L records
+          ===================================================================== */}
       <SeasonStandings
         standings={standings}
-        onViewTeam={(teamId) => navigate(`/team/${teamId}/stats`)}
+        onViewTeam={(teamId) => navigate(`/admin/teams/${teamId}`)}
       />
 
-      {/* Teams Section */}
+      {/* =====================================================================
+          TEAMS SECTION
+          Lists all teams participating in this season
+          ===================================================================== */}
       <SeasonTeams
         teams={teams}
         editable={true}
@@ -261,7 +369,10 @@ const SeasonDetailsPage: React.FC = () => {
         onViewTeam={(teamId) => navigate(`/admin/teams/${teamId}`)}
       />
 
-      {/* Matches Section */}
+      {/* =====================================================================
+          MATCHES SECTION
+          Shows all matches for the season with edit/import capabilities
+          ===================================================================== */}
       <SeasonMatches
         matches={matches}
         editable={true}
@@ -272,13 +383,22 @@ const SeasonDetailsPage: React.FC = () => {
         onEditMatch={openEditMatchModal}
       />
 
-      {/* Player Analytics Section */}
+      {/* =====================================================================
+          PLAYER ANALYTICS SECTION
+          Shows individual player statistics for the season
+          ===================================================================== */}
       <SeasonPlayerAnalytics
         playersData={playersData}
         onViewPlayer={(playerId) => navigate(`/admin/players/${playerId}`)}
       />
 
-      {/* CSV Upload Modal */}
+      {/* =====================================================================
+          MODAL: CSV UPLOAD
+          Allows importing three CSV files to populate season data:
+          1. Team Standings - team rankings and W/L records
+          2. Individual Standings - player statistics
+          3. Weekly Standings - per-week breakdowns
+          ===================================================================== */}
       <Modal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
@@ -292,7 +412,7 @@ const SeasonDetailsPage: React.FC = () => {
             players, and weekly statistics.
           </p>
 
-          {/* Team Standings File */}
+          {/* File Input: Team Standings */}
           <div>
             <label className="block text-sm font-medium text-dark mb-2">
               Team Standings CSV
@@ -319,7 +439,7 @@ const SeasonDetailsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Individual Standings File */}
+          {/* File Input: Individual Standings */}
           <div>
             <label className="block text-sm font-medium text-dark mb-2">
               Individual Standings CSV
@@ -346,7 +466,7 @@ const SeasonDetailsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Weekly Standings File */}
+          {/* File Input: Weekly Standings */}
           <div>
             <label className="block text-sm font-medium text-dark mb-2">
               Weekly Standings Worksheet CSV
@@ -373,7 +493,7 @@ const SeasonDetailsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Action Buttons */}
+          {/* Modal Action Buttons */}
           <div className="flex justify-end space-x-3 pt-4">
             <button
               onClick={() => setShowUploadModal(false)}
@@ -408,7 +528,13 @@ const SeasonDetailsPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Schedule Import Modal */}
+      {/* =====================================================================
+          MODAL: SCHEDULE IMPORT
+          Allows importing match schedule and results from two CSV files:
+          1. Schedule Worksheet - defines weekly matchups (who plays whom)
+          2. Standings Worksheet - contains actual game results/scores
+          Both are required to create complete match records
+          ===================================================================== */}
       <Modal
         isOpen={showScheduleImportModal}
         onClose={() => setShowScheduleImportModal(false)}
@@ -422,7 +548,7 @@ const SeasonDetailsPage: React.FC = () => {
             records with scores and player statistics.
           </p>
 
-          {/* Schedule File */}
+          {/* File Input: Schedule Worksheet (weekly matchups) */}
           <div>
             <label className="block text-sm font-medium text-dark mb-2">
               Schedule Worksheet CSV
@@ -447,7 +573,7 @@ const SeasonDetailsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Standings File */}
+          {/* File Input: Standings Worksheet (game results) */}
           <div>
             <label className="block text-sm font-medium text-dark mb-2">
               Standings Worksheet CSV
@@ -474,7 +600,7 @@ const SeasonDetailsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Info Box */}
+          {/* Info Box explaining the two-file requirement */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-800">
               <strong>Note:</strong> The schedule worksheet defines matchups by
@@ -483,7 +609,7 @@ const SeasonDetailsPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Action Buttons */}
+          {/* Modal Action Buttons */}
           <div className="flex justify-end space-x-3 pt-4">
             <button
               onClick={() => setShowScheduleImportModal(false)}
@@ -517,17 +643,29 @@ const SeasonDetailsPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Edit Match Modal */}
+      {/* =====================================================================
+          MODAL: EDIT MATCH
+          Custom modal (not using Modal component) for editing match details
+          Uses the MatchForm component which handles:
+          - Match date/time
+          - Venue
+          - Scores
+          - Player lineups and individual game results
+          ===================================================================== */}
       {showEditMatchModal && matchToEdit && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-cream-200 rounded-lg max-w-4xl w-full shadow-xl max-h-[95vh] overflow-y-auto my-4">
+            {/* Sticky header with match info */}
             <div className="sticky top-0 bg-primary text-white p-4 rounded-t-lg z-10 shadow-md">
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-medium">Edit Match</h3>
                   <p className="text-sm text-cream-200 mt-1">
-                    {matchToEdit.home_team_detail?.name || `Team ${matchToEdit.home_team}`} vs{" "}
-                    {matchToEdit.away_team_detail?.name || `Team ${matchToEdit.away_team}`}
+                    {matchToEdit.home_team_detail?.name ||
+                      `Team ${matchToEdit.home_team}`}{" "}
+                    vs{" "}
+                    {matchToEdit.away_team_detail?.name ||
+                      `Team ${matchToEdit.away_team}`}
                   </p>
                 </div>
                 <button
@@ -539,6 +677,7 @@ const SeasonDetailsPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Match form body */}
             <div className="p-6">
               <MatchForm
                 match={matchToEdit}
@@ -551,10 +690,19 @@ const SeasonDetailsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Season Modal */}
+      {/* =====================================================================
+          MODAL: EDIT SEASON
+          Custom modal for editing basic season information:
+          - Season name
+          - Start and end dates
+          - Status display (read-only - Active/Archived/Inactive)
+
+          Note: Status cannot be directly edited here - use archive functionality
+          ===================================================================== */}
       {showEditSeasonModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl">
+            {/* Modal Header */}
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-medium">Edit Season</h3>
               <button
@@ -565,8 +713,9 @@ const SeasonDetailsPage: React.FC = () => {
               </button>
             </div>
 
+            {/* Form Fields */}
             <div className="space-y-4 mb-6">
-              {/* Season Name */}
+              {/* Field: Season Name */}
               <div>
                 <label
                   htmlFor="season-name"
@@ -585,7 +734,7 @@ const SeasonDetailsPage: React.FC = () => {
                 />
               </div>
 
-              {/* Dates */}
+              {/* Fields: Start Date and End Date (side by side) */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label
@@ -624,7 +773,7 @@ const SeasonDetailsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Status Display (Read-only) */}
+              {/* Display: Season Status (read-only badge) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Season Status
@@ -647,6 +796,7 @@ const SeasonDetailsPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Modal Action Buttons */}
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowEditSeasonModal(false)}
