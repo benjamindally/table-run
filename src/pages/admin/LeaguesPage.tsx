@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Building2,
-  MapPin,
-  Calendar,
-  Plus,
-  ArrowRight,
-} from "lucide-react";
+import { Building2, MapPin, Calendar, Plus, ArrowRight } from "lucide-react";
 import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import CreateSeasonModal from "../../components/CreateSeasonModal";
 import CreateLeagueModal from "../../components/CreateLeagueModal";
@@ -32,9 +26,7 @@ const LeaguesPage: React.FC = () => {
   const [showCreateLeagueModal, setShowCreateLeagueModal] = useState(false);
 
   // Show only the 3 most recent leagues by default
-  const displayedLeagues = showAllLeagues
-    ? leagues
-    : leagues.slice(0, 3);
+  const displayedLeagues = showAllLeagues ? leagues : leagues.slice(0, 3);
   const hasMoreLeagues = leagues.length > 3;
 
   // Show only the 3 most recent seasons by default
@@ -44,9 +36,7 @@ const LeaguesPage: React.FC = () => {
   // Auto-expand if selected league/season is outside the initial slice
   useEffect(() => {
     if (currentLeagueId && leagues.length > 3) {
-      const selectedIndex = leagues.findIndex(
-        (l) => l.id === currentLeagueId
-      );
+      const selectedIndex = leagues.findIndex((l) => l.id === currentLeagueId);
       if (selectedIndex >= 3) {
         setShowAllLeagues(true);
       }
@@ -195,7 +185,7 @@ const LeaguesPage: React.FC = () => {
       )}
 
       {/* Seasons Section */}
-      {leagues.length > 0 && (
+      {/* {leagues.length > 0 && (
         <>
           <div className="pt-6 border-t">
             <h2 className="text-xl font-bold text-dark mb-4">Seasons</h2>
@@ -277,7 +267,6 @@ const LeaguesPage: React.FC = () => {
                 ))}
               </div>
 
-              {/* View More Seasons Button */}
               {hasMoreSeasons && !showAllSeasons && (
                 <div className="flex justify-center">
                   <button
@@ -299,7 +288,7 @@ const LeaguesPage: React.FC = () => {
             </div>
           )}
         </>
-      )}
+      )} */}
 
       {/* Create League Modal */}
       <CreateLeagueModal

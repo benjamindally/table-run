@@ -1,20 +1,119 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { Users, Plus, UserPlus, Building2, Megaphone } from "lucide-react";
-import { useMe } from "../../hooks/useMe";
+import React, { useState, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Users,
+  Plus,
+  UserPlus,
+  Building2,
+  Megaphone,
+  ChevronDown,
+  ChevronRight,
+  Calendar,
+  ArrowRight,
+} from "lucide-react";
+import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
+import { useSeasonMatches } from "../../hooks/useSeasons";
+import { MeSeason } from "../../api/me";
 import CreateLeagueModal from "../../components/CreateLeagueModal";
 import CreateAnnouncementModal from "../../components/CreateAnnouncementModal";
+import NextMatchCard from "../../components/NextMatchCard";
+
+// Component for the Next Match and View Matches cards (uses React Query hook)
+interface CurrentSeasonCardsProps {
+  season: MeSeason;
+  leagueId: number;
+  userTeamIds: number[];
+  setLeagueAndSeason: (leagueId: number, seasonId: number) => void;
+}
+
+const CurrentSeasonCards: React.FC<CurrentSeasonCardsProps> = ({
+  season,
+  leagueId,
+  userTeamIds,
+  setLeagueAndSeason,
+}) => {
+  const { data: matches, isLoading } = useSeasonMatches(season.id);
+
+  return (
+    <>
+      {/* Next Match Card */}
+      <NextMatchCard
+        matches={matches}
+        userTeamIds={userTeamIds}
+        isLoading={isLoading}
+      />
+
+      {/* View Matches Card */}
+      <div className="bg-white rounded-lg p-4 border hover:shadow-md transition-shadow flex flex-col justify-between">
+        <div>
+          <h4 className="font-semibold text-dark mb-2">Season Schedule</h4>
+          <p className="text-sm text-dark-300 mb-4">
+            View all matches for this season
+          </p>
+        </div>
+        <Link
+          to="/admin/matches"
+          onClick={(e) => {
+            e.stopPropagation();
+            setLeagueAndSeason(leagueId, season.id);
+          }}
+          className="btn btn-primary btn-sm flex items-center justify-center"
+        >
+          View All Matches
+          <ArrowRight className="h-4 w-4 ml-1" />
+        </Link>
+      </div>
+    </>
+  );
+};
 
 const DashboardPage: React.FC = () => {
-  const { data: meData, isLoading } = useMe();
-  const leagues = meData?.leagues || [];
+  const navigate = useNavigate();
+  const { leagues, seasons, teams, isLoading, setLeagueAndSeason } =
+    useLeagueSeason();
   const hasLeagues = leagues.length > 0;
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [expandedLeagueId, setExpandedLeagueId] = useState<number | null>(null);
   const [selectedLeague, setSelectedLeague] = useState<{
     id: number;
     name: string;
   } | null>(null);
+
+  // Memoize user's team IDs
+  const userTeamIds = useMemo(() => teams.map((t) => t.id), [teams]);
+
+  // Memoize seasons grouped by league
+  const seasonsByLeague = useMemo(() => {
+    const grouped: Record<number, MeSeason[]> = {};
+    for (const season of seasons) {
+      if (!grouped[season.league_id]) {
+        grouped[season.league_id] = [];
+      }
+      grouped[season.league_id].push(season);
+    }
+    // Sort each league's seasons by start_date descending
+    for (const leagueId in grouped) {
+      grouped[leagueId].sort(
+        (a, b) =>
+          new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+      );
+    }
+    return grouped;
+  }, [seasons]);
+
+  const getSeasonsForLeague = (leagueId: number) => {
+    return seasonsByLeague[leagueId] || [];
+  };
+
+  const toggleLeagueExpand = (leagueId: number) => {
+    setExpandedLeagueId(expandedLeagueId === leagueId ? null : leagueId);
+  };
+
+  const handleSeasonClick = (leagueId: number, seasonId: number) => {
+    setLeagueAndSeason(leagueId, seasonId);
+    navigate(`/admin/seasons/${seasonId}`);
+  };
 
   const handleAnnouncementClick = (leagueId: number, leagueName: string) => {
     setSelectedLeague({ id: leagueId, name: leagueName });
@@ -122,61 +221,158 @@ const DashboardPage: React.FC = () => {
           Your Leagues ({leagues.length})
         </h2>
         <div className="space-y-3">
-          {leagues.map((league) => (
-            <div
-              key={league.id}
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="bg-primary-100 p-2 rounded-lg">
-                  <Building2 className="h-5 w-5 text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-dark">
-                    {league.name}
-                    {league.is_operator && (
-                      <span className="ml-2 text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">
-                        Operator
-                      </span>
-                    )}
-                  </h3>
-                  <p className="text-sm text-dark-300">
-                    {league.city}, {league.state}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                {league.is_operator && (
-                  <button
-                    onClick={() =>
-                      handleAnnouncementClick(league.id, league.name)
-                    }
-                    className="btn btn-secondary btn-sm flex items-center"
-                    title="Send announcement to all league members"
-                  >
-                    <Megaphone className="h-4 w-4 mr-1" />
-                    Announce
-                  </button>
-                )}
-                {league.is_operator && (
-                  <Link to="/admin/leagues" className="btn btn-outline btn-sm">
-                    Manage
-                  </Link>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+          {leagues.map((league) => {
+            const leagueSeasons = getSeasonsForLeague(league.id);
+            const isExpanded = expandedLeagueId === league.id;
 
-      {/* Coming soon placeholder */}
-      <div className="bg-cream-200 rounded-lg p-8 text-center">
-        <h3 className="font-semibold text-dark mb-2">
-          Dashboard Analytics Coming Soon
-        </h3>
-        <p className="text-sm text-dark-300">
-          Real-time stats, match results, and league insights will appear here.
-        </p>
+            return (
+              <div
+                key={league.id}
+                className="border rounded-lg overflow-hidden"
+              >
+                {/* League Header - Clickable to expand */}
+                <div
+                  onClick={() => toggleLeagueExpand(league.id)}
+                  className="flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-primary-100 p-2 rounded-lg">
+                      <Building2 className="h-5 w-5 text-primary-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-dark">
+                        {league.name}
+                        {league.is_operator && (
+                          <span className="ml-2 text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">
+                            Operator
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-sm text-dark-300">
+                        {league.city}, {league.state}
+                        {leagueSeasons.length > 0 && (
+                          <span className="ml-2 text-dark-400">
+                            · {leagueSeasons.length} season
+                            {leagueSeasons.length !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {league.is_operator && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAnnouncementClick(league.id, league.name);
+                        }}
+                        className="btn btn-secondary btn-sm flex items-center"
+                        title="Send announcement to all league members"
+                      >
+                        <Megaphone className="h-4 w-4 mr-1" />
+                        Announce
+                      </button>
+                    )}
+                    {league.is_operator && (
+                      <Link
+                        to="/admin/leagues"
+                        onClick={(e) => e.stopPropagation()}
+                        className="btn btn-outline btn-sm"
+                      >
+                        Manage
+                      </Link>
+                    )}
+                    {isExpanded ? (
+                      <ChevronDown className="h-5 w-5 text-dark-300" />
+                    ) : (
+                      <ChevronRight className="h-5 w-5 text-dark-300" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Expanded Seasons Section */}
+                {isExpanded && (
+                  <div className="border-t bg-gray-50 p-4">
+                    {leagueSeasons.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {leagueSeasons.map((season, index) => {
+                          const isCurrentSeason = index === 0;
+
+                          return (
+                            <React.Fragment key={season.id}>
+                              {/* Season Card */}
+                              <div
+                                onClick={() =>
+                                  handleSeasonClick(league.id, season.id)
+                                }
+                                className={`bg-white rounded-lg p-4 border hover:shadow-md transition-shadow cursor-pointer ${
+                                  isCurrentSeason
+                                    ? "ring-2 ring-primary-200"
+                                    : ""
+                                }`}
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <h4 className="font-semibold text-dark">
+                                    {season.name}
+                                    {isCurrentSeason && (
+                                      <span className="ml-2 text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">
+                                        Current
+                                      </span>
+                                    )}
+                                  </h4>
+                                  <span
+                                    className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                      season.is_active
+                                        ? "bg-secondary-100 text-secondary-800"
+                                        : "bg-gray-100 text-gray-600"
+                                    }`}
+                                  >
+                                    {season.is_active ? "Active" : "Inactive"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center text-sm text-dark-300">
+                                  <Calendar className="h-4 w-4 mr-1" />
+                                  <span>
+                                    {new Date(
+                                      season.start_date
+                                    ).toLocaleDateString()}
+                                    {season.end_date && (
+                                      <>
+                                        {" "}
+                                        -{" "}
+                                        {new Date(
+                                          season.end_date
+                                        ).toLocaleDateString()}
+                                      </>
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Current Season Cards (Next Match + View Matches) */}
+                              {isCurrentSeason && (
+                                <CurrentSeasonCards
+                                  season={season}
+                                  leagueId={league.id}
+                                  userTeamIds={userTeamIds}
+                                  setLeagueAndSeason={setLeagueAndSeason}
+                                />
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-dark-300 text-center py-2">
+                        No seasons found for this league.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Create League Modal */}

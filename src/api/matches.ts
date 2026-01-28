@@ -3,7 +3,7 @@
  */
 
 import { api } from './client';
-import { Match, PaginatedResponse, MatchScoreSubmission } from './types';
+import { Match, PaginatedResponse, MatchScoreSubmission, MatchLineupResponse } from './types';
 
 export const matchesApi = {
   /**
@@ -41,4 +41,30 @@ export const matchesApi = {
    */
   submitMatch: (data: any, token?: string) =>
     api.post<Match>('/matches/submit_match/', data, token),
+
+  /**
+   * Submit team lineup (captain only)
+   * Away team submits first (creates games), home team submits second (updates games)
+   */
+  submitLineup: (
+    matchId: number,
+    data: {
+      games: Array<{ game_number: number; player_id: number }>;
+      team_side?: 'home' | 'away'; // Only needed if captain of both teams
+    },
+    token?: string
+  ) => api.post<Match>(`/matches/${matchId}/submit-lineup/`, data, token),
+
+  /**
+   * Start the match (home captain only)
+   */
+  startMatch: (matchId: number, token?: string) =>
+    api.post<Match>(`/matches/${matchId}/start-match/`, {}, token),
+
+  /**
+   * Get lineup data for a match (captains and league operators)
+   * Used by home team to see away lineup before setting their own
+   */
+  getLineup: (matchId: number, token?: string) =>
+    api.get<MatchLineupResponse>(`/matches/${matchId}/lineup/`, token),
 };
