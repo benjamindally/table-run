@@ -43,6 +43,7 @@ import AdminTeamDetailsPage from "./pages/admin/TeamDetailsPage";
 import AdminPlayerDetailsPage from "./pages/admin/PlayerDetailsPage";
 import AdminPlayersPage from "./pages/admin/AdminPlayersPage";
 import AdminMatchScorePage from "./pages/admin/MatchScorePage";
+import AdminProfilePage from "./pages/admin/ProfilePage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
@@ -102,6 +103,7 @@ function App() {
             <Route path="leagues/:id" element={<AdminLeagueDetailsPage />} />
             <Route path="seasons" element={<AdminSeasonsPage />} />
             <Route path="seasons/:id" element={<AdminSeasonDetailsPage />} />
+            <Route path="profile" element={<AdminProfilePage />} />
           </Route>
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} />

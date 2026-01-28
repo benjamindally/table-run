@@ -125,13 +125,13 @@ const AdminHeader: React.FC = () => {
                 >
                   Your Profile
                 </Link>
-                <Link
+                {/* <Link
                   to="/admin/settings"
                   className="block px-4 py-2 text-sm text-dark hover:bg-cream-200"
                   onClick={() => setIsProfileOpen(false)}
                 >
                   Settings
-                </Link>
+                </Link> */}
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left px-4 py-2 text-sm text-dark hover:bg-cream-200"
