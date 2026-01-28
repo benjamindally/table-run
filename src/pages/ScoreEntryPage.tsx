@@ -59,16 +59,9 @@ const ScoreEntryPage: React.FC = () => {
 
   // Get games count from league settings
   const gamesCount = useMemo(() => {
-    if (!season) return null;
-
-    // Try to get from league settings
-    // Note: league_detail should include sets_per_match and games_per_set
-    const league = season.league_detail as { sets_per_match?: number; games_per_set?: number } | undefined;
-    if (league?.sets_per_match && league?.games_per_set) {
-      return league.sets_per_match * league.games_per_set;
-    }
-
-    return null;
+    const league = season?.league_detail;
+    if (!league?.sets_per_match || !league?.games_per_set) return null;
+    return league.sets_per_match * league.games_per_set;
   }, [season]);
 
   // WebSocket connection (only enable if we have valid game configuration)

@@ -42,6 +42,7 @@ import AdminSeasonDetailsPage from "./pages/admin/SeasonDetailsPage";
 import AdminTeamDetailsPage from "./pages/admin/TeamDetailsPage";
 import AdminPlayerDetailsPage from "./pages/admin/PlayerDetailsPage";
 import AdminPlayersPage from "./pages/admin/AdminPlayersPage";
+import AdminMatchScorePage from "./pages/admin/MatchScorePage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
@@ -96,6 +97,7 @@ function App() {
             <Route path="players" element={<AdminPlayersPage />} />
             <Route path="players/:id" element={<AdminPlayerDetailsPage />} />
             <Route path="matches" element={<AdminMatchesPage />} />
+            <Route path="matches/:matchId/score" element={<AdminMatchScorePage />} />
             <Route path="leagues" element={<AdminLeaguesPage />} />
             <Route path="leagues/:id" element={<AdminLeagueDetailsPage />} />
             <Route path="seasons" element={<AdminSeasonsPage />} />

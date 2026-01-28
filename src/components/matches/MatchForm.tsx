@@ -3,15 +3,33 @@
  * Uses MatchScoringContext and WebSocket for real-time updates between captains
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useTeamRoster } from "../../hooks/useTeams";
 import { matchesApi } from "../../api";
 import { toast } from "react-toastify";
-import { Calendar, MapPin, Check, ChevronDown, ChevronUp, Wifi, WifiOff, AlertCircle } from "lucide-react";
-import type { Match } from "../../api/types";
+import {
+  Calendar,
+  MapPin,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Wifi,
+  WifiOff,
+  AlertCircle,
+  Clock,
+  Users,
+} from "lucide-react";
+import type { Match, LineupState } from "../../api/types";
 import { formatLocalDate } from "../../utils/dateUtils";
 import { useMatchScoring } from "../../contexts/MatchScoringContext";
 import { useMatchWebSocket } from "../../hooks/useMatchWebSocket";
+import { useAuth } from "../../contexts/AuthContext";
 import type { IncomingMessage, TeamSide } from "../../types/websocket";
 
 interface MatchFormProps {
@@ -39,21 +57,45 @@ const MatchForm: React.FC<MatchFormProps> = ({
     toggleAwayAttendance,
     updateGame,
     setSubmittedBy,
+    setLineupState,
     homeScore,
     awayScore,
     presentHomePlayers,
     presentAwayPlayers,
+    isAwayLineupComplete,
+    isHomeLineupComplete,
   } = useMatchScoring();
 
-  // Local UI state
-  const [attendanceCollapsed, setAttendanceCollapsed] = useState(false);
+  // Get auth token for API calls
+  const { getAuthToken } = useAuth();
+
+  // Local UI state - attendance collapsed by default when match is live
+  const [attendanceCollapsed, setAttendanceCollapsed] = useState(
+    match.lineup_state === "match_live" ||
+      match.lineup_state === "awaiting_confirmation"
+  );
   const [collapsedSets, setCollapsedSets] = useState<Set<number>>(new Set());
+  const lineupFetchedRef = useRef(false);
 
   // Get state values with defaults
-  const homeRoster = state?.homeRoster || [];
-  const awayRoster = state?.awayRoster || [];
-  const games = state?.games || [];
+  const homeRoster = useMemo(() => state?.homeRoster || [], [state?.homeRoster]);
+  const awayRoster = useMemo(() => state?.awayRoster || [], [state?.awayRoster]);
+  const games = useMemo(() => state?.games || [], [state?.games]);
   const submittedBy = state?.submittedBy || null;
+
+  // Get lineup state - prefer context (updated by WebSocket) over prop (stale after initial load)
+  const lineupState: LineupState =
+    state?.lineupState || match.lineup_state || "awaiting_away_lineup";
+
+  // Derived states for UI control
+  // 'not_started' should be treated the same as 'awaiting_away_lineup' since away team goes first
+  const isAwayLineupPhase =
+    lineupState === "awaiting_away_lineup" || lineupState === "not_started";
+  const isHomeLineupPhase = lineupState === "awaiting_home_lineup";
+  const isReadyToStart = lineupState === "ready_to_start";
+  const isMatchLive =
+    lineupState === "match_live" || lineupState === "awaiting_confirmation";
+  const isMatchCompleted = lineupState === "completed";
 
   // Fetch rosters
   const { data: homeRosterData, isLoading: homeRosterLoading } = useTeamRoster(
@@ -68,40 +110,162 @@ const MatchForm: React.FC<MatchFormProps> = ({
 
   // Initialize match state when component mounts
   useEffect(() => {
-    // TODO: Get games count from backend match format instead of hardcoding 16
-    initializeMatch(match.id, 16);
-  }, [match.id, initializeMatch]);
+    // TODO: Replace hardcoded 16 with dynamic games count from league config
+    // Fix: Add `gamesCount` prop to MatchForm interface, calculated as:
+    //   league.sets_per_match * league.games_per_set (see admin/MatchScorePage.tsx lines 44-48)
+    // Then pass it here instead of 16. Also update error messages at lines ~663, 1650-1705
+    // that reference "16 games" to use games.length instead.
+    initializeMatch(match.id, 16, match.lineup_state);
+  }, [match.id, match.lineup_state, initializeMatch]);
+
+  // Auto-collapse attendance section when match goes live
+  useEffect(() => {
+    if (isMatchLive) {
+      setAttendanceCollapsed(true);
+    }
+  }, [isMatchLive]);
 
   // Initialize rosters when data loads (only if empty)
+  // Also check if any games already have players assigned (from match_state arriving first)
   useEffect(() => {
     if (homeRosterData && state?.homeRoster.length === 0) {
+      // Check if any games already have home players assigned
+      const assignedPlayerIds = new Set<number>();
+      games.forEach((g) => {
+        if (g.homePlayerId) assignedPlayerIds.add(g.homePlayerId);
+      });
+
       setHomeRoster(
         homeRosterData.map((member) => ({
           playerId: member.player,
           playerName: member.player_detail?.full_name || "Unknown",
-          present: false,
+          present: assignedPlayerIds.has(member.player),
         }))
       );
     }
-  }, [homeRosterData, setHomeRoster, state?.homeRoster.length]);
+  }, [homeRosterData, setHomeRoster, state?.homeRoster.length, games]);
 
   useEffect(() => {
     if (awayRosterData && state?.awayRoster.length === 0) {
+      // Check if any games already have away players assigned
+      const assignedPlayerIds = new Set<number>();
+      games.forEach((g) => {
+        if (g.awayPlayerId) assignedPlayerIds.add(g.awayPlayerId);
+      });
+
       setAwayRoster(
         awayRosterData.map((member) => ({
           playerId: member.player,
           playerName: member.player_detail?.full_name || "Unknown",
-          present: false,
+          present: assignedPlayerIds.has(member.player),
         }))
       );
     }
-  }, [awayRosterData, setAwayRoster, state?.awayRoster.length]);
+  }, [awayRosterData, setAwayRoster, state?.awayRoster.length, games]);
+
+  // Fetch lineup data when captain needs to see the other team's lineup
+  // - Home captain: fetches when entering home lineup phase (to see away lineup)
+  // - Away captain: fetches when match is ready to start or live (to see home lineup)
+  useEffect(() => {
+    const fetchLineup = async () => {
+      // Only fetch once per match
+      if (lineupFetchedRef.current) return;
+
+      // Determine when each captain should fetch
+      const homeShouldFetch =
+        userTeamSide === "home" &&
+        (isHomeLineupPhase || isReadyToStart || isMatchLive);
+      const awayShouldFetch =
+        userTeamSide === "away" && (isReadyToStart || isMatchLive);
+
+      if (!homeShouldFetch && !awayShouldFetch) return;
+
+      const token = getAuthToken();
+      if (!token) return;
+
+      // Need rosters to be loaded first
+      if (!state?.awayRoster || state.awayRoster.length === 0) return;
+      if (!state?.homeRoster || state.homeRoster.length === 0) return;
+
+      lineupFetchedRef.current = true;
+
+      try {
+        const lineupData = await matchesApi.getLineup(match.id, token);
+
+        if (lineupData.games && lineupData.games.length > 0) {
+          // Collect player IDs from the lineup
+          const awayPlayerIds = new Set<number>();
+          const homePlayerIds = new Set<number>();
+
+          lineupData.games.forEach((game) => {
+            if (game.away_player) {
+              awayPlayerIds.add(game.away_player.id);
+            }
+            if (game.home_player) {
+              homePlayerIds.add(game.home_player.id);
+            }
+          });
+
+          // Mark away players as present
+          if (awayPlayerIds.size > 0) {
+            const updatedAwayRoster = state.awayRoster.map((player) => ({
+              ...player,
+              present: awayPlayerIds.has(player.playerId)
+                ? true
+                : player.present,
+            }));
+            setAwayRoster(updatedAwayRoster);
+          }
+
+          // Mark home players as present
+          if (homePlayerIds.size > 0) {
+            const updatedHomeRoster = state.homeRoster.map((player) => ({
+              ...player,
+              present: homePlayerIds.has(player.playerId)
+                ? true
+                : player.present,
+            }));
+            setHomeRoster(updatedHomeRoster);
+          }
+
+          // Update games with player assignments
+          lineupData.games.forEach((game) => {
+            if (game.away_player) {
+              updateGame(game.game_number - 1, {
+                awayPlayerId: game.away_player.id,
+              });
+            }
+            if (game.home_player) {
+              updateGame(game.game_number - 1, {
+                homePlayerId: game.home_player.id,
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch lineup:", error);
+        lineupFetchedRef.current = false; // Allow retry on error
+      }
+    };
+
+    fetchLineup();
+  }, [
+    match.id,
+    userTeamSide,
+    isHomeLineupPhase,
+    isReadyToStart,
+    isMatchLive,
+    getAuthToken,
+    updateGame,
+    state?.awayRoster,
+    state?.homeRoster,
+    setAwayRoster,
+    setHomeRoster,
+  ]);
 
   // WebSocket message handler
   const handleWebSocketMessage = useCallback(
     (message: IncomingMessage) => {
-      console.log("Received WebSocket message:", message);
-
       switch (message.type) {
         case "player_assignment":
           // Update player assignment
@@ -111,22 +275,42 @@ const MatchForm: React.FC<MatchFormProps> = ({
           });
           break;
 
-        case "game_update":
-          // Update game data
-          updateGame(message.game_id - 1, {
-            winner: message.game_data.winner,
-            homeTableRun: message.game_data.home_table_run,
-            awayTableRun: message.game_data.away_table_run,
-            home8Ball: message.game_data.home_8ball_break,
-            away8Ball: message.game_data.away_8ball_break,
-          });
+        case "game_update": {
+          // Find the game by its actual database ID
+          const gameIndex = games.findIndex((g) => g.id === message.game_id);
+          if (gameIndex === -1) {
+            break;
+          }
+
+          // Update game data - only update fields that are defined in the message
+          // Last write wins - the most recent change from any captain takes effect
+          const gameUpdates: Partial<{
+            winner: TeamSide | null;
+            homeTableRun: boolean;
+            awayTableRun: boolean;
+            home8Ball: boolean;
+            away8Ball: boolean;
+          }> = {};
+
+          if (message.game_data.winner !== undefined) gameUpdates.winner = message.game_data.winner;
+          if (message.game_data.home_table_run !== undefined) gameUpdates.homeTableRun = message.game_data.home_table_run;
+          if (message.game_data.away_table_run !== undefined) gameUpdates.awayTableRun = message.game_data.away_table_run;
+          if (message.game_data.home_8ball_break !== undefined) gameUpdates.home8Ball = message.game_data.home_8ball_break;
+          if (message.game_data.away_8ball_break !== undefined) gameUpdates.away8Ball = message.game_data.away_8ball_break;
+
+          updateGame(gameIndex, gameUpdates);
           break;
+        }
 
         case "scorecard_submitted":
           // Other captain submitted
           setSubmittedBy(message.submitted_by);
           toast.info(
-            `${message.submitted_by === "home" ? homeTeam?.name : awayTeam?.name} captain submitted scorecard (${message.home_score}-${message.away_score})`
+            `${
+              message.submitted_by === "home" ? homeTeam?.name : awayTeam?.name
+            } captain submitted scorecard (${message.home_score}-${
+              message.away_score
+            })`
           );
           break;
 
@@ -138,11 +322,163 @@ const MatchForm: React.FC<MatchFormProps> = ({
           }
           break;
 
+        case "captain_presence":
+          // Track captain presence - could update UI indicator
+          break;
+
+        case "away_lineup_submitted":
+          setLineupState("awaiting_home_lineup");
+          if (userTeamSide === "home") {
+            toast.info(`${awayTeam?.name} has submitted their lineup!`);
+            // Reset fetch flag so home captain fetches the lineup
+            lineupFetchedRef.current = false;
+          }
+          break;
+
+        case "home_lineup_submitted":
+          setLineupState("ready_to_start");
+          if (userTeamSide === "away") {
+            toast.info(
+              `${homeTeam?.name} has submitted their lineup! Match is ready to begin.`
+            );
+            // Reset fetch flag so away captain fetches the lineup
+            lineupFetchedRef.current = false;
+          }
+          break;
+
+        case "lineup_submitted": {
+          // Handle echoed lineup_submitted message (in case backend reflects it directly)
+          const lineupMsg = message as {
+            type: "lineup_submitted";
+            team_side: TeamSide;
+          };
+          if (lineupMsg.team_side === "away") {
+            setLineupState("awaiting_home_lineup");
+            if (userTeamSide === "home") {
+              toast.info(`${awayTeam?.name} has submitted their lineup!`);
+              // Reset fetch flag so home captain fetches the lineup
+              lineupFetchedRef.current = false;
+            }
+          } else if (lineupMsg.team_side === "home") {
+            setLineupState("ready_to_start");
+            if (userTeamSide === "away") {
+              toast.info(
+                `${homeTeam?.name} has submitted their lineup! Match is ready to begin.`
+              );
+              // Reset fetch flag so away captain fetches the lineup
+              lineupFetchedRef.current = false;
+            }
+          }
+          break;
+        }
+
+        case "match_started":
+        case "match_start":
+          setLineupState("match_live");
+          if (userTeamSide === "away") {
+            toast.info("Match has begun! Score entry is now available.");
+          }
+          break;
+
+        case "match_state": {
+          // Initial state from backend on connection - populate game IDs
+          // Backend sends: { type: 'match_state', data: { games: [...], lineup_state: ... }, ... }
+          const { data: matchData } = message;
+          if (matchData?.games && matchData.games.length > 0) {
+            // Collect player IDs from games to update roster attendance
+            const homePlayerIds = new Set<number>();
+            const awayPlayerIds = new Set<number>();
+
+            matchData.games.forEach((gameData) => {
+              if (gameData.home_player?.id) homePlayerIds.add(gameData.home_player.id);
+              if (gameData.away_player?.id) awayPlayerIds.add(gameData.away_player.id);
+
+              // Update each game with its real ID and any existing data
+              // Only update player IDs if the backend provides them - don't overwrite with null
+              const gameUpdate: Partial<{
+                id: number;
+                homePlayerId: number;
+                awayPlayerId: number;
+                winner: TeamSide | null;
+                homeTableRun: boolean;
+                awayTableRun: boolean;
+                home8Ball: boolean;
+                away8Ball: boolean;
+              }> = {
+                id: gameData.id,
+                winner: gameData.winner || null,
+                homeTableRun: gameData.home_table_run || false,
+                awayTableRun: gameData.away_table_run || false,
+                home8Ball: gameData.home_8ball_break || false,
+                away8Ball: gameData.away_8ball_break || false,
+              };
+
+              // Only include player IDs if backend provided them
+              if (gameData.home_player?.id) {
+                gameUpdate.homePlayerId = gameData.home_player.id;
+              }
+              if (gameData.away_player?.id) {
+                gameUpdate.awayPlayerId = gameData.away_player.id;
+              }
+
+              updateGame(gameData.game_number - 1, gameUpdate);
+            });
+
+            // Update roster attendance if rosters are already loaded
+            if (homeRoster.length > 0 && homePlayerIds.size > 0) {
+              setHomeRoster(
+                homeRoster.map((p) => ({
+                  ...p,
+                  present: homePlayerIds.has(p.playerId) ? true : p.present,
+                }))
+              );
+            }
+            if (awayRoster.length > 0 && awayPlayerIds.size > 0) {
+              setAwayRoster(
+                awayRoster.map((p) => ({
+                  ...p,
+                  present: awayPlayerIds.has(p.playerId) ? true : p.present,
+                }))
+              );
+            }
+
+            // Also update lineup state from backend
+            if (matchData.lineup_state) {
+              setLineupState(matchData.lineup_state as LineupState);
+            }
+
+            // Update submitted_by state from backend (or reset if not provided)
+            // This ensures we have correct submission status on reconnect
+            const submittedByFromBackend = (matchData as { submitted_by?: TeamSide | null }).submitted_by;
+            if (submittedByFromBackend !== undefined) {
+              setSubmittedBy(submittedByFromBackend);
+            } else if (matchData.lineup_state === "match_live") {
+              // Match is live but no submission info - reset to allow fresh submission
+              setSubmittedBy(null);
+            }
+          }
+          break;
+        }
+
         default:
-          console.warn("Unknown WebSocket message type:", message);
+          // Unknown message type
+          break;
       }
     },
-    [updateGame, setSubmittedBy, homeTeam, awayTeam, onSuccess]
+    [
+      games,
+      updateGame,
+      setSubmittedBy,
+      setLineupState,
+      homeTeam,
+      awayTeam,
+      userTeamSide,
+      onSuccess,
+      homeRoster,
+      awayRoster,
+      setHomeRoster,
+      setAwayRoster,
+    ]
   );
 
   // Initialize WebSocket connection
@@ -152,8 +488,8 @@ const MatchForm: React.FC<MatchFormProps> = ({
     onMessage: handleWebSocketMessage,
   });
 
-  // Determine if user is in read-only mode
-  const isReadOnly = userTeamSide === null;
+  // Determine if user is in read-only mode (viewer or match completed)
+  const isReadOnly = userTeamSide === null || isMatchCompleted;
 
   // Determine submit button text and state
   const getSubmitButtonConfig = () => {
@@ -164,6 +500,22 @@ const MatchForm: React.FC<MatchFormProps> = ({
         disabled: true,
         className: "bg-gray-400 text-white cursor-not-allowed",
         hidden: true, // Hide submit button for viewers
+      };
+    }
+
+    // Check if all games have winners recorded (must be "home" or "away")
+    const gamesWithWinners = games.filter(
+      (g) => g.winner === "home" || g.winner === "away"
+    ).length;
+    const totalGames = games.length;
+    const allGamesComplete = totalGames > 0 && gamesWithWinners === totalGames;
+
+    if (!allGamesComplete) {
+      return {
+        text: `Record All Games First (${gamesWithWinners}/${totalGames})`,
+        disabled: true,
+        className: "bg-gray-400 text-white cursor-not-allowed",
+        hidden: false,
       };
     }
 
@@ -269,74 +621,227 @@ const MatchForm: React.FC<MatchFormProps> = ({
         away8Ball?: boolean;
       }
     ) => {
-      // Update context
+      const game = games[gameIndex];
+      const gameId = game?.id;
+
+      // Update context locally
       updateGame(gameIndex, updates);
 
-      // Send WebSocket message
+      // Need the real game ID from backend to send WebSocket message
+      if (!gameId) {
+        return;
+      }
+
+      // Build game_data with only defined fields to avoid overwriting other fields
+      // Last write wins - whoever changes a field last, that's what everyone sees
+      const game_data: {
+        winner?: TeamSide | null;
+        home_table_run?: boolean;
+        away_table_run?: boolean;
+        home_8ball_break?: boolean;
+        away_8ball_break?: boolean;
+      } = {};
+
+      if (updates.winner !== undefined) game_data.winner = updates.winner;
+      if (updates.homeTableRun !== undefined) game_data.home_table_run = updates.homeTableRun;
+      if (updates.awayTableRun !== undefined) game_data.away_table_run = updates.awayTableRun;
+      if (updates.home8Ball !== undefined) game_data.home_8ball_break = updates.home8Ball;
+      if (updates.away8Ball !== undefined) game_data.away_8ball_break = updates.away8Ball;
+
+      // Send WebSocket message to broadcast to other connected users
       sendWebSocket({
-        type: "game_update",
-        game_id: gameIndex + 1,
-        game_data: {
-          winner: updates.winner,
-          home_table_run: updates.homeTableRun,
-          away_table_run: updates.awayTableRun,
-          home_8ball_break: updates.home8Ball,
-          away_8ball_break: updates.away8Ball,
-        },
+        type: "game_update" as const,
+        game_id: gameId, // Use actual database ID, not game number
+        game_data,
       });
     },
-    [updateGame, sendWebSocket]
+    [games, updateGame, sendWebSocket]
   );
 
-  // Auto-assign players to games
-  const autoAssignPlayers = () => {
-    const homePlayers = presentHomePlayers.map((p) => p.playerId);
-    const awayPlayers = presentAwayPlayers.map((p) => p.playerId);
+  // Submit lineup (away or home team)
+  const handleSubmitLineup = useCallback(async () => {
+    const isAway = userTeamSide === "away";
+    const lineupComplete = isAway ? isAwayLineupComplete : isHomeLineupComplete;
 
-    // Track which matchups have been used
-    const usedMatchups = new Set<string>();
+    if (!lineupComplete) {
+      toast.error("Please assign all 16 games before submitting");
+      return;
+    }
 
-    for (let setNum = 1; setNum <= 4; setNum++) {
-      const setStartIndex = (setNum - 1) * 4;
-      const availableHomePlayers = [...homePlayers];
-      const availableAwayPlayers = [...awayPlayers];
+    const lineupGames = games.map((g) => ({
+      game_number: g.gameNumber,
+      player_id: isAway ? g.awayPlayerId! : g.homePlayerId!,
+    }));
 
-      for (let gameInSet = 0; gameInSet < 4; gameInSet++) {
-        const gameIndex = setStartIndex + gameInSet;
+    const token = getAuthToken();
+    if (!token) {
+      toast.error("You must be logged in to submit lineup");
+      return;
+    }
 
-        // Skip if we don't have enough players
-        if (
-          availableHomePlayers.length === 0 ||
-          availableAwayPlayers.length === 0
-        )
-          break;
+    try {
+      await matchesApi.submitLineup(match.id, { games: lineupGames }, token);
+      setLineupState(isAway ? "awaiting_home_lineup" : "ready_to_start");
 
-        // Pick first available home player
-        const homePlayerId = availableHomePlayers[0];
-        availableHomePlayers.shift();
+      // Notify other captain via WebSocket
+      sendWebSocket({
+        type: "lineup_submitted",
+        team_side: isAway ? "away" : "home",
+      });
 
-        // Find first available away player that hasn't played this home player
-        let awayPlayerId = null;
-        for (let i = 0; i < availableAwayPlayers.length; i++) {
-          const candidateAwayId = availableAwayPlayers[i];
-          const matchupKey = `${homePlayerId}-${candidateAwayId}`;
+      toast.success(
+        isAway
+          ? "Lineup submitted! Waiting for home team."
+          : "Lineup submitted! Ready to begin match."
+      );
+    } catch (error: any) {
+      console.error("Failed to submit lineup:", error);
+      toast.error(error.message || "Failed to submit lineup");
+    }
+  }, [
+    userTeamSide,
+    isAwayLineupComplete,
+    isHomeLineupComplete,
+    games,
+    match.id,
+    setLineupState,
+    getAuthToken,
+    sendWebSocket,
+  ]);
 
-          if (!usedMatchups.has(matchupKey)) {
-            awayPlayerId = candidateAwayId;
-            availableAwayPlayers.splice(i, 1);
-            usedMatchups.add(matchupKey);
+  // Start the match (home captain only)
+  const handleStartMatch = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      toast.error("You must be logged in to start match");
+      return;
+    }
+
+    try {
+      await matchesApi.startMatch(match.id, token);
+      setLineupState("match_live");
+
+      // Notify other captain via WebSocket
+      sendWebSocket({
+        type: "match_start",
+      });
+
+      toast.success("Match started! Score entry is now available.");
+    } catch (error: any) {
+      console.error("Failed to start match:", error);
+      toast.error(error.message || "Failed to start match");
+    }
+  }, [match.id, setLineupState, getAuthToken, sendWebSocket]);
+
+  // Auto-assign players to games (works for single team during lineup phase)
+  const autoAssignPlayers = useCallback(() => {
+    // Determine which team we're assigning based on lineup phase
+    const isAwayAssigning = isAwayLineupPhase && userTeamSide === "away";
+    const isHomeAssigning = isHomeLineupPhase && userTeamSide === "home";
+    const isBothTeams = isMatchLive; // Legacy mode for both teams
+
+    if (isBothTeams) {
+      // Original logic for both teams (match already started)
+      const homePlayers = presentHomePlayers.map((p) => p.playerId);
+      const awayPlayers = presentAwayPlayers.map((p) => p.playerId);
+      const usedMatchups = new Set<string>();
+
+      for (let setNum = 1; setNum <= 4; setNum++) {
+        const setStartIndex = (setNum - 1) * 4;
+        const availableHomePlayers = [...homePlayers];
+        const availableAwayPlayers = [...awayPlayers];
+
+        for (let gameInSet = 0; gameInSet < 4; gameInSet++) {
+          const gameIndex = setStartIndex + gameInSet;
+          if (
+            availableHomePlayers.length === 0 ||
+            availableAwayPlayers.length === 0
+          )
             break;
+
+          const homePlayerId = availableHomePlayers.shift()!;
+          let awayPlayerId = null;
+
+          for (let i = 0; i < availableAwayPlayers.length; i++) {
+            const candidateAwayId = availableAwayPlayers[i];
+            const matchupKey = `${homePlayerId}-${candidateAwayId}`;
+            if (!usedMatchups.has(matchupKey)) {
+              awayPlayerId = candidateAwayId;
+              availableAwayPlayers.splice(i, 1);
+              usedMatchups.add(matchupKey);
+              break;
+            }
+          }
+
+          if (awayPlayerId) {
+            handlePlayerChange(gameIndex, "home", homePlayerId);
+            handlePlayerChange(gameIndex, "away", awayPlayerId);
           }
         }
+      }
+    } else if (isAwayAssigning) {
+      // Away team assignment - no opponent to check against yet
+      const players = presentAwayPlayers.map((p) => p.playerId);
 
-        // If we found a valid matchup, assign it
-        if (awayPlayerId) {
-          handlePlayerChange(gameIndex, "home", homePlayerId);
-          handlePlayerChange(gameIndex, "away", awayPlayerId);
+      for (let setNum = 1; setNum <= 4; setNum++) {
+        const setStartIndex = (setNum - 1) * 4;
+        const availablePlayers = [...players];
+
+        for (let gameInSet = 0; gameInSet < 4; gameInSet++) {
+          const gameIndex = setStartIndex + gameInSet;
+          if (availablePlayers.length === 0) break;
+
+          const playerId = availablePlayers.shift()!;
+          handlePlayerChange(gameIndex, "away", playerId);
+        }
+      }
+    } else if (isHomeAssigning) {
+      // Home team assignment - must avoid matchup conflicts with away players
+      const players = presentHomePlayers.map((p) => p.playerId);
+      const usedMatchups = new Set<string>();
+
+      for (let setNum = 1; setNum <= 4; setNum++) {
+        const setStartIndex = (setNum - 1) * 4;
+        const availablePlayers = [...players];
+
+        for (let gameInSet = 0; gameInSet < 4; gameInSet++) {
+          const gameIndex = setStartIndex + gameInSet;
+          if (availablePlayers.length === 0) break;
+
+          const awayPlayerId = games[gameIndex]?.awayPlayerId;
+
+          // Find a home player that hasn't played this away player yet
+          let assignedPlayerId: number | null = null;
+          for (let i = 0; i < availablePlayers.length; i++) {
+            const candidateId = availablePlayers[i];
+            const matchupKey = `${candidateId}-${awayPlayerId}`;
+
+            if (!awayPlayerId || !usedMatchups.has(matchupKey)) {
+              assignedPlayerId = candidateId;
+              availablePlayers.splice(i, 1);
+              if (awayPlayerId) {
+                usedMatchups.add(matchupKey);
+              }
+              break;
+            }
+          }
+
+          if (assignedPlayerId) {
+            handlePlayerChange(gameIndex, "home", assignedPlayerId);
+          }
         }
       }
     }
-  };
+  }, [
+    isAwayLineupPhase,
+    isHomeLineupPhase,
+    isMatchLive,
+    userTeamSide,
+    presentHomePlayers,
+    presentAwayPlayers,
+    handlePlayerChange,
+    games,
+  ]);
 
   // Toggle set collapse state
   const toggleSetCollapse = (setNum: number) => {
@@ -357,11 +862,14 @@ const MatchForm: React.FC<MatchFormProps> = ({
     if (userTeamSide === "away" && submittedBy === null) {
       // Away captain is submitting for the first time
       setSubmittedBy("away");
-      toast.success("Scorecard submitted! Waiting for home captain to confirm.");
+      toast.success(
+        "Scorecard submitted! Waiting for home captain to confirm."
+      );
 
       // Send WebSocket notification to home captain
       sendWebSocket({
-        type: "score_update",
+        type: "scorecard_submitted",
+        submitted_by: "away",
         home_score: homeScore,
         away_score: awayScore,
       });
@@ -371,57 +879,24 @@ const MatchForm: React.FC<MatchFormProps> = ({
 
     // Home captain confirms and finalizes
     if (userTeamSide === "home") {
-      // If away hasn't submitted yet, show warning
+      // If away hasn't submitted yet, show warning but allow submission
       if (submittedBy === null) {
         toast.warning(
           "The away team captain hasn't submitted their scorecard yet. You can still submit, but it's better to wait for both captains to agree."
         );
       }
 
-      // Transform games data to match API format
-      const gamesData = games.map((game) => ({
-        game_number: game.gameNumber,
-        home_player_id: game.homePlayerId,
-        away_player_id: game.awayPlayerId,
-        winner: game.winner,
-        home_table_run: game.homeTableRun,
-        away_table_run: game.awayTableRun,
-        home_8ball_break: game.home8Ball,
-        away_8ball_break: game.away8Ball,
-      }));
+      // Send confirmation via WebSocket - backend will finalize the match
+      sendWebSocket({
+        type: "scorecard_confirmed",
+        home_score: homeScore,
+        away_score: awayScore,
+      });
 
-      const payload = {
-        date: match.date,
-        home_team_id: match.home_team,
-        away_team_id: match.away_team,
-        games: gamesData,
-      };
-
-      try {
-        await matchesApi.submitMatch(payload);
-        toast.success(
-          `Match finalized! Final score: ${homeScore} - ${awayScore}`
-        );
-
-        // Notify via WebSocket
-        sendWebSocket({
-          type: "score_update",
-          home_score: homeScore,
-          away_score: awayScore,
-        });
-
-        if (onSuccess) {
-          onSuccess();
-        }
-      } catch (error: any) {
-        console.error("Failed to submit match:", error);
-        toast.error(error.response?.data?.error || "Failed to submit match");
-      }
+      toast.info("Finalizing match...");
+      // The match_finalized WebSocket message will trigger onSuccess
     }
   };
-
-  const attendanceComplete =
-    presentHomePlayers.length > 0 && presentAwayPlayers.length > 0;
 
   return (
     <div className="space-y-4">
@@ -466,181 +941,367 @@ const MatchForm: React.FC<MatchFormProps> = ({
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <h4 className="font-semibold text-blue-900">Viewing Match in Real-Time</h4>
+            <h4 className="font-semibold text-blue-900">
+              Viewing Match in Real-Time
+            </h4>
             <p className="text-sm text-blue-700 mt-1">
-              You're viewing this match as it's being scored. Only team captains can enter or modify scores.
+              You're viewing this match as it's being scored. Only team captains
+              can enter or modify scores.
             </p>
           </div>
         </div>
       )}
 
-      {/* Section 1: Rosters */}
-      <div className="bg-white rounded-lg shadow-md">
-        <button
-          onClick={() => setAttendanceCollapsed(!attendanceCollapsed)}
-          className="w-full p-4 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-2">
-            {attendanceComplete && <Check className="h-5 w-5 text-green-600" />}
-            <h2 className="text-lg font-bold">Mark Attendance</h2>
+      {/* Awaiting Visitors Lineup Banner - for home captain during away lineup phase */}
+      {userTeamSide === "home" && isAwayLineupPhase && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+          <Clock className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="font-semibold text-yellow-900">
+              Awaiting Visitors Lineup
+            </h4>
+            <p className="text-sm text-yellow-700 mt-1">
+              {awayTeam?.name} is setting up their lineup. You'll be able to set
+              your lineup once they're done.
+            </p>
           </div>
-          {attendanceCollapsed ? (
-            <ChevronDown className="h-5 w-5" />
-          ) : (
-            <ChevronUp className="h-5 w-5" />
-          )}
-        </button>
+        </div>
+      )}
 
-        {!attendanceCollapsed && (
-          <div className="p-4 pt-0 space-y-6">
-            {/* Home Team Roster */}
-            <div>
-              <h3 className="font-medium text-dark-700 mb-3">
-                {homeTeam?.name} (Home)
-              </h3>
-              {homeRosterLoading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="h-12 bg-cream-200 rounded animate-pulse"
-                    ></div>
-                  ))}
-                </div>
-              ) : homeRoster.length === 0 ? (
-                <p className="text-dark-400 italic">No players on roster</p>
-              ) : (
-                <div className="space-y-2">
-                  {homeRoster.map((player) => (
-                    <button
-                      key={player.playerId}
-                      onClick={() => !isReadOnly && toggleHomeAttendance(player.playerId)}
-                      disabled={isReadOnly}
-                      className={`w-full p-3 rounded-md border-2 transition-all text-left flex items-center gap-3 ${
-                        player.present
-                          ? "border-primary bg-primary-50"
-                          : "border-dark-200 bg-white hover:border-dark-300"
-                      } ${isReadOnly ? "cursor-not-allowed opacity-60" : ""}`}
-                    >
-                      <div
-                        className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
-                          player.present
-                            ? "border-primary bg-primary"
-                            : "border-dark-300"
-                        }`}
-                      >
-                        {player.present && (
-                          <Check className="h-4 w-4 text-white" />
-                        )}
-                      </div>
-                      <span className="font-medium">{player.playerName}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Away Team Roster */}
-            <div>
-              <h3 className="font-medium text-dark-700 mb-3">
-                {awayTeam?.name} (Visiting)
-              </h3>
-              {awayRosterLoading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="h-12 bg-cream-200 rounded animate-pulse"
-                    ></div>
-                  ))}
-                </div>
-              ) : awayRoster.length === 0 ? (
-                <p className="text-dark-400 italic">No players on roster</p>
-              ) : (
-                <div className="space-y-2">
-                  {awayRoster.map((player) => (
-                    <button
-                      key={player.playerId}
-                      onClick={() => !isReadOnly && toggleAwayAttendance(player.playerId)}
-                      disabled={isReadOnly}
-                      className={`w-full p-3 rounded-md border-2 transition-all text-left flex items-center gap-3 ${
-                        player.present
-                          ? "border-primary bg-primary-50"
-                          : "border-dark-200 bg-white hover:border-dark-300"
-                      } ${isReadOnly ? "cursor-not-allowed opacity-60" : ""}`}
-                    >
-                      <div
-                        className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
-                          player.present
-                            ? "border-primary bg-primary"
-                            : "border-dark-300"
-                        }`}
-                      >
-                        {player.present && (
-                          <Check className="h-4 w-4 text-white" />
-                        )}
-                      </div>
-                      <span className="font-medium">{player.playerName}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Auto-assign button */}
-            <div className="mt-4 flex flex-col items-center gap-2">
-              <button
-                onClick={autoAssignPlayers}
-                disabled={
-                  isReadOnly ||
-                  presentHomePlayers.length < 4 ||
-                  presentAwayPlayers.length < 4
-                }
-                className={`px-6 py-3 font-semibold rounded-lg shadow-md transition-colors flex items-center gap-2 ${
-                  isReadOnly ||
-                  presentHomePlayers.length < 4 ||
-                  presentAwayPlayers.length < 4
-                    ? "bg-dark-200 text-dark-400 cursor-not-allowed"
-                    : "bg-primary text-white hover:bg-primary-600"
-                }`}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-                Auto-Assign Players
-              </button>
-              {(presentHomePlayers.length < 4 ||
-                presentAwayPlayers.length < 4) && (
-                <p className="text-xs text-dark-500 text-center">
-                  Need at least 4 players from each team (
-                  {presentHomePlayers.length} home, {presentAwayPlayers.length}{" "}
-                  away)
-                </p>
-              )}
+      {/* Away Lineup Submitted Banner - for away captain after submitting */}
+      {userTeamSide === "away" &&
+        (isHomeLineupPhase || isReadyToStart || isMatchLive) && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+            <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-semibold text-green-900">
+                {isMatchLive ? "Match in Progress" : "Lineup Submitted"}
+              </h4>
+              <p className="text-sm text-green-700 mt-1">
+                {isMatchLive
+                  ? "The match has started. Watch the scores update in real-time below."
+                  : "Your lineup has been submitted. Waiting for the home team to complete their lineup and start the match."}
+              </p>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Section 2: Score Entry */}
-      {homeRoster.some((p) => p.present) &&
-        awayRoster.some((p) => p.present) && (
+      {/* Match Completed Banner */}
+      {isMatchCompleted && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+          <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="font-semibold text-green-900">Match Completed</h4>
+            <p className="text-sm text-green-700 mt-1">
+              This match has been finalized. Final score: {homeScore} - {awayScore}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Fallback Begin Match Card - for home captain when both lineups ready */}
+      {userTeamSide === "home" && isReadyToStart && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-start gap-3 mb-4">
+            <Users className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-semibold text-green-900">
+                Both Lineups Ready
+              </h4>
+              <p className="text-sm text-green-700 mt-1">
+                Both teams have submitted their lineups. Click below to begin
+                the match and enable score entry.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleStartMatch}
+            className="w-full py-3 rounded-md font-bold text-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+          >
+            Begin Match
+          </button>
+        </div>
+      )}
+
+      {/* Section 1: Rosters - Conditional based on phase and user role */}
+      {/* Show only during lineup phases for the appropriate team */}
+      {((userTeamSide === "away" && isAwayLineupPhase) ||
+        (userTeamSide === "home" && isHomeLineupPhase) ||
+        isMatchLive ||
+        isReadOnly) && (
+        <div className="bg-white rounded-lg shadow-md">
+          <button
+            onClick={() => setAttendanceCollapsed(!attendanceCollapsed)}
+            className="w-full p-4 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              {((userTeamSide === "away" && presentAwayPlayers.length > 0) ||
+                (userTeamSide === "home" && presentHomePlayers.length > 0) ||
+                (isMatchLive &&
+                  presentHomePlayers.length > 0 &&
+                  presentAwayPlayers.length > 0)) && (
+                <Check className="h-5 w-5 text-green-600" />
+              )}
+              <h2 className="text-lg font-bold">
+                {isMatchLive ? "Team Rosters" : "Mark Attendance"}
+              </h2>
+            </div>
+            {attendanceCollapsed ? (
+              <ChevronDown className="h-5 w-5" />
+            ) : (
+              <ChevronUp className="h-5 w-5" />
+            )}
+          </button>
+
+          {!attendanceCollapsed && (
+            <div className="p-4 pt-0 space-y-6">
+              {/* Away Team Roster - Show for away captain during their phase, or read-only after */}
+              {(userTeamSide === "away" ||
+                isHomeLineupPhase ||
+                isMatchLive ||
+                isReadOnly) && (
+                <div>
+                  <h3 className="font-medium text-dark-700 mb-3">
+                    {awayTeam?.name} (Visiting)
+                    {isHomeLineupPhase && userTeamSide === "home" && (
+                      <span className="ml-2 text-sm text-green-600 font-normal">
+                        - Lineup submitted
+                      </span>
+                    )}
+                  </h3>
+                  {awayRosterLoading ? (
+                    <div className="space-y-2">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div
+                          key={i}
+                          className="h-12 bg-cream-200 rounded animate-pulse"
+                        ></div>
+                      ))}
+                    </div>
+                  ) : awayRoster.length === 0 ? (
+                    <p className="text-dark-400 italic">No players on roster</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {awayRoster.map((player) => {
+                        const canEdit =
+                          userTeamSide === "away" &&
+                          isAwayLineupPhase &&
+                          !isReadOnly;
+                        return (
+                          <button
+                            key={player.playerId}
+                            onClick={() =>
+                              canEdit && toggleAwayAttendance(player.playerId)
+                            }
+                            disabled={!canEdit}
+                            className={`w-full p-3 rounded-md border-2 transition-all text-left flex items-center gap-3 ${
+                              player.present
+                                ? "border-primary bg-primary-50"
+                                : "border-dark-200 bg-white hover:border-dark-300"
+                            } ${!canEdit ? "cursor-default" : ""}`}
+                          >
+                            <div
+                              className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                                player.present
+                                  ? "border-primary bg-primary"
+                                  : "border-dark-300"
+                              }`}
+                            >
+                              {player.present && (
+                                <Check className="h-4 w-4 text-white" />
+                              )}
+                            </div>
+                            <span className="font-medium">
+                              {player.playerName}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Home Team Roster - Show for home captain during their phase, or read-only after */}
+              {(userTeamSide === "home" || isMatchLive || isReadOnly) &&
+                !isAwayLineupPhase && (
+                  <div>
+                    <h3 className="font-medium text-dark-700 mb-3">
+                      {homeTeam?.name} (Home)
+                    </h3>
+                    {homeRosterLoading ? (
+                      <div className="space-y-2">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div
+                            key={i}
+                            className="h-12 bg-cream-200 rounded animate-pulse"
+                          ></div>
+                        ))}
+                      </div>
+                    ) : homeRoster.length === 0 ? (
+                      <p className="text-dark-400 italic">
+                        No players on roster
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {homeRoster.map((player) => {
+                          const canEdit =
+                            userTeamSide === "home" &&
+                            isHomeLineupPhase &&
+                            !isReadOnly;
+                          return (
+                            <button
+                              key={player.playerId}
+                              onClick={() =>
+                                canEdit && toggleHomeAttendance(player.playerId)
+                              }
+                              disabled={!canEdit}
+                              className={`w-full p-3 rounded-md border-2 transition-all text-left flex items-center gap-3 ${
+                                player.present
+                                  ? "border-primary bg-primary-50"
+                                  : "border-dark-200 bg-white hover:border-dark-300"
+                              } ${!canEdit ? "cursor-default" : ""}`}
+                            >
+                              <div
+                                className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                                  player.present
+                                    ? "border-primary bg-primary"
+                                    : "border-dark-300"
+                                }`}
+                              >
+                                {player.present && (
+                                  <Check className="h-4 w-4 text-white" />
+                                )}
+                              </div>
+                              <span className="font-medium">
+                                {player.playerName}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              {/* Auto-assign and Manual assign buttons - only during active lineup phase */}
+              {((userTeamSide === "away" && isAwayLineupPhase) ||
+                (userTeamSide === "home" && isHomeLineupPhase)) && (
+                <div className="mt-4 flex flex-col items-center gap-3">
+                  <div className="flex gap-3">
+                    <button
+                      onClick={autoAssignPlayers}
+                      disabled={
+                        (userTeamSide === "away" &&
+                          presentAwayPlayers.length < 4) ||
+                        (userTeamSide === "home" &&
+                          presentHomePlayers.length < 4)
+                      }
+                      className={`px-6 py-3 font-semibold rounded-lg shadow-md transition-colors flex items-center gap-2 ${
+                        (userTeamSide === "away" &&
+                          presentAwayPlayers.length < 4) ||
+                        (userTeamSide === "home" &&
+                          presentHomePlayers.length < 4)
+                          ? "bg-dark-200 text-dark-400 cursor-not-allowed"
+                          : "bg-primary text-white hover:bg-primary-600"
+                      }`}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      Auto-Assign
+                    </button>
+                    <button
+                      onClick={() => setAttendanceCollapsed(true)}
+                      disabled={
+                        (userTeamSide === "away" &&
+                          presentAwayPlayers.length === 0) ||
+                        (userTeamSide === "home" &&
+                          presentHomePlayers.length === 0)
+                      }
+                      className={`px-6 py-3 font-semibold rounded-lg shadow-md transition-colors flex items-center gap-2 ${
+                        (userTeamSide === "away" &&
+                          presentAwayPlayers.length === 0) ||
+                        (userTeamSide === "home" &&
+                          presentHomePlayers.length === 0)
+                          ? "bg-dark-200 text-dark-400 cursor-not-allowed"
+                          : "bg-dark-600 text-white hover:bg-dark-700"
+                      }`}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                      Manual Assign
+                    </button>
+                  </div>
+                  {((userTeamSide === "away" &&
+                    presentAwayPlayers.length < 4) ||
+                    (userTeamSide === "home" &&
+                      presentHomePlayers.length < 4)) && (
+                    <p className="text-xs text-dark-500 text-center">
+                      Need at least 4 players for auto-assign (
+                      {userTeamSide === "away"
+                        ? `${presentAwayPlayers.length} present`
+                        : `${presentHomePlayers.length} present`}
+                      )
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Section 2: Player Assignment / Score Entry */}
+      {/* Show during lineup phases (for player assignment), match live (for scoring), or completed (read-only) */}
+      {games.length > 0 &&
+        ((userTeamSide === "away" &&
+          isAwayLineupPhase &&
+          presentAwayPlayers.length > 0) ||
+          (userTeamSide === "home" &&
+            isHomeLineupPhase &&
+            presentHomePlayers.length > 0) ||
+          (userTeamSide === "home" && isReadyToStart) ||
+          (userTeamSide === "away" && isReadyToStart) ||
+          isMatchLive ||
+          isMatchCompleted ||
+          (isReadOnly &&
+            (isMatchLive || isHomeLineupPhase || isReadyToStart))) && (
           <div className="bg-white rounded-lg shadow-md p-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">Enter Scores</h2>
-              <div className="text-2xl font-bold text-primary">
-                {homeScore} - {awayScore}
-              </div>
+              <h2 className="text-lg font-bold">
+                {isMatchCompleted
+                  ? "Final Scores"
+                  : isMatchLive
+                  ? "Enter Scores"
+                  : "Assign Players to Games"}
+              </h2>
+              {(isMatchLive || isMatchCompleted) && (
+                <div className="text-2xl font-bold text-primary">
+                  {homeScore} - {awayScore}
+                </div>
+              )}
             </div>
 
             {/* Game grid organized by sets */}
@@ -652,6 +1313,10 @@ const MatchForm: React.FC<MatchFormProps> = ({
                   away: setGames.filter((g) => g.winner === "away").length,
                 };
                 const setComplete = setGames.every((g) => g.winner !== null);
+                const setPlayersAssigned =
+                  userTeamSide === "away"
+                    ? setGames.every((g) => g.awayPlayerId !== null)
+                    : setGames.every((g) => g.homePlayerId !== null);
 
                 return (
                   <div
@@ -663,7 +1328,7 @@ const MatchForm: React.FC<MatchFormProps> = ({
                       className="w-full p-3 flex items-center justify-between hover:bg-cream-100 transition-colors rounded-t-lg"
                     >
                       <div className="flex items-center gap-2">
-                        {setComplete && (
+                        {((isMatchLive || isMatchCompleted) ? setComplete : setPlayersAssigned) && (
                           <Check className="h-4 w-4 text-green-600" />
                         )}
                         <h3 className="font-bold text-dark-700">
@@ -671,9 +1336,11 @@ const MatchForm: React.FC<MatchFormProps> = ({
                         </h3>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-primary">
-                          {setScore.home} - {setScore.away}
-                        </span>
+                        {(isMatchLive || isMatchCompleted) && (
+                          <span className="text-sm font-semibold text-primary">
+                            {setScore.home} - {setScore.away}
+                          </span>
+                        )}
                         {collapsedSets.has(setNum) ? (
                           <ChevronDown className="h-4 w-4" />
                         ) : (
@@ -688,6 +1355,16 @@ const MatchForm: React.FC<MatchFormProps> = ({
                           const gameIndex = (setNum - 1) * 4 + (gameInSet - 1);
                           const game = games[gameIndex];
 
+                          // Determine which dropdowns are editable
+                          const canEditHome =
+                            userTeamSide === "home" &&
+                            isHomeLineupPhase &&
+                            !isReadOnly;
+                          const canEditAway =
+                            userTeamSide === "away" &&
+                            isAwayLineupPhase &&
+                            !isReadOnly;
+
                           return (
                             <div
                               key={gameIndex}
@@ -699,56 +1376,80 @@ const MatchForm: React.FC<MatchFormProps> = ({
 
                               {/* Player selection */}
                               <div className="grid grid-cols-2 gap-2 mb-3">
-                                {/* Home player */}
-                                <div>
-                                  <label className="text-xs text-dark-600 mb-1 block">
-                                    {homeTeam?.name}
-                                  </label>
-                                  <select
-                                    value={game.homePlayerId || ""}
-                                    onChange={(e) => {
-                                      const homePlayerId = Number(
-                                        e.target.value
-                                      );
-                                      handlePlayerChange(gameIndex, "home", homePlayerId);
-                                    }}
-                                    disabled={isReadOnly}
-                                    className={`w-full px-2 py-2 text-sm border border-dark-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
-                                      isReadOnly ? "bg-gray-100 cursor-not-allowed" : ""
-                                    }`}
-                                  >
-                                    <option value="">Select player...</option>
-                                    {presentHomePlayers.map((player) => {
-                                      const usedInSet = hasPlayerPlayedInSet(
-                                        player.playerId,
-                                        setNum,
-                                        gameIndex,
-                                        true
-                                      );
-                                      const usedMatchup = game.awayPlayerId
-                                        ? hasMatchupBeenUsed(
-                                            player.playerId,
-                                            game.awayPlayerId,
-                                            gameIndex
-                                          )
-                                        : false;
-                                      const disabled = usedInSet || usedMatchup;
+                                {/* Home player - show during home lineup phase, ready to start, or match live */}
+                                {(isHomeLineupPhase ||
+                                  isReadyToStart ||
+                                  isMatchLive ||
+                                  isReadOnly) && (
+                                  <div>
+                                    <label className="text-xs text-dark-600 mb-1 block">
+                                      {homeTeam?.name}
+                                    </label>
+                                    <select
+                                      value={game.homePlayerId || ""}
+                                      onChange={(e) => {
+                                        const homePlayerId = Number(
+                                          e.target.value
+                                        );
+                                        handlePlayerChange(
+                                          gameIndex,
+                                          "home",
+                                          homePlayerId
+                                        );
+                                      }}
+                                      disabled={!canEditHome}
+                                      className={`w-full px-2 py-2 text-sm border border-dark-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                                        !canEditHome
+                                          ? "bg-gray-100 cursor-not-allowed"
+                                          : ""
+                                      }`}
+                                    >
+                                      <option value="">Select player...</option>
+                                      {presentHomePlayers.map((player) => {
+                                        const usedInSet = hasPlayerPlayedInSet(
+                                          player.playerId,
+                                          setNum,
+                                          gameIndex,
+                                          true
+                                        );
+                                        const usedMatchup = game.awayPlayerId
+                                          ? hasMatchupBeenUsed(
+                                              player.playerId,
+                                              game.awayPlayerId,
+                                              gameIndex
+                                            )
+                                          : false;
+                                        const disabled =
+                                          usedInSet || usedMatchup;
+                                        return (
+                                          <option
+                                            key={player.playerId}
+                                            value={player.playerId}
+                                            disabled={disabled}
+                                          >
+                                            {player.playerName}
+                                            {usedInSet && " (played this set)"}
+                                            {usedMatchup &&
+                                              " (played this opponent)"}
+                                          </option>
+                                        );
+                                      })}
+                                    </select>
+                                  </div>
+                                )}
 
-                                      return (
-                                        <option
-                                          key={player.playerId}
-                                          value={player.playerId}
-                                          disabled={disabled}
-                                        >
-                                          {player.playerName}
-                                          {usedInSet && " (played this set)"}
-                                          {usedMatchup &&
-                                            " (played this opponent)"}
-                                        </option>
-                                      );
-                                    })}
-                                  </select>
-                                </div>
+                                {/* Placeholder for away captain during their phase */}
+                                {isAwayLineupPhase &&
+                                  userTeamSide === "away" && (
+                                    <div>
+                                      <label className="text-xs text-dark-600 mb-1 block">
+                                        {homeTeam?.name}
+                                      </label>
+                                      <div className="w-full px-2 py-2 text-sm border border-dark-200 rounded-md bg-gray-50 text-dark-400">
+                                        Awaiting home lineup
+                                      </div>
+                                    </div>
+                                  )}
 
                                 {/* Away player */}
                                 <div>
@@ -761,11 +1462,17 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                       const awayPlayerId = Number(
                                         e.target.value
                                       );
-                                      handlePlayerChange(gameIndex, "away", awayPlayerId);
+                                      handlePlayerChange(
+                                        gameIndex,
+                                        "away",
+                                        awayPlayerId
+                                      );
                                     }}
-                                    disabled={isReadOnly}
+                                    disabled={!canEditAway}
                                     className={`w-full px-2 py-2 text-sm border border-dark-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
-                                      isReadOnly ? "bg-gray-100 cursor-not-allowed" : ""
+                                      !canEditAway
+                                        ? "bg-gray-100 cursor-not-allowed"
+                                        : ""
                                     }`}
                                   >
                                     <option value="">Select player...</option>
@@ -784,7 +1491,6 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                           )
                                         : false;
                                       const disabled = usedInSet || usedMatchup;
-
                                       return (
                                         <option
                                           key={player.playerId}
@@ -802,107 +1508,125 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                 </div>
                               </div>
 
-                              {/* Winner buttons - only show if both players selected */}
-                              {game.homePlayerId && game.awayPlayerId && (
-                                <>
-                                  <div className="grid grid-cols-2 gap-2 mb-3">
-                                    <button
-                                      onClick={() =>
-                                        !isReadOnly && handleGameDataChange(gameIndex, { winner: "home" })
-                                      }
-                                      disabled={isReadOnly}
-                                      className={`py-2 px-3 rounded-md font-medium text-sm transition-all ${
-                                        game.winner === "home"
-                                          ? "bg-primary text-white shadow-md"
-                                          : "bg-cream-200 text-dark-700 hover:bg-cream-300"
-                                      } ${isReadOnly ? "cursor-not-allowed opacity-60" : ""}`}
-                                    >
-                                      WIN
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        !isReadOnly && handleGameDataChange(gameIndex, { winner: "away" })
-                                      }
-                                      disabled={isReadOnly}
-                                      className={`py-2 px-3 rounded-md font-medium text-sm transition-all ${
-                                        game.winner === "away"
-                                          ? "bg-primary text-white shadow-md"
-                                          : "bg-cream-200 text-dark-700 hover:bg-cream-300"
-                                      } ${isReadOnly ? "cursor-not-allowed opacity-60" : ""}`}
-                                    >
-                                      WIN
-                                    </button>
-                                  </div>
+                              {/* Winner buttons - show during match_live or completed if both players selected */}
+                              {(isMatchLive || isMatchCompleted) &&
+                                game.homePlayerId &&
+                                game.awayPlayerId && (
+                                  <>
+                                    <div className="grid grid-cols-2 gap-2 mb-3">
+                                      <button
+                                        onClick={() =>
+                                          !isReadOnly &&
+                                          handleGameDataChange(gameIndex, {
+                                            winner: "home",
+                                          })
+                                        }
+                                        disabled={isReadOnly}
+                                        className={`py-2 px-3 rounded-md font-medium text-sm transition-all ${
+                                          game.winner === "home"
+                                            ? "bg-primary text-white shadow-md"
+                                            : "bg-cream-200 text-dark-700 hover:bg-cream-300"
+                                        } ${
+                                          isReadOnly
+                                            ? "cursor-not-allowed opacity-60"
+                                            : ""
+                                        }`}
+                                      >
+                                        WIN
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          !isReadOnly &&
+                                          handleGameDataChange(gameIndex, {
+                                            winner: "away",
+                                          })
+                                        }
+                                        disabled={isReadOnly}
+                                        className={`py-2 px-3 rounded-md font-medium text-sm transition-all ${
+                                          game.winner === "away"
+                                            ? "bg-primary text-white shadow-md"
+                                            : "bg-cream-200 text-dark-700 hover:bg-cream-300"
+                                        } ${
+                                          isReadOnly
+                                            ? "cursor-not-allowed opacity-60"
+                                            : ""
+                                        }`}
+                                      >
+                                        WIN
+                                      </button>
+                                    </div>
 
-                                  {/* TR/8B checkboxes */}
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div className="space-y-1">
-                                      <label className="flex items-center gap-2 text-xs">
-                                        <input
-                                          type="checkbox"
-                                          checked={game.homeTableRun}
-                                          onChange={() =>
-                                            !isReadOnly &&
-                                            handleGameDataChange(gameIndex, {
-                                              homeTableRun: !game.homeTableRun,
-                                            })
-                                          }
-                                          disabled={isReadOnly}
-                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-                                        />
-                                        <span>Table Run</span>
-                                      </label>
-                                      <label className="flex items-center gap-2 text-xs">
-                                        <input
-                                          type="checkbox"
-                                          checked={game.home8Ball}
-                                          onChange={() =>
-                                            !isReadOnly &&
-                                            handleGameDataChange(gameIndex, {
-                                              home8Ball: !game.home8Ball,
-                                            })
-                                          }
-                                          disabled={isReadOnly}
-                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-                                        />
-                                        <span>8-Ball break</span>
-                                      </label>
+                                    {/* TR/8B checkboxes */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="space-y-1">
+                                        <label className="flex items-center gap-2 text-xs">
+                                          <input
+                                            type="checkbox"
+                                            checked={game.homeTableRun}
+                                            onChange={() =>
+                                              !isReadOnly &&
+                                              handleGameDataChange(gameIndex, {
+                                                homeTableRun:
+                                                  !game.homeTableRun,
+                                              })
+                                            }
+                                            disabled={isReadOnly}
+                                            className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                                          />
+                                          <span>Table Run</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 text-xs">
+                                          <input
+                                            type="checkbox"
+                                            checked={game.home8Ball}
+                                            onChange={() =>
+                                              !isReadOnly &&
+                                              handleGameDataChange(gameIndex, {
+                                                home8Ball: !game.home8Ball,
+                                              })
+                                            }
+                                            disabled={isReadOnly}
+                                            className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                                          />
+                                          <span>8-Ball break</span>
+                                        </label>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="flex items-center gap-2 text-xs">
+                                          <input
+                                            type="checkbox"
+                                            checked={game.awayTableRun}
+                                            onChange={() =>
+                                              !isReadOnly &&
+                                              handleGameDataChange(gameIndex, {
+                                                awayTableRun:
+                                                  !game.awayTableRun,
+                                              })
+                                            }
+                                            disabled={isReadOnly}
+                                            className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                                          />
+                                          <span>Table Run</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 text-xs">
+                                          <input
+                                            type="checkbox"
+                                            checked={game.away8Ball}
+                                            onChange={() =>
+                                              !isReadOnly &&
+                                              handleGameDataChange(gameIndex, {
+                                                away8Ball: !game.away8Ball,
+                                              })
+                                            }
+                                            disabled={isReadOnly}
+                                            className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                                          />
+                                          <span>8-Ball break</span>
+                                        </label>
+                                      </div>
                                     </div>
-                                    <div className="space-y-1">
-                                      <label className="flex items-center gap-2 text-xs">
-                                        <input
-                                          type="checkbox"
-                                          checked={game.awayTableRun}
-                                          onChange={() =>
-                                            !isReadOnly &&
-                                            handleGameDataChange(gameIndex, {
-                                              awayTableRun: !game.awayTableRun,
-                                            })
-                                          }
-                                          disabled={isReadOnly}
-                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-                                        />
-                                        <span>Table Run</span>
-                                      </label>
-                                      <label className="flex items-center gap-2 text-xs">
-                                        <input
-                                          type="checkbox"
-                                          checked={game.away8Ball}
-                                          onChange={() =>
-                                            !isReadOnly &&
-                                            handleGameDataChange(gameIndex, {
-                                              away8Ball: !game.away8Ball,
-                                            })
-                                          }
-                                          disabled={isReadOnly}
-                                          className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-                                        />
-                                        <span>8-Ball break</span>
-                                      </label>
-                                    </div>
-                                  </div>
-                                </>
-                              )}
+                                  </>
+                                )}
                             </div>
                           );
                         })}
@@ -913,25 +1637,101 @@ const MatchForm: React.FC<MatchFormProps> = ({
               })}
             </div>
 
-            {/* Submission Status Banner */}
-            {submittedBy === "away" && userTeamSide === "home" && (
-              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="font-semibold text-blue-900">
-                    Away Team Submitted Scorecard
-                  </h4>
-                  <p className="text-sm text-blue-700 mt-1">
-                    {awayTeam?.name} captain has submitted their scorecard showing{" "}
-                    {homeScore}-{awayScore}. Review the scores and click confirm to
-                    finalize the match.
-                  </p>
-                </div>
+            {/* Lineup Submission Button - Away Captain */}
+            {userTeamSide === "away" && isAwayLineupPhase && (
+              <div className="mt-6">
+                <button
+                  onClick={() => {
+                    if (presentAwayPlayers.length < 4) {
+                      toast.error(
+                        `Need at least 4 players present (currently ${presentAwayPlayers.length})`
+                      );
+                      return;
+                    }
+                    const assignedGames = games.filter(
+                      (g) => g.awayPlayerId
+                    ).length;
+                    if (assignedGames < 16) {
+                      toast.error(
+                        `Please assign all 16 games (${assignedGames}/16 assigned)`
+                      );
+                      return;
+                    }
+                    handleSubmitLineup();
+                  }}
+                  className={`w-full py-4 rounded-md font-bold text-lg transition-colors ${
+                    isAwayLineupComplete
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "bg-gray-400 text-white hover:bg-gray-500"
+                  }`}
+                >
+                  {isAwayLineupComplete
+                    ? "Submit Lineup"
+                    : `Submit Lineup (${
+                        games.filter((g) => g.awayPlayerId).length
+                      }/16 assigned)`}
+                </button>
               </div>
             )}
 
-            {/* Submit button - hidden for viewers */}
-            {!submitConfig.hidden && (
+            {/* Lineup Submission Button - Home Captain */}
+            {userTeamSide === "home" && isHomeLineupPhase && (
+              <div className="mt-6">
+                <button
+                  onClick={() => {
+                    if (presentHomePlayers.length < 4) {
+                      toast.error(
+                        `Need at least 4 players present (currently ${presentHomePlayers.length})`
+                      );
+                      return;
+                    }
+                    const assignedGames = games.filter(
+                      (g) => g.homePlayerId
+                    ).length;
+                    if (assignedGames < 16) {
+                      toast.error(
+                        `Please assign all 16 games (${assignedGames}/16 assigned)`
+                      );
+                      return;
+                    }
+                    handleSubmitLineup();
+                  }}
+                  className={`w-full py-4 rounded-md font-bold text-lg transition-colors ${
+                    isHomeLineupComplete
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "bg-gray-400 text-white hover:bg-gray-500"
+                  }`}
+                >
+                  {isHomeLineupComplete
+                    ? "Submit Lineup"
+                    : `Submit Lineup (${
+                        games.filter((g) => g.homePlayerId).length
+                      }/16 assigned)`}
+                </button>
+              </div>
+            )}
+
+            {/* Submission Status Banner - During scoring */}
+            {isMatchLive &&
+              submittedBy === "away" &&
+              userTeamSide === "home" && (
+                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-blue-900">
+                      Away Team Submitted Scorecard
+                    </h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      {awayTeam?.name} captain has submitted their scorecard
+                      showing {homeScore}-{awayScore}. Review the scores and
+                      click confirm to finalize the match.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+            {/* Score Submit button - only during match_live, hidden for viewers */}
+            {isMatchLive && !submitConfig.hidden && (
               <div className="flex gap-3 mt-6">
                 {showCancelButton && onCancel && (
                   <button

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, FileEdit, X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import {
   useSeason,
   useSeasonTeams,
@@ -45,7 +45,7 @@ const SeasonDetailsPage: React.FC = () => {
 
   // Get user's team IDs for permission checks
   const userTeamIds = useMemo(() => {
-    return currentTeams?.map(team => team.id) || [];
+    return currentTeams?.map((team) => team.id) || [];
   }, [currentTeams]);
 
   // Determine if user can edit a specific match
@@ -57,10 +57,13 @@ const SeasonDetailsPage: React.FC = () => {
       if (isLeagueOperator) return true;
 
       // Captains cannot edit completed matches
-      if (match.status === 'completed') return false;
+      if (match.status === "completed") return false;
 
       // Check if user's team is involved in this match
-      return userTeamIds.includes(match.home_team) || userTeamIds.includes(match.away_team);
+      return (
+        userTeamIds.includes(match.home_team) ||
+        userTeamIds.includes(match.away_team)
+      );
     };
   }, [player, isLeagueOperator, userTeamIds]);
 
@@ -120,13 +123,13 @@ const SeasonDetailsPage: React.FC = () => {
         </div>
 
         {/* Enter Match Scores Button */}
-        <button
+        {/* <button
           onClick={() => navigate(`/score-entry/${seasonId}`)}
           className="btn btn-primary flex items-center"
         >
           <FileEdit className="h-4 w-4 mr-2" />
           Enter Match Scores
-        </button>
+        </button> */}
       </div>
 
       {/* Overview Section - Read Only */}
@@ -147,7 +150,8 @@ const SeasonDetailsPage: React.FC = () => {
         editable={canEditMatch}
         onEditMatch={openEditMatchModal}
         isUserTeamMatch={(match) =>
-          userTeamIds.includes(match.home_team) || userTeamIds.includes(match.away_team)
+          userTeamIds.includes(match.home_team) ||
+          userTeamIds.includes(match.away_team)
         }
       />
 
@@ -163,8 +167,11 @@ const SeasonDetailsPage: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-medium">Edit Match</h3>
                   <p className="text-sm text-cream-200 mt-1">
-                    {matchToEdit.home_team_detail?.name || `Team ${matchToEdit.home_team}`} vs{" "}
-                    {matchToEdit.away_team_detail?.name || `Team ${matchToEdit.away_team}`}
+                    {matchToEdit.home_team_detail?.name ||
+                      `Team ${matchToEdit.home_team}`}{" "}
+                    vs{" "}
+                    {matchToEdit.away_team_detail?.name ||
+                      `Team ${matchToEdit.away_team}`}
                   </p>
                 </div>
                 <button

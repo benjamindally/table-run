@@ -34,7 +34,9 @@ export function useMatchWebSocket({
 
   // Get WebSocket URL from API base URL
   const socketUrl = useMemo(() => {
-    if (!enabled || !accessToken) return null;
+    if (!enabled || !accessToken) {
+      return null;
+    }
 
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -54,8 +56,8 @@ export function useMatchWebSocket({
       try {
         const message: IncomingMessage = JSON.parse(event.data);
         onMessage?.(message);
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+      } catch {
+        // Failed to parse WebSocket message
       }
     },
     [onMessage]
@@ -78,8 +80,6 @@ export function useMatchWebSocket({
     (message: OutgoingMessage) => {
       if (readyState === ReadyState.OPEN) {
         sendJsonMessage(message);
-      } else {
-        console.warn('WebSocket is not open. Message not sent:', message);
       }
     },
     [sendJsonMessage, readyState]

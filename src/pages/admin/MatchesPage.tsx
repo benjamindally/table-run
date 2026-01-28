@@ -6,6 +6,7 @@ import { useSeasons } from "../../hooks/useSeasons";
 import { useSeasonMatches } from "../../hooks/useSeasons";
 import { useCurrentTeams } from "../../hooks/usePlayers";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import SeasonMatches from "../../components/seasons/SeasonMatches";
 import LeagueSeasonSelectorModal from "../../components/LeagueSeasonSelectorModal";
 import type { Match } from "../../api/types";
@@ -16,13 +17,14 @@ const MatchesPage: React.FC = () => {
   const { data: allSeasonsData, isLoading: seasonsLoading } = useSeasons();
   const { data: currentTeams } = useCurrentTeams();
   const { leagueData } = useAuth();
+  const { currentLeagueId, currentSeasonId, setLeagueAndSeason } = useLeagueSeason();
 
   const myLeagues = meData?.leagues || [];
   const allSeasons = allSeasonsData?.results || [];
 
-  // State for selected league and season
-  const [selectedLeagueId, setSelectedLeagueId] = useState<number | null>(null);
-  const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
+  // State for selected league and season - initialize from context
+  const [selectedLeagueId, setSelectedLeagueId] = useState<number | null>(currentLeagueId);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(currentSeasonId);
   const [showSelectorModal, setShowSelectorModal] = useState(false);
 
   // Get selected league and season objects
@@ -48,18 +50,26 @@ const MatchesPage: React.FC = () => {
     isLoading: matchesLoading,
   } = useSeasonMatches(selectedSeasonId || 0);
 
-  // Auto-select first league and season on load
+  // Sync from context when it has values (e.g., navigating from dashboard)
   useEffect(() => {
-    if (myLeagues.length > 0 && !selectedLeagueId) {
+    if (currentLeagueId && currentSeasonId) {
+      setSelectedLeagueId(currentLeagueId);
+      setSelectedSeasonId(currentSeasonId);
+    }
+  }, [currentLeagueId, currentSeasonId]);
+
+  // Auto-select first league and season on load (only if context doesn't have values)
+  useEffect(() => {
+    if (myLeagues.length > 0 && !selectedLeagueId && !currentLeagueId) {
       setSelectedLeagueId(myLeagues[0].id);
     }
-  }, [myLeagues, selectedLeagueId]);
+  }, [myLeagues, selectedLeagueId, currentLeagueId]);
 
   useEffect(() => {
-    if (filteredSeasons.length > 0 && !selectedSeasonId) {
+    if (filteredSeasons.length > 0 && !selectedSeasonId && !currentSeasonId) {
       setSelectedSeasonId(filteredSeasons[0].id);
     }
-  }, [filteredSeasons, selectedSeasonId]);
+  }, [filteredSeasons, selectedSeasonId, currentSeasonId]);
 
   // Check if user is a league operator for the selected league
   const isLeagueOperator = selectedLeagueId
@@ -94,28 +104,16 @@ const MatchesPage: React.FC = () => {
     return userTeamIds.includes(match.home_team) || userTeamIds.includes(match.away_team);
   };
 
-  // Determine which matches are editable based on role
-  const getMatchEditable = (match: Match): boolean => {
-    if (!selectedLeagueId) return false;
-
-    // Use the canEditMatch helper from auth context
-    return leagueData.canEditMatch(match, selectedLeagueId);
-  };
-
-  // Handle match click - navigate to score entry page
+  // Handle match click - navigate to match score page
   const handleMatchClick = (match: Match) => {
-    if (!selectedSeasonId) return;
-
-    // Only navigate if user can edit the match
-    if (getMatchEditable(match)) {
-      navigate(`/score-entry/${selectedSeasonId}`);
-    }
+    navigate(`/admin/matches/${match.id}/score`);
   };
 
   // Handle league/season selection from modal
   const handleLeagueSeasonSelect = (leagueId: number, seasonId: number) => {
     setSelectedLeagueId(leagueId);
     setSelectedSeasonId(seasonId);
+    setLeagueAndSeason(leagueId, seasonId);
   };
 
   // Loading state
@@ -307,7 +305,7 @@ const MatchesPage: React.FC = () => {
           ) : (
             <SeasonMatches
               matches={displayMatches}
-              editable={getMatchEditable}
+              editable={() => true}
               onEditMatch={handleMatchClick}
               initialWeeksToShow={4}
               isUserTeamMatch={isUserTeamMatch}

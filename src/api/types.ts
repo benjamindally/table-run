@@ -66,6 +66,8 @@ export interface LeagueList {
   name: string;
   city: string;
   state: string;
+  sets_per_match: number;
+  games_per_set: number;
 }
 
 export interface LeagueOperator {
@@ -155,6 +157,15 @@ export interface SeasonParticipation {
   is_active: boolean;
 }
 
+export type LineupState =
+  | 'not_started'
+  | 'awaiting_away_lineup'
+  | 'awaiting_home_lineup'
+  | 'ready_to_start'
+  | 'match_live'
+  | 'awaiting_confirmation'
+  | 'completed';
+
 export interface Match {
   id: number;
   season: number;
@@ -167,6 +178,10 @@ export interface Match {
   home_score: number | null;
   away_score: number | null;
   status: 'scheduled' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled';
+  lineup_state?: LineupState;
+  away_lineup_submitted?: boolean;
+  home_lineup_submitted?: boolean;
+  match_started?: boolean;
 }
 
 export interface TeamMembership {
@@ -221,6 +236,20 @@ export interface TeamRegistrationData {
 export interface MatchScoreSubmission {
   home_score: number;
   away_score: number;
+}
+
+export interface MatchLineupGame {
+  game_number: number;
+  set_number: number;
+  away_player: { id: number; full_name: string } | null;
+  home_player: { id: number; full_name: string } | null;
+}
+
+export interface MatchLineupResponse {
+  away_lineup_submitted: boolean;
+  home_lineup_submitted: boolean;
+  match_started: boolean;
+  games: MatchLineupGame[];
 }
 
 export interface PlayerUpdateData {

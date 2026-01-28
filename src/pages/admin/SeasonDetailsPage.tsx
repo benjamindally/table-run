@@ -36,6 +36,8 @@ import SeasonTeams from "../../components/seasons/SeasonTeams";
 import SeasonMatches from "../../components/seasons/SeasonMatches";
 import SeasonPlayerAnalytics from "../../components/seasons/SeasonPlayerAnalytics";
 import MatchForm from "../../components/matches/MatchForm";
+import NextMatchCard from "../../components/NextMatchCard";
+import { useCurrentTeams } from "../../hooks/usePlayers";
 import type { Match } from "../../api/types";
 
 const SeasonDetailsPage: React.FC = () => {
@@ -55,6 +57,10 @@ const SeasonDetailsPage: React.FC = () => {
   const { data: matches } = useSeasonMatches(seasonId); // All matches for season
   const { data: standings } = useSeasonStandings(seasonId); // Team standings/rankings
   const { data: playersData } = useSeasonPlayers(seasonId); // Player stats for season
+  const { data: currentTeams } = useCurrentTeams(); // User's teams for Next Match card
+
+  // Get user's team IDs for Next Match card
+  const userTeamIds = currentTeams?.map((team) => team.id) || [];
 
   // ============================================================================
   // MUTATION HOOKS
@@ -346,6 +352,12 @@ const SeasonDetailsPage: React.FC = () => {
         }}
         onImportCSV={() => setShowUploadModal(true)}
       />
+
+      {/* =====================================================================
+          NEXT MATCH CARD
+          Shows user's next upcoming match (only if user is on a team)
+          ===================================================================== */}
+      <NextMatchCard matches={matches} userTeamIds={userTeamIds} />
 
       {/* =====================================================================
           STANDINGS SECTION
