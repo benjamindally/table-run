@@ -4,7 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Table Run is an 8-ball pool league management application built with React, TypeScript, and Vite. It provides functionality for team registration, match score submission, league standings tracking, and an admin dashboard for league management.
+**League Genius** is a league management application built with React, TypeScript, and Vite. Originally designed for 8-ball pool leagues, it's expanding to support multiple league types. It provides functionality for team registration, match score submission, league standings tracking, and an admin dashboard for league management.
+
+**IMPORTANT**: The app is called "League Genius", NOT "Table Run". The folder may still be named "Table Run" but all package names use `@league-genius/*`.
+
+## Monorepo Structure
+
+This is a pnpm monorepo with the following structure:
+
+```
+league-genius/
+├── package.json               # Workspace root
+├── pnpm-workspace.yaml
+├── packages/
+│   └── web/                   # React web app (@league-genius/web)
+│       ├── src/
+│       └── ...
+│   └── shared/ (planned)      # Shared code (@league-genius/shared)
+│   └── mobile/ (planned)      # React Native app (@league-genius/mobile)
+```
 
 ## Tech Stack
 
@@ -15,18 +33,22 @@ Table Run is an 8-ball pool league management application built with React, Type
 - **Icons**: Lucide React
 - **Notifications**: React Toastify
 - **Linting**: ESLint 9.9+ with TypeScript ESLint
+- **Package Manager**: pnpm (workspaces)
 
 ## Development Commands
 
 ```bash
-# Start development server
-npm run dev
+# From root - Start development server
+pnpm dev
 
-# Build for production
-npm run build
+# From root - Build for production
+pnpm build
+
+# From root - Run linter
+pnpm lint
 
 # Preview production build
-npm run preview
+pnpm preview
 
 # Run linter
 npm run lint
