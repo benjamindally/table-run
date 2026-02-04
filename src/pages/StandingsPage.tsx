@@ -124,7 +124,7 @@ export default function StandingsPage() {
         </button>
         <div className="flex items-center gap-3 mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               {standingsData?.league_name || league?.name || "League Standings"}
             </h1>
             {standingsData?.season_name && (
@@ -142,7 +142,7 @@ export default function StandingsPage() {
 
         {/* Season Selector */}
         {seasons.length > 1 && (
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <label
               htmlFor="season-select"
               className="text-sm font-medium text-gray-700"
@@ -344,16 +344,16 @@ export default function StandingsPage() {
 
       {/* Legend for top 3 */}
       {standings.length >= 3 && (
-        <div className="mt-4 flex items-center gap-6 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Trophy className="h-4 w-4 text-yellow-500" />
             <span>1st Place</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Trophy className="h-4 w-4 text-gray-400" />
             <span>2nd Place</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Trophy className="h-4 w-4 text-orange-400" />
             <span>3rd Place</span>
           </div>

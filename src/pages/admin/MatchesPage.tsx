@@ -105,8 +105,13 @@ const MatchesPage: React.FC = () => {
   };
 
   // Handle match click - navigate to match score page
+  // League operators go to operator view with full control
   const handleMatchClick = (match: Match) => {
-    navigate(`/admin/matches/${match.id}/score`);
+    if (isLeagueOperator) {
+      navigate(`/admin/matches/${match.id}/operator`);
+    } else {
+      navigate(`/admin/matches/${match.id}/score`);
+    }
   };
 
   // Handle league/season selection from modal
@@ -167,16 +172,16 @@ const MatchesPage: React.FC = () => {
       {/* Current Selection Card */}
       {selectedLeague && selectedSeason && (
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
             <div className="flex-1">
-              <h2 className="text-xl font-semibold text-dark mb-1">
+              <h2 className="text-lg sm:text-xl font-semibold text-dark mb-1">
                 {selectedLeague.name}
               </h2>
               <p className="text-sm text-dark-300">{selectedSeason.name}</p>
             </div>
             <button
               onClick={() => setShowSelectorModal(true)}
-              className="btn btn-outline btn-sm flex items-center"
+              className="btn btn-outline btn-sm flex items-center justify-center sm:justify-start"
             >
               <Edit2 className="h-4 w-4 mr-1" />
               Change

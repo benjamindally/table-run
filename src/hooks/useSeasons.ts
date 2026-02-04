@@ -4,8 +4,9 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { seasonsApi } from '../api/seasons';
-import { Season, SeasonParticipation, Match } from '../api/types';
+import type { Season, SeasonParticipation, Match, Venue, ScheduleConfiguration, SaveScheduleRequest } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
+import { meKeys } from './useMe';
 
 // Query keys for caching
 export const seasonKeys = {
@@ -18,6 +19,7 @@ export const seasonKeys = {
   matches: (id: number) => [...seasonKeys.detail(id), 'matches'] as const,
   standings: (id: number) => [...seasonKeys.detail(id), 'standings'] as const,
   players: (id: number) => [...seasonKeys.detail(id), 'players'] as const,
+  venues: (id: number) => [...seasonKeys.detail(id), 'venues'] as const,
 };
 
 /**
@@ -112,6 +114,8 @@ export const useCreateSeason = () => {
       queryClient.invalidateQueries({ queryKey: seasonKeys.lists() });
       // Also invalidate leagues to update season count
       queryClient.invalidateQueries({ queryKey: ['leagues'] });
+      // Invalidate the /me endpoint so LeagueSeasonContext gets fresh data
+      queryClient.invalidateQueries({ queryKey: meKeys.all });
     },
   });
 };
@@ -188,6 +192,83 @@ export const useImportSchedule = () => {
       queryClient.invalidateQueries({ queryKey: seasonKeys.teams(variables.seasonId) });
       queryClient.invalidateQueries({ queryKey: seasonKeys.standings(variables.seasonId) });
       queryClient.invalidateQueries({ queryKey: seasonKeys.players(variables.seasonId) });
+    },
+  });
+};
+
+/**
+ * Get venues available for a season's league
+ */
+export const useSeasonVenues = (seasonId: number) => {
+  const { getAuthToken } = useAuth();
+
+  return useQuery({
+    queryKey: seasonKeys.venues(seasonId),
+    queryFn: () => seasonsApi.getVenues(seasonId, getAuthToken() || undefined),
+    enabled: !!seasonId,
+  });
+};
+
+/**
+ * Generate schedule preview (doesn't save)
+ */
+export const useGenerateSchedule = () => {
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ seasonId, config }: { seasonId: number; config: ScheduleConfiguration }) =>
+      seasonsApi.generateSchedule(seasonId, config, getAuthToken() || undefined),
+  });
+};
+
+/**
+ * Save the generated/edited schedule
+ */
+export const useSaveSchedule = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ seasonId, data }: { seasonId: number; data: SaveScheduleRequest }) =>
+      seasonsApi.saveSchedule(seasonId, data, getAuthToken() || undefined),
+    onSuccess: (_, variables) => {
+      // Invalidate matches to show newly created schedule
+      queryClient.invalidateQueries({ queryKey: seasonKeys.matches(variables.seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.detail(variables.seasonId) });
+    },
+  });
+};
+
+/**
+ * Update a venue (e.g., table_count)
+ */
+export const useUpdateVenue = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ venueId, data }: { venueId: number; data: Partial<Venue> }) =>
+      seasonsApi.updateVenue(venueId, data, getAuthToken() || undefined),
+    onSuccess: () => {
+      // Invalidate all season venue queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: seasonKeys.all });
+    },
+  });
+};
+
+/**
+ * Create a new venue
+ */
+export const useCreateVenue = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: (data: { league: number; name: string; address?: string; table_count: number }) =>
+      seasonsApi.createVenue(data, getAuthToken() || undefined),
+    onSuccess: () => {
+      // Invalidate all season venue queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: seasonKeys.all });
     },
   });
 };

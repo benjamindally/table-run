@@ -3,7 +3,7 @@
  */
 
 import { api } from './client';
-import { Season, PaginatedResponse, SeasonParticipation, Match } from './types';
+import type { Season, PaginatedResponse, SeasonParticipation, Match, Venue, ScheduleConfiguration, GeneratedScheduleResponse, SaveScheduleRequest } from './types';
 
 export const seasonsApi = {
   /**
@@ -114,6 +114,38 @@ export const seasonsApi = {
 
     return response.json();
   },
+
+  /**
+   * Get venues available for a season's league
+   */
+  getVenues: (seasonId: number, token?: string) =>
+    api.get<Venue[]>(`/seasons/${seasonId}/venues/`, token),
+
+  /**
+   * Generate schedule preview (doesn't save)
+   * Returns schedule grouped by weeks with team matchups and warnings
+   */
+  generateSchedule: (seasonId: number, config: ScheduleConfiguration, token?: string) =>
+    api.post<GeneratedScheduleResponse>(`/seasons/${seasonId}/generate-schedule/`, config, token),
+
+  /**
+   * Validate and save the schedule
+   * Accepts edited schedule from frontend, validates all constraints before saving
+   */
+  saveSchedule: (seasonId: number, data: SaveScheduleRequest, token?: string) =>
+    api.post<{ success: boolean; matches_created: number }>(`/seasons/${seasonId}/save-schedule/`, data, token),
+
+  /**
+   * Update a venue (name, address, table_count, is_active)
+   */
+  updateVenue: (venueId: number, data: Partial<Venue>, token?: string) =>
+    api.patch<Venue>(`/venues/${venueId}/`, data, token),
+
+  /**
+   * Create a new venue for a league
+   */
+  createVenue: (data: { league: number; name: string; address?: string; table_count: number }, token?: string) =>
+    api.post<Venue>('/venues/', data, token),
 };
 
 export interface SeasonStandingsResponse {

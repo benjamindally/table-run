@@ -179,9 +179,9 @@ const TeamsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Team Management</h1>
-        <button className="btn btn-primary flex items-center">
+        <button className="btn btn-primary flex items-center justify-center sm:w-auto">
           <Plus className="h-5 w-5 mr-1" /> Add New Team
         </button>
       </div>
@@ -283,8 +283,86 @@ const TeamsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Teams table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      {/* Teams - Mobile Cards */}
+      <div className="sm:hidden space-y-3">
+        {filteredTeams.length > 0 ? (
+          filteredTeams.map((team) => (
+            <div
+              key={team.id}
+              className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+            >
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-dark truncate">{team.name}</h3>
+                  <p className="text-sm text-gray-500 truncate">{team.establishment}</p>
+                </div>
+                <span
+                  className={`px-2 py-1 text-xs rounded-full flex-shrink-0 ${
+                    team.active
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {team.active ? "Active" : "Inactive"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-sm mb-3">
+                <div>
+                  <p className="text-xs text-gray-500">Captain</p>
+                  <p className="font-medium truncate">{team.captain}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">Record</p>
+                  <p className="font-medium">
+                    <span className="text-green-600">{team.wins}W</span>
+                    {" - "}
+                    <span className="text-red-600">{team.losses}L</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Win %</p>
+                  <p className="font-medium">
+                    {((team.wins / (team.wins + team.losses)) * 100).toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <span className="text-xs text-gray-500">{team.players} players</span>
+                <div className="flex space-x-3">
+                  <button
+                    className="text-blue-600 hover:text-blue-800"
+                    title="View team details"
+                  >
+                    <Info className="h-5 w-5" />
+                  </button>
+                  <button
+                    className="text-gray-600 hover:text-gray-800"
+                    title="Edit team"
+                  >
+                    <Edit className="h-5 w-5" />
+                  </button>
+                  <button
+                    className="text-red-600 hover:text-red-800"
+                    title="Delete team"
+                    onClick={() => confirmDelete(team)}
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">
+            No teams found matching your filters.
+          </div>
+        )}
+      </div>
+
+      {/* Teams - Desktop Table */}
+      <div className="hidden sm:block bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -396,7 +474,7 @@ const TeamsPage: React.FC = () => {
       {/* Delete confirmation modal */}
       {showDeleteModal && teamToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+          <div className="bg-white rounded-lg max-w-[95vw] sm:max-w-md w-full p-4 sm:p-6 shadow-xl mx-2 sm:mx-0">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-medium">Confirm Delete</h3>
               <button

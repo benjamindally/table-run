@@ -32,7 +32,7 @@ const SeasonsPage: React.FC = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-dark">Seasons</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-dark">Seasons</h1>
           <p className="text-sm text-dark-300 mt-1">Season Management</p>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
@@ -46,7 +46,7 @@ const SeasonsPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-dark">Seasons</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-dark">Seasons</h1>
         <p className="text-sm text-dark-300 mt-1">Manage your league seasons</p>
       </div>
 

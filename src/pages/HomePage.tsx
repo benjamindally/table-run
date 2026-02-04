@@ -115,69 +115,69 @@ const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {/* Stat 1 */}
-            <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-md text-center">
               {isLoading || error ? (
                 <>
-                  <div className="h-10 bg-primary-100 rounded mb-2 animate-pulse"></div>
-                  <div className="h-4 bg-cream-300 rounded w-24 mx-auto animate-pulse"></div>
+                  <div className="h-8 md:h-10 bg-primary-100 rounded mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-cream-300 rounded w-20 md:w-24 mx-auto animate-pulse"></div>
                 </>
               ) : (
                 <>
-                  <p className="text-4xl font-bold text-primary mb-2">
+                  <p className="text-2xl md:text-4xl font-bold text-primary mb-2">
                     {stats?.active_teams ?? 0}
                   </p>
-                  <p className="text-dark-300">Active Teams</p>
+                  <p className="text-sm md:text-base text-dark-300">Active Teams</p>
                 </>
               )}
             </div>
 
             {/* Stat 2 */}
-            <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-md text-center">
               {isLoading || error ? (
                 <>
-                  <div className="h-10 bg-primary-100 rounded mb-2 animate-pulse"></div>
-                  <div className="h-4 bg-cream-300 rounded w-28 mx-auto animate-pulse"></div>
+                  <div className="h-8 md:h-10 bg-primary-100 rounded mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-cream-300 rounded w-20 md:w-28 mx-auto animate-pulse"></div>
                 </>
               ) : (
                 <>
-                  <p className="text-4xl font-bold text-primary mb-2">
+                  <p className="text-2xl md:text-4xl font-bold text-primary mb-2">
                     {stats?.active_players ?? 0}
                   </p>
-                  <p className="text-dark-300">League Players</p>
+                  <p className="text-sm md:text-base text-dark-300">League Players</p>
                 </>
               )}
             </div>
 
             {/* Stat 3 */}
-            <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-md text-center">
               {isLoading || error ? (
                 <>
-                  <div className="h-10 bg-primary-100 rounded mb-2 animate-pulse"></div>
-                  <div className="h-4 bg-cream-300 rounded w-32 mx-auto animate-pulse"></div>
+                  <div className="h-8 md:h-10 bg-primary-100 rounded mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-cream-300 rounded w-20 md:w-32 mx-auto animate-pulse"></div>
                 </>
               ) : (
                 <>
-                  <p className="text-4xl font-bold text-primary mb-2">
+                  <p className="text-2xl md:text-4xl font-bold text-primary mb-2">
                     {stats?.venues ?? 0}
                   </p>
-                  <p className="text-dark-300">Sponsoring Venues</p>
+                  <p className="text-sm md:text-base text-dark-300">Venues</p>
                 </>
               )}
             </div>
 
             {/* Stat 4 */}
-            <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-md text-center">
               {isLoading || error ? (
                 <>
-                  <div className="h-10 bg-primary-100 rounded mb-2 animate-pulse"></div>
-                  <div className="h-4 bg-cream-300 rounded w-28 mx-auto animate-pulse"></div>
+                  <div className="h-8 md:h-10 bg-primary-100 rounded mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-cream-300 rounded w-20 md:w-28 mx-auto animate-pulse"></div>
                 </>
               ) : (
                 <>
-                  <p className="text-4xl font-bold text-primary mb-2">
+                  <p className="text-2xl md:text-4xl font-bold text-primary mb-2">
                     {stats?.matches_played ?? 0}
                   </p>
-                  <p className="text-dark-300">Matches Played</p>
+                  <p className="text-sm md:text-base text-dark-300">Matches Played</p>
                 </>
               )}
             </div>

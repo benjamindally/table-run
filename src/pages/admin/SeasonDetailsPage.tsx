@@ -17,16 +17,19 @@
 
 import React, { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, X } from "lucide-react";
+import { ArrowLeft, Upload, X, Calendar } from "lucide-react";
 import {
   useSeason,
   useSeasonTeams,
   useSeasonMatches,
   useSeasonStandings,
   useSeasonPlayers,
+  useSeasonVenues,
   useImportSeasonCSV,
   useImportSchedule,
   useUpdateSeason,
+  useCreateVenue,
+  useUpdateVenue,
 } from "../../hooks/useSeasons";
 import { toast } from "react-toastify";
 import Modal from "../../components/Modal";
@@ -35,10 +38,10 @@ import SeasonStandings from "../../components/seasons/SeasonStandings";
 import SeasonTeams from "../../components/seasons/SeasonTeams";
 import SeasonMatches from "../../components/seasons/SeasonMatches";
 import SeasonPlayerAnalytics from "../../components/seasons/SeasonPlayerAnalytics";
-import MatchForm from "../../components/matches/MatchForm";
+import SeasonVenues from "../../components/seasons/SeasonVenues";
 import NextMatchCard from "../../components/NextMatchCard";
 import { useCurrentTeams } from "../../hooks/usePlayers";
-import type { Match } from "../../api/types";
+import type { Match, Venue } from "../../api/types";
 
 const SeasonDetailsPage: React.FC = () => {
   // ============================================================================
@@ -57,6 +60,7 @@ const SeasonDetailsPage: React.FC = () => {
   const { data: matches } = useSeasonMatches(seasonId); // All matches for season
   const { data: standings } = useSeasonStandings(seasonId); // Team standings/rankings
   const { data: playersData } = useSeasonPlayers(seasonId); // Player stats for season
+  const { data: venues } = useSeasonVenues(seasonId); // Venues for season's league
   const { data: currentTeams } = useCurrentTeams(); // User's teams for Next Match card
 
   // Get user's team IDs for Next Match card
@@ -69,6 +73,8 @@ const SeasonDetailsPage: React.FC = () => {
   const importCSVMutation = useImportSeasonCSV(); // Import team/individual/weekly standings
   const importScheduleMutation = useImportSchedule(); // Import match schedule
   const updateSeasonMutation = useUpdateSeason(); // Update season details
+  const createVenueMutation = useCreateVenue(); // Create new venue
+  const updateVenueMutation = useUpdateVenue(); // Update existing venue
 
   // ============================================================================
   // CSV IMPORT MODAL STATE
@@ -92,13 +98,6 @@ const SeasonDetailsPage: React.FC = () => {
   const [showScheduleImportModal, setShowScheduleImportModal] = useState(false);
 
   // ============================================================================
-  // EDIT MATCH MODAL STATE
-  // For editing individual match details (scores, players, etc.)
-  // ============================================================================
-  const [showEditMatchModal, setShowEditMatchModal] = useState(false);
-  const [matchToEdit, setMatchToEdit] = useState<Match | null>(null);
-
-  // ============================================================================
   // EDIT SEASON MODAL STATE
   // For editing season name, dates, and viewing status
   // ============================================================================
@@ -110,6 +109,22 @@ const SeasonDetailsPage: React.FC = () => {
     is_active: false,
     is_archived: false,
   });
+
+  // ============================================================================
+  // VENUE MODAL STATE
+  // For adding and editing venues
+  // ============================================================================
+  const [showVenueModal, setShowVenueModal] = useState(false);
+  const [venueToEdit, setVenueToEdit] = useState<Venue | null>(null);
+  const [venueFormData, setVenueFormData] = useState({
+    name: "",
+    address: "",
+    table_count: 1,
+  });
+  const [originalVenueData, setOriginalVenueData] = useState<{
+    name: string;
+    address: string;
+  } | null>(null);
 
   // ============================================================================
   // FILE INPUT REFS
@@ -157,27 +172,10 @@ const SeasonDetailsPage: React.FC = () => {
   };
 
   /**
-   * Opens the edit match modal with the selected match data
+   * Navigates to the match score page for editing match details
    */
-  const openEditMatchModal = (match: Match) => {
-    setMatchToEdit(match);
-    setShowEditMatchModal(true);
-  };
-
-  /**
-   * Callback when match form is successfully submitted - closes modal and clears state
-   */
-  const handleMatchFormSuccess = () => {
-    setShowEditMatchModal(false);
-    setMatchToEdit(null);
-  };
-
-  /**
-   * Callback when match form is cancelled - closes modal and clears state
-   */
-  const handleMatchFormCancel = () => {
-    setShowEditMatchModal(false);
-    setMatchToEdit(null);
+  const handleEditMatch = (match: Match) => {
+    navigate(`/admin/matches/${match.id}/score`);
   };
 
   /**
@@ -224,6 +222,107 @@ const SeasonDetailsPage: React.FC = () => {
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to update season"
+      );
+    }
+  };
+
+  // ============================================================================
+  // VENUE HANDLER FUNCTIONS
+  // ============================================================================
+
+  /**
+   * Opens the venue modal for adding a new venue
+   */
+  const openAddVenueModal = () => {
+    setVenueToEdit(null);
+    setVenueFormData({ name: "", address: "", table_count: 1 });
+    setOriginalVenueData(null);
+    setShowVenueModal(true);
+  };
+
+  /**
+   * Opens the venue modal for editing an existing venue
+   */
+  const openEditVenueModal = (venue: Venue) => {
+    setVenueToEdit(venue);
+    setVenueFormData({
+      name: venue.name,
+      address: venue.address || "",
+      table_count: venue.table_count,
+    });
+    setOriginalVenueData({
+      name: venue.name,
+      address: venue.address || "",
+    });
+    setShowVenueModal(true);
+  };
+
+  /**
+   * Handles venue form field changes
+   */
+  const handleVenueFormChange = (
+    field: keyof typeof venueFormData,
+    value: string | number
+  ) => {
+    setVenueFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  /**
+   * Check if venue name or address has changed (for soft delete warning)
+   */
+  const venueNameAddressChanged =
+    venueToEdit &&
+    originalVenueData &&
+    (venueFormData.name !== originalVenueData.name ||
+      venueFormData.address !== originalVenueData.address);
+
+  /**
+   * Saves the venue - creates new or updates existing
+   * Implements soft delete workflow when name/address changes
+   */
+  const saveVenue = async () => {
+    if (!season) return;
+
+    try {
+      if (venueToEdit) {
+        // EDIT MODE
+        if (venueNameAddressChanged) {
+          // Soft delete workflow: deactivate old venue, create new one
+          await updateVenueMutation.mutateAsync({
+            venueId: venueToEdit.id,
+            data: { is_active: false },
+          });
+          await createVenueMutation.mutateAsync({
+            league: season.league,
+            name: venueFormData.name,
+            address: venueFormData.address || undefined,
+            table_count: venueFormData.table_count,
+          });
+          toast.success("Venue updated (previous version archived)");
+        } else {
+          // Only table_count changed - simple update
+          await updateVenueMutation.mutateAsync({
+            venueId: venueToEdit.id,
+            data: { table_count: venueFormData.table_count },
+          });
+          toast.success("Venue updated successfully!");
+        }
+      } else {
+        // CREATE MODE
+        await createVenueMutation.mutateAsync({
+          league: season.league,
+          name: venueFormData.name,
+          address: venueFormData.address || undefined,
+          table_count: venueFormData.table_count,
+        });
+        toast.success("Venue created successfully!");
+      }
+
+      setShowVenueModal(false);
+      setVenueToEdit(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save venue"
       );
     }
   };
@@ -321,17 +420,17 @@ const SeasonDetailsPage: React.FC = () => {
           HEADER SECTION
           Contains back navigation button, season name, and league name
           ===================================================================== */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <button
             onClick={() => navigate("/admin/leagues")}
-            className="btn btn-outline btn-sm flex items-center"
+            className="btn btn-outline btn-sm flex items-center justify-center sm:justify-start w-full sm:w-auto"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Leagues
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-dark">{season.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-dark">{season.name}</h1>
             <p className="text-sm text-dark-300 mt-1">
               {season.league_detail?.name}
             </p>
@@ -385,15 +484,50 @@ const SeasonDetailsPage: React.FC = () => {
           MATCHES SECTION
           Shows all matches for the season with edit/import capabilities
           ===================================================================== */}
-      <SeasonMatches
-        matches={matches}
-        editable={true}
-        onScheduleMatch={() => {
-          // TODO: Implement schedule match functionality
-        }}
-        onImportSchedule={() => setShowScheduleImportModal(true)}
-        onEditMatch={openEditMatchModal}
-      />
+      {/* Create Schedule prompt when no matches exist */}
+      {(!matches || matches.length === 0) && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-dark">Schedule</h2>
+          </div>
+          <div className="text-center py-8">
+            <Calendar className="h-12 w-12 text-dark-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-dark mb-2">No Schedule Yet</h3>
+            <p className="text-dark-300 mb-6 max-w-md mx-auto">
+              Create a schedule to define when teams play each other, or import an existing schedule from a CSV file.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={() => navigate(`/admin/seasons/${seasonId}/schedule`)}
+                className="btn btn-primary flex items-center w-full sm:w-auto justify-center"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Create Schedule
+              </button>
+              <button
+                onClick={() => setShowScheduleImportModal(true)}
+                className="btn btn-outline flex items-center w-full sm:w-auto justify-center"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import Schedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Show SeasonMatches when there are matches */}
+      {matches && matches.length > 0 && (
+        <SeasonMatches
+          matches={matches}
+          editable={true}
+          onScheduleMatch={() => {
+            navigate(`/admin/seasons/${seasonId}/schedule`);
+          }}
+          onImportSchedule={() => setShowScheduleImportModal(true)}
+          onEditMatch={handleEditMatch}
+        />
+      )}
 
       {/* =====================================================================
           PLAYER ANALYTICS SECTION
@@ -402,6 +536,17 @@ const SeasonDetailsPage: React.FC = () => {
       <SeasonPlayerAnalytics
         playersData={playersData}
         onViewPlayer={(playerId) => navigate(`/admin/players/${playerId}`)}
+      />
+
+      {/* =====================================================================
+          VENUES SECTION
+          Shows all venues available for matches in this season's league
+          ===================================================================== */}
+      <SeasonVenues
+        venues={venues}
+        editable={true}
+        onAddVenue={openAddVenueModal}
+        onEditVenue={openEditVenueModal}
       />
 
       {/* =====================================================================
@@ -506,17 +651,17 @@ const SeasonDetailsPage: React.FC = () => {
           </div>
 
           {/* Modal Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
             <button
               onClick={() => setShowUploadModal(false)}
-              className="btn btn-outline"
+              className="btn btn-outline w-full sm:w-auto"
               disabled={importCSVMutation.isPending}
             >
               Cancel
             </button>
             <button
               onClick={handleImportCSV}
-              className="btn btn-primary flex items-center"
+              className="btn btn-primary flex items-center justify-center w-full sm:w-auto"
               disabled={
                 !teamStandingsFile ||
                 !individualStandingsFile ||
@@ -622,17 +767,17 @@ const SeasonDetailsPage: React.FC = () => {
           </div>
 
           {/* Modal Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
             <button
               onClick={() => setShowScheduleImportModal(false)}
-              className="btn btn-outline"
+              className="btn btn-outline w-full sm:w-auto"
               disabled={importScheduleMutation.isPending}
             >
               Cancel
             </button>
             <button
               onClick={handleImportSchedule}
-              className="btn btn-primary flex items-center"
+              className="btn btn-primary flex items-center justify-center w-full sm:w-auto"
               disabled={
                 !scheduleFile ||
                 !scheduleStandingsFile ||
@@ -656,53 +801,6 @@ const SeasonDetailsPage: React.FC = () => {
       </Modal>
 
       {/* =====================================================================
-          MODAL: EDIT MATCH
-          Custom modal (not using Modal component) for editing match details
-          Uses the MatchForm component which handles:
-          - Match date/time
-          - Venue
-          - Scores
-          - Player lineups and individual game results
-          ===================================================================== */}
-      {showEditMatchModal && matchToEdit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-cream-200 rounded-lg max-w-4xl w-full shadow-xl max-h-[95vh] overflow-y-auto my-4">
-            {/* Sticky header with match info */}
-            <div className="sticky top-0 bg-primary text-white p-4 rounded-t-lg z-10 shadow-md">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-medium">Edit Match</h3>
-                  <p className="text-sm text-cream-200 mt-1">
-                    {matchToEdit.home_team_detail?.name ||
-                      `Team ${matchToEdit.home_team}`}{" "}
-                    vs{" "}
-                    {matchToEdit.away_team_detail?.name ||
-                      `Team ${matchToEdit.away_team}`}
-                  </p>
-                </div>
-                <button
-                  onClick={handleMatchFormCancel}
-                  className="text-white hover:text-cream-200 transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Match form body */}
-            <div className="p-6">
-              <MatchForm
-                match={matchToEdit}
-                onSuccess={handleMatchFormSuccess}
-                onCancel={handleMatchFormCancel}
-                showCancelButton={true}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================================
           MODAL: EDIT SEASON
           Custom modal for editing basic season information:
           - Season name
@@ -713,7 +811,7 @@ const SeasonDetailsPage: React.FC = () => {
           ===================================================================== */}
       {showEditSeasonModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl">
+          <div className="bg-white rounded-lg max-w-[95vw] sm:max-w-lg w-full p-4 sm:p-6 shadow-xl mx-2 sm:mx-0">
             {/* Modal Header */}
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-medium">Edit Season</h3>
@@ -747,7 +845,7 @@ const SeasonDetailsPage: React.FC = () => {
               </div>
 
               {/* Fields: Start Date and End Date (side by side) */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label
                     htmlFor="season-start-date"
@@ -809,17 +907,17 @@ const SeasonDetailsPage: React.FC = () => {
             </div>
 
             {/* Modal Action Buttons */}
-            <div className="flex justify-end space-x-3">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
               <button
                 onClick={() => setShowEditSeasonModal(false)}
-                className="btn btn-outline"
+                className="btn btn-outline w-full sm:w-auto"
                 disabled={updateSeasonMutation.isPending}
               >
                 Cancel
               </button>
               <button
                 onClick={saveSeasonEdit}
-                className="btn btn-primary flex items-center"
+                className="btn btn-primary flex items-center justify-center w-full sm:w-auto"
                 disabled={updateSeasonMutation.isPending}
               >
                 {updateSeasonMutation.isPending ? (
@@ -835,6 +933,121 @@ const SeasonDetailsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* =====================================================================
+          MODAL: ADD/EDIT VENUE
+          Allows creating new venues or editing existing ones
+          Shows warning when name/address changes (triggers soft delete)
+          ===================================================================== */}
+      <Modal
+        isOpen={showVenueModal}
+        onClose={() => setShowVenueModal(false)}
+        title={venueToEdit ? "Edit Venue" : "Add Venue"}
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          {/* Venue Name */}
+          <div>
+            <label
+              htmlFor="venue-name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Venue Name *
+            </label>
+            <input
+              type="text"
+              id="venue-name"
+              className="form-input w-full"
+              value={venueFormData.name}
+              onChange={(e) => handleVenueFormChange("name", e.target.value)}
+              placeholder="e.g., Murphy's Pub"
+            />
+          </div>
+
+          {/* Address */}
+          <div>
+            <label
+              htmlFor="venue-address"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Address
+            </label>
+            <input
+              type="text"
+              id="venue-address"
+              className="form-input w-full"
+              value={venueFormData.address}
+              onChange={(e) => handleVenueFormChange("address", e.target.value)}
+              placeholder="e.g., 123 Main St, Portland, OR"
+            />
+          </div>
+
+          {/* Table Count */}
+          <div>
+            <label
+              htmlFor="venue-tables"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Number of Tables *
+            </label>
+            <input
+              type="number"
+              id="venue-tables"
+              className="form-input w-full"
+              value={venueFormData.table_count}
+              onChange={(e) =>
+                handleVenueFormChange("table_count", parseInt(e.target.value) || 1)
+              }
+              min="1"
+            />
+          </div>
+
+          {/* Soft Delete Warning */}
+          {venueNameAddressChanged && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-800">
+                <strong>Note:</strong> Changing the venue name or address will
+                archive the current venue and create a new one. This preserves
+                historical match data.
+              </p>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
+            <button
+              onClick={() => setShowVenueModal(false)}
+              className="btn btn-outline w-full sm:w-auto"
+              disabled={
+                createVenueMutation.isPending || updateVenueMutation.isPending
+              }
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveVenue}
+              className="btn btn-primary flex items-center justify-center w-full sm:w-auto"
+              disabled={
+                !venueFormData.name.trim() ||
+                venueFormData.table_count < 1 ||
+                createVenueMutation.isPending ||
+                updateVenueMutation.isPending
+              }
+            >
+              {createVenueMutation.isPending || updateVenueMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : venueToEdit ? (
+                "Save Changes"
+              ) : (
+                "Add Venue"
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

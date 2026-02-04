@@ -40,7 +40,7 @@ const ProfilePage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-dark">Your Profile</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-dark">Your Profile</h1>
         <p className="text-sm text-dark-300 mt-1">
           Manage your account information
         </p>
@@ -49,17 +49,17 @@ const ProfilePage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Profile Card */}
         <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-start justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
             <div className="flex items-center space-x-4">
               {/* Avatar */}
-              <div className="h-20 w-20 rounded-full bg-primary-100 flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary-700">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-xl sm:text-2xl font-bold text-primary-700">
                   {getInitials()}
                 </span>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-dark">{getFullName()}</h2>
-                <p className="text-dark-300">@{user?.username}</p>
+                <h2 className="text-lg sm:text-xl font-bold text-dark">{getFullName()}</h2>
+                <p className="text-dark-300 text-sm sm:text-base">@{user?.username}</p>
                 {operatorLeagues.length > 0 && (
                   <span className="inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700">
                     <Shield className="h-3 w-3 mr-1" />
@@ -68,7 +68,7 @@ const ProfilePage: React.FC = () => {
                 )}
               </div>
             </div>
-            <button className="btn btn-outline btn-sm flex items-center">
+            <button className="btn btn-outline btn-sm flex items-center justify-center sm:justify-start">
               <Edit3 className="h-4 w-4 mr-1" />
               Edit Profile
             </button>

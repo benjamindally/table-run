@@ -79,7 +79,7 @@ const AdminPlayersPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
           {canManagePlayers ? "Manage Players" : "Player Directory"}
         </h1>
         <p className="text-gray-600">

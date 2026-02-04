@@ -26,17 +26,17 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
 
   if (!matches || matches.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-dark">Matches</h2>
-          <div className="flex items-center space-x-2">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-dark">Matches</h2>
+          <div className="flex items-center gap-2">
             {editable && onImportSchedule && (
               <button
                 onClick={onImportSchedule}
                 className="btn btn-outline btn-sm flex items-center"
               >
-                <Upload className="h-4 w-4 mr-1" />
-                Import Schedule
+                <Upload className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Import Schedule</span>
               </button>
             )}
             {/* {editable && onScheduleMatch && (
@@ -100,17 +100,17 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
   const hasEditableMatches = typeof editable === 'boolean' ? editable : matches.some(isMatchEditable);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-dark">Matches</h2>
-        <div className="flex items-center space-x-2">
+    <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <h2 className="text-lg sm:text-xl font-semibold text-dark">Matches</h2>
+        <div className="flex items-center gap-2">
           {hasEditableMatches && onImportSchedule && (
             <button
               onClick={onImportSchedule}
               className="btn btn-outline btn-sm flex items-center"
             >
-              <Upload className="h-4 w-4 mr-1" />
-              Import Schedule
+              <Upload className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Import Schedule</span>
             </button>
           )}
           {/* {hasEditableMatches && onScheduleMatch && (
@@ -136,12 +136,12 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
             {weeksToShow.map((weekNum) => (
               <div
                 key={weekNum}
-                className="border border-cream-400 rounded-lg p-4 bg-cream-50"
+                className="border border-cream-400 rounded-lg p-3 sm:p-4 bg-cream-50"
               >
-                <h3 className="font-semibold text-lg text-dark mb-3">
+                <h3 className="font-semibold text-base sm:text-lg text-dark mb-3">
                   {weekNum === 0 ? "Unscheduled" : `Week ${weekNum}`}
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   {matchesByWeek[weekNum].map((match) => {
                     const matchEditable = isMatchEditable(match);
                     const isUserMatch = isUserTeamMatch?.(match) ?? false;

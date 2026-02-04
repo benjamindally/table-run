@@ -1,13 +1,12 @@
-import React, { useMemo, useEffect, useCallback } from "react";
+import React, { useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wifi, WifiOff, Eye } from "lucide-react";
+import { ArrowLeft, Eye } from "lucide-react";
 import { useMatch } from "../../hooks/useMatches";
 import { useSeason } from "../../hooks/useSeasons";
 import { useCurrentTeams } from "../../hooks/usePlayers";
 import { useAuth } from "../../contexts/AuthContext";
 import { useMatchScoring } from "../../contexts/MatchScoringContext";
-import { useMatchWebSocket } from "../../hooks/useMatchWebSocket";
-import type { IncomingMessage, TeamSide } from "../../types/websocket";
+import type { TeamSide } from "../../types/websocket";
 import MatchForm from "../../components/matches/MatchForm";
 
 const MatchScorePage: React.FC = () => {
@@ -47,16 +46,6 @@ const MatchScorePage: React.FC = () => {
     return league.sets_per_match * league.games_per_set;
   }, [season]);
 
-  const handleWebSocketMessage = useCallback((message: IncomingMessage) => {
-    console.log("WebSocket message received:", message);
-  }, []);
-
-  const { status: wsStatus, isConnected } = useMatchWebSocket({
-    matchId: match?.id || 0,
-    enabled: !!match && gamesCount !== null,
-    onMessage: handleWebSocketMessage,
-  });
-
   useEffect(() => {
     if (match && gamesCount !== null) {
       initializeMatch(match.id, gamesCount);
@@ -74,7 +63,7 @@ const MatchScorePage: React.FC = () => {
   if (matchLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-dark">Match Score Entry</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-dark">Match Score Entry</h1>
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
           <div className="text-gray-500">Loading match...</div>
         </div>
@@ -85,7 +74,7 @@ const MatchScorePage: React.FC = () => {
   if (matchError || !match) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-dark">Match Score Entry</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-dark">Match Score Entry</h1>
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
           <div className="text-red-500">Match not found</div>
           <button onClick={() => navigate("/admin/matches")} className="mt-4 btn btn-outline">
@@ -112,7 +101,7 @@ const MatchScorePage: React.FC = () => {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-dark">
+            <h1 className="text-xl sm:text-2xl font-bold text-dark">
               {homeTeam?.name || "Home"} vs {awayTeam?.name || "Away"}
             </h1>
             <p className="text-sm text-dark-300 mt-1">
@@ -120,26 +109,12 @@ const MatchScorePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            {isConnected ? (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
-                <Wifi className="h-4 w-4" />
-                Live
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 text-sm font-medium rounded-full">
-                <WifiOff className="h-4 w-4" />
-                {wsStatus === "connecting" ? "Connecting..." : "Offline"}
-              </span>
-            )}
-
-            {!canEdit && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
-                <Eye className="h-4 w-4" />
-                View Only
-              </span>
-            )}
-          </div>
+          {!canEdit && (
+            <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+              <Eye className="h-4 w-4" />
+              View Only
+            </span>
+          )}
         </div>
       </div>
 
@@ -168,6 +143,7 @@ const MatchScorePage: React.FC = () => {
           <MatchForm
             match={match}
             userTeamSide={userTeamSide}
+            isLeagueOperator={isLeagueOperator}
             onSuccess={handleSuccess}
             onCancel={handleCancel}
             showCancelButton={false}

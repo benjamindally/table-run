@@ -260,3 +260,74 @@ export interface PlayerUpdateData {
   phone?: string;
   skill_level?: number | null;
 }
+
+/**
+ * Scheduling Types
+ */
+
+// Venue model from backend
+export interface Venue {
+  id: number;
+  league: number;
+  league_name?: string;
+  name: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  table_count: number;
+  is_active?: boolean;
+  created_at?: string;
+}
+
+// Schedule configuration for generation
+export interface ScheduleConfiguration {
+  start_date: string;
+  matches_per_week: number;
+  break_weeks?: number[];           // Holiday/break weeks (no matches for anyone)
+  bye_weeks?: number[];             // Weeks with reduced matches (some teams have byes)
+  alternating_home_away: boolean;   // Whether to alternate home/away for teams
+  times_play_each_other: number;    // 1 = single round robin, 2 = double, etc.
+  tables_per_establishment?: Record<number, number>; // venue_id -> table count
+}
+
+// API response from generate-schedule
+export interface GeneratedScheduleResponse {
+  schedule: ScheduleWeek[];
+  warnings: ScheduleWarning[];
+  configuration: ScheduleConfiguration;
+}
+
+export interface ScheduleWeek {
+  week_number: number;
+  date: string;
+  matches: ScheduleMatch[];
+  is_break_week?: boolean;
+}
+
+export interface ScheduleMatch {
+  temp_id?: string;              // For new matches (not yet saved)
+  id?: number;                   // For existing matches
+  home_team_id: number | null;
+  home_team_name?: string;
+  away_team_id: number | null;
+  away_team_name?: string;
+  venue_id?: number | null;
+  venue_name?: string;
+  date: string;
+  is_bye?: boolean;
+  bye_team_id?: number;         // Team with bye this week
+  bye_team_name?: string;
+}
+
+export interface ScheduleWarning {
+  type: 'venue_conflict' | 'season_overflow' | 'team_conflict' | 'missing_venue' | 'date_conflict';
+  message: string;
+  week_number?: number;
+}
+
+// Request to save schedule
+export interface SaveScheduleRequest {
+  schedule: ScheduleWeek[];
+  configuration?: ScheduleConfiguration;
+  is_manual?: boolean;
+}

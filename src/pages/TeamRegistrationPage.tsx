@@ -152,7 +152,7 @@ const TeamRegistrationPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex flex-col items-center">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm md:text-base ${
                 currentStep >= 1
                   ? "bg-orange-500 text-white"
                   : "bg-gray-200 text-gray-500"
@@ -160,16 +160,16 @@ const TeamRegistrationPage: React.FC = () => {
             >
               1
             </div>
-            <span className="mt-2 text-sm">Team Info</span>
+            <span className="mt-2 text-xs md:text-sm text-center">Team Info</span>
           </div>
           <div
-            className={`flex-1 h-1 mx-2 ${
+            className={`flex-1 h-0.5 md:h-1 mx-1 md:mx-2 ${
               currentStep >= 2 ? "bg-orange-500" : "bg-gray-200"
             }`}
           ></div>
           <div className="flex flex-col items-center">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm md:text-base ${
                 currentStep >= 2
                   ? "bg-orange-500 text-white"
                   : "bg-gray-200 text-gray-500"
@@ -177,16 +177,16 @@ const TeamRegistrationPage: React.FC = () => {
             >
               2
             </div>
-            <span className="mt-2 text-sm">Team Captain</span>
+            <span className="mt-2 text-xs md:text-sm text-center">Captain</span>
           </div>
           <div
-            className={`flex-1 h-1 mx-2 ${
+            className={`flex-1 h-0.5 md:h-1 mx-1 md:mx-2 ${
               currentStep >= 3 ? "bg-orange-500" : "bg-gray-200"
             }`}
           ></div>
           <div className="flex flex-col items-center">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm md:text-base ${
                 currentStep >= 3
                   ? "bg-orange-500 text-white"
                   : "bg-gray-200 text-gray-500"
@@ -194,7 +194,7 @@ const TeamRegistrationPage: React.FC = () => {
             >
               3
             </div>
-            <span className="mt-2 text-sm">Players</span>
+            <span className="mt-2 text-xs md:text-sm text-center">Players</span>
           </div>
         </div>
       </div>

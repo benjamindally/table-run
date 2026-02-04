@@ -105,17 +105,17 @@ const SeasonDetailsPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       {/* Header with Back Button and Enter Scores Button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <button
             onClick={() => navigate("/leagues")}
-            className="btn btn-outline btn-sm flex items-center"
+            className="btn btn-outline btn-sm flex items-center justify-center sm:justify-start w-full sm:w-auto"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Leagues
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-dark">{season.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-dark">{season.name}</h1>
             <p className="text-sm text-dark-300 mt-1">
               {season.league_detail?.name}
             </p>

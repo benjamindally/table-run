@@ -72,16 +72,16 @@ const LoginPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-4xl">
             {/* Add a League Card */}
-            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-8">
-              <div className="bg-primary-100 p-4 rounded-lg w-fit mb-4">
-                <Building2 className="h-8 w-8 text-primary-600" />
+            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 md:p-8">
+              <div className="bg-primary-100 p-3 md:p-4 rounded-lg w-fit mb-4">
+                <Building2 className="h-6 w-6 md:h-8 md:w-8 text-primary-600" />
               </div>
-              <h2 className="text-xl font-bold text-dark mb-2">
+              <h2 className="text-lg md:text-xl font-bold text-dark mb-2">
                 Create a League
               </h2>
-              <p className="text-dark-300 mb-6">
+              <p className="text-sm md:text-base text-dark-300 mb-4 md:mb-6">
                 Start your own pool league and manage teams, matches, and
                 standings.
               </p>
@@ -95,14 +95,14 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Join a League Card */}
-            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-8">
-              <div className="bg-secondary-100 p-4 rounded-lg w-fit mb-4">
-                <UserPlus className="h-8 w-8 text-secondary-600" />
+            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 md:p-8">
+              <div className="bg-secondary-100 p-3 md:p-4 rounded-lg w-fit mb-4">
+                <UserPlus className="h-6 w-6 md:h-8 md:w-8 text-secondary-600" />
               </div>
-              <h2 className="text-xl font-bold text-dark mb-2">
+              <h2 className="text-lg md:text-xl font-bold text-dark mb-2">
                 Join a League
               </h2>
-              <p className="text-dark-300 mb-6">
+              <p className="text-sm md:text-base text-dark-300 mb-4 md:mb-6">
                 Connect with an existing league as an operator or staff member.
               </p>
               <button className="btn btn-outline flex items-center">
@@ -141,7 +141,7 @@ const LoginPage: React.FC = () => {
         <p className="text-dark-300">Sign in to your account</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-8">
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-8">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4 flex items-start">
             <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />

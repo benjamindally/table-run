@@ -124,7 +124,7 @@ const DashboardPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
           <div className="text-gray-500">Loading...</div>
         </div>
@@ -138,7 +138,7 @@ const DashboardPage: React.FC = () => {
       <>
         <div className="space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-dark">
+            <h1 className="text-xl sm:text-2xl font-bold text-dark">
               Welcome to League Genius
             </h1>
             <p className="text-sm text-dark-300 mt-1">
@@ -211,7 +211,7 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-dark">Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-dark">Dashboard</h1>
         <p className="text-sm text-dark-300 mt-1">Overview of your leagues</p>
       </div>
 
@@ -259,7 +259,7 @@ const DashboardPage: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     {league.is_operator && (
                       <button
                         onClick={(e) => {
@@ -269,15 +269,15 @@ const DashboardPage: React.FC = () => {
                         className="btn btn-secondary btn-sm flex items-center"
                         title="Send announcement to all league members"
                       >
-                        <Megaphone className="h-4 w-4 mr-1" />
-                        Announce
+                        <Megaphone className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Announce</span>
                       </button>
                     )}
                     {league.is_operator && (
                       <Link
                         to="/admin/leagues"
                         onClick={(e) => e.stopPropagation()}
-                        className="btn btn-outline btn-sm"
+                        className="btn btn-outline btn-sm hidden sm:inline-flex"
                       >
                         Manage
                       </Link>
@@ -292,9 +292,9 @@ const DashboardPage: React.FC = () => {
 
                 {/* Expanded Seasons Section */}
                 {isExpanded && (
-                  <div className="border-t bg-gray-50 p-4">
+                  <div className="border-t bg-gray-50 p-2 sm:p-4">
                     {leagueSeasons.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
                         {leagueSeasons.map((season, index) => {
                           const isCurrentSeason = index === 0;
 
