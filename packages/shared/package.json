@@ -1,0 +1,19 @@
+{
+  "name": "@league-genius/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./api": "./src/api/index.ts",
+    "./types": "./src/types/index.ts",
+    "./utils": "./src/utils/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  }
+}
