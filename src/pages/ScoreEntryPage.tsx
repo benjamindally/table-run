@@ -225,6 +225,7 @@ const ScoreEntryPage: React.FC = () => {
           <MatchForm
             match={selectedMatch}
             userTeamSide={captainRole}
+            isLeagueOperator={isLeagueOperator}
             onSuccess={handleSuccess}
             onCancel={handleCancel}
             showCancelButton={false}

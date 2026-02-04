@@ -159,7 +159,7 @@ const LeagueDetailsPage: React.FC = () => {
             Back to Leagues
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-dark">League Details</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-dark">League Details</h1>
             <p className="text-sm text-dark-300 mt-1">
               {isOperator ? 'Edit league information' : 'View league information'}
             </p>

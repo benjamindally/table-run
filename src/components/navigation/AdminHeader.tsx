@@ -5,9 +5,11 @@ import {
   Bell,
   User,
   LayoutDashboard,
-  Users,
   ClipboardList,
   LogOut,
+  Calendar,
+  CircleUser,
+  Trophy,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -53,14 +55,24 @@ const AdminHeader: React.FC = () => {
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-      name: "Teams",
-      path: "/admin/teams",
-      icon: <Users className="h-5 w-5" />,
+      name: "Leagues",
+      path: "/admin/leagues",
+      icon: <Calendar className="h-5 w-5" />,
+    },
+    {
+      name: "Seasons",
+      path: "/admin/seasons",
+      icon: <ClipboardList className="h-5 w-5" />,
+    },
+    {
+      name: "Players",
+      path: "/admin/players",
+      icon: <CircleUser className="h-5 w-5" />,
     },
     {
       name: "Matches",
       path: "/admin/matches",
-      icon: <ClipboardList className="h-5 w-5" />,
+      icon: <Trophy className="h-5 w-5" />,
     },
   ];
 
@@ -164,6 +176,20 @@ const AdminHeader: React.FC = () => {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link
+                to="/admin/profile"
+                className={`flex items-center space-x-3 px-4 py-2 rounded-md transition-colors ${
+                  location.pathname === "/admin/profile"
+                    ? "bg-primary text-white"
+                    : "text-cream-400 hover:bg-dark-400"
+                }`}
+                onClick={toggleMenu}
+              >
+                <User className="h-5 w-5" />
+                <span>Profile</span>
+              </Link>
+            </li>
             <li>
               <button
                 onClick={handleLogout}

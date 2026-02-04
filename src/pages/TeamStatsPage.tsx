@@ -115,12 +115,12 @@ export default function TeamStatsPage() {
           Back to Standings
         </button>
 
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               {stats.team_name}
             </h1>
-            <p className="text-gray-600 mt-1">{stats.season_name}</p>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">{stats.season_name}</p>
           </div>
 
           {/* Season Selector */}
@@ -444,12 +444,12 @@ export default function TeamStatsPage() {
       )}
 
       {/* Legend */}
-      <div className="mt-6 flex items-center gap-6 text-sm text-gray-600">
-        <div className="flex items-center gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Flame className="h-4 w-4 text-orange-500" />
           <span>Table Runs</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Target className="h-4 w-4 text-blue-500" />
           <span>8-Ball breaks</span>
         </div>

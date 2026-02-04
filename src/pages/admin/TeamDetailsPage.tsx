@@ -142,17 +142,17 @@ const TeamDetailsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header with Back Button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <button
             onClick={() => navigate(-1)}
-            className="btn btn-outline btn-sm flex items-center"
+            className="btn btn-outline btn-sm flex items-center justify-center sm:justify-start w-full sm:w-auto"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-dark">{team.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-dark">{team.name}</h1>
             <p className="text-sm text-dark-300 mt-1">
               <MapPin className="h-4 w-4 inline mr-1" />
               {team.establishment}
@@ -162,28 +162,29 @@ const TeamDetailsPage: React.FC = () => {
         {!isEditing ? (
           <button
             onClick={handleEdit}
-            className="btn btn-primary btn-sm flex items-center"
+            className="btn btn-primary btn-sm flex items-center justify-center w-full sm:w-auto"
           >
-            <Edit className="h-4 w-4 mr-1" />
-            Edit Team
+            <Edit className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Edit Team</span>
+            <span className="sm:hidden ml-1">Edit</span>
           </button>
         ) : (
-          <div className="flex space-x-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <button
               onClick={handleSave}
               disabled={updateMutation.isPending}
-              className="btn btn-primary btn-sm flex items-center"
+              className="btn btn-primary btn-sm flex items-center justify-center flex-1 sm:flex-none"
             >
-              <Check className="h-4 w-4 mr-1" />
-              Save
+              <Check className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Save</span>
             </button>
             <button
               onClick={handleCancel}
               disabled={updateMutation.isPending}
-              className="btn btn-outline btn-sm flex items-center"
+              className="btn btn-outline btn-sm flex items-center justify-center flex-1 sm:flex-none"
             >
-              <X className="h-4 w-4 mr-1" />
-              Cancel
+              <X className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Cancel</span>
             </button>
           </div>
         )}
@@ -323,85 +324,142 @@ const TeamDetailsPage: React.FC = () => {
           </div>
         </div>
         {roster && roster.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Player
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Email
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                    Joined
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {roster.map((membership) => (
-                  <tr key={membership.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
-                          <span className="text-sm font-semibold text-primary-600">
-                            {membership.player_detail?.full_name
-                              ?.split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-dark">
-                            {membership.player_detail?.full_name}
-                          </p>
-                          <p className="text-sm text-dark-300">
-                            ID: {membership.player_detail?.id}
-                          </p>
-                        </div>
+          <>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
+              {roster.map((membership) => (
+                <div
+                  key={membership.id}
+                  className="p-4 border border-gray-200 rounded-lg"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-semibold text-primary-600">
+                          {membership.player_detail?.full_name
+                            ?.split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </span>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center text-sm text-dark-300">
-                        <Mail className="h-4 w-4 mr-2" />
-                        {membership.player_detail?.email}
+                      <div className="min-w-0">
+                        <p className="font-medium text-dark truncate">
+                          {membership.player_detail?.full_name}
+                        </p>
+                        <p className="text-xs text-dark-300 truncate">
+                          {membership.player_detail?.email}
+                        </p>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm text-dark-300">
-                      {new Date(membership.joined_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                          membership.is_active
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {membership.is_active ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() =>
-                          navigate(`/admin/players/${membership.player}`)
-                        }
-                        className="btn btn-outline btn-sm"
-                      >
-                        View Player
-                      </button>
-                    </td>
+                    </div>
+                    <span
+                      className={`inline-block px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
+                        membership.is_active
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {membership.is_active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <span className="text-xs text-dark-300">
+                      Joined {new Date(membership.joined_at).toLocaleDateString()}
+                    </span>
+                    <button
+                      onClick={() =>
+                        navigate(`/admin/players/${membership.player}`)
+                      }
+                      className="btn btn-outline btn-sm"
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Player
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Email
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                      Joined
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {roster.map((membership) => (
+                    <tr key={membership.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                            <span className="text-sm font-semibold text-primary-600">
+                              {membership.player_detail?.full_name
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-dark">
+                              {membership.player_detail?.full_name}
+                            </p>
+                            <p className="text-sm text-dark-300">
+                              ID: {membership.player_detail?.id}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center text-sm text-dark-300">
+                          <Mail className="h-4 w-4 mr-2" />
+                          {membership.player_detail?.email}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm text-dark-300">
+                        {new Date(membership.joined_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                            membership.is_active
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {membership.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() =>
+                            navigate(`/admin/players/${membership.player}`)
+                          }
+                          className="btn btn-outline btn-sm"
+                        >
+                          View Player
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <div className="text-center py-8 text-dark-300">
             No players on the roster yet. Add players to get started.
@@ -420,89 +478,152 @@ const TeamDetailsPage: React.FC = () => {
           )}
         </div>
         {seasons && seasons.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Season
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    League
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                    W
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                    L
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                    Win %
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                    <Trophy className="h-3 w-3 inline mr-1" />
-                    Place
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {seasons.map((participation) => (
-                  <tr key={participation.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-dark-300" />
-                        <span className="font-medium text-dark">
+          <>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
+              {seasons.map((participation) => (
+                <div
+                  key={participation.id}
+                  className="p-4 border border-gray-200 rounded-lg"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-dark-300 flex-shrink-0" />
+                        <span className="font-medium text-dark truncate">
                           {participation.season_detail?.name}
                         </span>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-dark-300">
-                      {participation.season_detail?.league_name}
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm font-semibold text-green-600">
-                      {participation.wins}
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm font-semibold text-red-600">
-                      {participation.losses}
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm">
-                      {participation.win_percentage?.toFixed(1)}%
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm">
-                      <span className="text-gray-400">-</span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                          participation.is_active
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {participation.is_active ? "Active" : "Completed"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() =>
-                          navigate(`/admin/seasons/${participation.season}`)
-                        }
-                        className="btn btn-outline btn-sm"
-                      >
-                        View Season
-                      </button>
-                    </td>
+                      <p className="text-xs text-dark-300 mt-1 truncate">
+                        {participation.season_detail?.league_name}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-block px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
+                        participation.is_active
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {participation.is_active ? "Active" : "Completed"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500">Record</p>
+                        <p className="text-sm font-semibold">
+                          <span className="text-green-600">{participation.wins}</span>
+                          {" - "}
+                          <span className="text-red-600">{participation.losses}</span>
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500">Win %</p>
+                        <p className="text-sm font-medium">
+                          {participation.win_percentage?.toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() =>
+                        navigate(`/admin/seasons/${participation.season}`)
+                      }
+                      className="btn btn-outline btn-sm"
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Season
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      League
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                      W
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                      L
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                      Win %
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                      <Trophy className="h-3 w-3 inline mr-1" />
+                      Place
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {seasons.map((participation) => (
+                    <tr key={participation.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-dark-300" />
+                          <span className="font-medium text-dark">
+                            {participation.season_detail?.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-dark-300">
+                        {participation.season_detail?.league_name}
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm font-semibold text-green-600">
+                        {participation.wins}
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm font-semibold text-red-600">
+                        {participation.losses}
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm">
+                        {participation.win_percentage?.toFixed(1)}%
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm">
+                        <span className="text-gray-400">-</span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                            participation.is_active
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {participation.is_active ? "Active" : "Completed"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() =>
+                            navigate(`/admin/seasons/${participation.season}`)
+                          }
+                          className="btn btn-outline btn-sm"
+                        >
+                          View Season
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <div className="text-center py-8 text-dark-300">
             This team hasn't completed in any seasons of record.
@@ -513,7 +634,7 @@ const TeamDetailsPage: React.FC = () => {
       {/* Manage Captains Modal */}
       {showCaptainModal && roster && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-2xl w-full mx-2 sm:mx-4 max-h-[80vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-dark">
                 Manage Team Captains

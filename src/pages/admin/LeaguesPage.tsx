@@ -69,14 +69,14 @@ const LeaguesPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-dark">Leagues</h1>
           <p className="text-sm text-dark-300 mt-1">League Management</p>
         </div>
         <button
           onClick={() => setShowCreateLeagueModal(true)}
-          className="btn btn-primary flex items-center"
+          className="btn btn-primary flex items-center justify-center sm:w-auto"
         >
           <Plus className="h-5 w-5 mr-1" /> Create League
         </button>
@@ -121,7 +121,7 @@ const LeaguesPage: React.FC = () => {
                   </div>
 
                   {league.is_operator ? (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <button
                         onClick={() => setSelectedLeagueForSeason(league.id)}
                         className="btn btn-primary text-sm flex items-center justify-center"

@@ -28,18 +28,18 @@ const SeasonOverview: React.FC<SeasonOverviewProps> = ({
   onImportCSV,
 }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-dark">Overview</h2>
+    <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-dark">Overview</h2>
         {editable && (
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             {onImportCSV && (
               <button
                 onClick={onImportCSV}
                 className="btn btn-outline btn-sm flex items-center"
               >
-                <Upload className="h-4 w-4 mr-1" />
-                Import CSV
+                <Upload className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Import CSV</span>
               </button>
             )}
             {onEditSeason && (
@@ -47,8 +47,8 @@ const SeasonOverview: React.FC<SeasonOverviewProps> = ({
                 onClick={onEditSeason}
                 className="btn btn-outline btn-sm flex items-center"
               >
-                <Edit className="h-4 w-4 mr-1" />
-                Edit Season
+                <Edit className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Edit Season</span>
               </button>
             )}
             {onArchive && (
@@ -56,15 +56,15 @@ const SeasonOverview: React.FC<SeasonOverviewProps> = ({
                 onClick={onArchive}
                 className="btn btn-outline btn-sm flex items-center"
               >
-                <Archive className="h-4 w-4 mr-1" />
-                Archive
+                <Archive className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Archive</span>
               </button>
             )}
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
         <div>
           <div className="flex items-center text-dark-300 mb-2">
             <Calendar className="h-5 w-5 mr-2" />

@@ -6,7 +6,7 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -36,10 +36,12 @@ const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   const maxWidthClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
+    sm: 'max-w-[95vw] sm:max-w-sm',
+    md: 'max-w-[95vw] sm:max-w-md',
+    lg: 'max-w-[95vw] sm:max-w-lg',
+    xl: 'max-w-[95vw] sm:max-w-xl',
+    '2xl': 'max-w-[95vw] sm:max-w-2xl',
+    '4xl': 'max-w-[95vw] sm:max-w-4xl',
   };
 
   return (
@@ -57,8 +59,8 @@ const Modal: React.FC<ModalProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b">
-            <h2 className="text-xl font-bold text-dark">{title}</h2>
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+            <h2 className="text-lg sm:text-xl font-bold text-dark">{title}</h2>
             <button
               onClick={onClose}
               className="text-dark-300 hover:text-dark transition-colors"
@@ -68,7 +70,7 @@ const Modal: React.FC<ModalProps> = ({
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {children}
           </div>
         </div>

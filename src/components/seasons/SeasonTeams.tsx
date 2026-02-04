@@ -29,10 +29,10 @@ const SeasonTeams: React.FC<SeasonTeamsProps> = ({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-dark">Teams</h2>
-        <div className="flex items-center space-x-2">
+    <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <h2 className="text-lg sm:text-xl font-semibold text-dark">Teams</h2>
+        <div className="flex items-center gap-2">
           {editable && onAddTeam && (
             <button onClick={onAddTeam} className="btn btn-primary btn-sm">
               Add Team
@@ -59,20 +59,20 @@ const SeasonTeams: React.FC<SeasonTeamsProps> = ({
                   (participation) => (
                     <div
                       key={participation.id}
-                      className="flex items-center justify-between p-4 border border-cream-400 rounded-lg"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 sm:p-4 border border-cream-400 rounded-lg"
                     >
                       <div>
-                        <h3 className="font-semibold text-dark">
+                        <h3 className="font-semibold text-dark text-sm sm:text-base">
                           {participation.team_detail?.name}
                         </h3>
-                        <p className="text-sm text-dark-300">
+                        <p className="text-xs sm:text-sm text-dark-300">
                           {participation.team_detail?.establishment}
                         </p>
                       </div>
                       {onViewTeam && (
                         <button
                           onClick={() => onViewTeam(participation.team)}
-                          className="btn btn-outline btn-sm"
+                          className="btn btn-outline btn-sm w-full sm:w-auto"
                         >
                           View Team
                         </button>

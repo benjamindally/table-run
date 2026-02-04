@@ -188,80 +188,80 @@ const PlayerDetailsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header with Back Button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
           <button
             onClick={() => navigate(-1)}
-            className="btn btn-outline btn-sm flex items-center"
+            className="btn btn-outline btn-sm flex items-center flex-shrink-0"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+            <ArrowLeft className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Back</span>
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-dark">{player.full_name}</h1>
-            <p className="text-sm text-dark-300 mt-1">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold text-dark truncate">{player.full_name}</h1>
+            <p className="text-xs sm:text-sm text-dark-300 mt-1 truncate">
               {player.user ? player.user.email : ""}
             </p>
           </div>
         </div>
         <button
           onClick={handleEditPlayer}
-          className="btn btn-primary btn-sm flex items-center"
+          className="btn btn-primary btn-sm flex items-center flex-shrink-0"
         >
-          <Edit className="h-4 w-4 mr-1" />
-          Edit Player
+          <Edit className="h-4 w-4 sm:mr-1" />
+          <span className="hidden sm:inline">Edit Player</span>
         </button>
       </div>
 
       {/* Career Overview */}
       {seasonStats && seasonStats.career_totals && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-dark flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2" />
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
+            <h2 className="text-lg sm:text-xl font-semibold text-dark flex items-center">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
               Career Statistics
             </h2>
-            <span className="text-sm text-dark-300">
+            <span className="text-xs sm:text-sm text-dark-300 flex-shrink-0">
               {seasonStats.career_totals.seasons_played}{" "}
               {seasonStats.career_totals.seasons_played === 1
                 ? "Season"
                 : "Seasons"}
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-white rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+            <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">
                 {seasonStats.career_totals.total_wins}
               </div>
               <div className="text-xs text-dark-300 mt-1">Wins</div>
             </div>
-            <div className="bg-white rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-red-600">
+            <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-red-600">
                 {seasonStats.career_totals.total_losses}
               </div>
               <div className="text-xs text-dark-300 mt-1">Losses</div>
             </div>
-            <div className="bg-white rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-dark">
+            <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-dark">
                 {seasonStats.career_totals.total_games}
               </div>
               <div className="text-xs text-dark-300 mt-1">Games</div>
             </div>
-            <div className="bg-white rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-primary-600">
+            <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-primary-600">
                 {seasonStats.career_totals.win_percentage.toFixed(1)}%
               </div>
               <div className="text-xs text-dark-300 mt-1">Win %</div>
             </div>
-            <div className="bg-white rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-yellow-600 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-yellow-600 flex items-center justify-center">
                 <Trophy className="h-5 w-5 mr-1" />
                 {seasonStats.career_totals.table_runs}
               </div>
               <div className="text-xs text-dark-300 mt-1">Table Runs</div>
             </div>
-            <div className="bg-white rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-orange-600 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-orange-600 flex items-center justify-center">
                 <Flame className="h-5 w-5 mr-1" />
                 {seasonStats.career_totals.eight_ball_breaks}
               </div>
@@ -272,9 +272,9 @@ const PlayerDetailsPage: React.FC = () => {
       )}
 
       {/* Current Teams */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-dark mb-4 flex items-center">
-          <Users className="h-5 w-5 mr-2" />
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-dark mb-4 flex items-center">
+          <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
           Teams
         </h2>
         {teams && teams.length > 0 ? (
@@ -341,9 +341,9 @@ const PlayerDetailsPage: React.FC = () => {
       </div>
 
       {/* Season-by-Season Statistics */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-dark mb-4 flex items-center">
-          <Calendar className="h-5 w-5 mr-2" />
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-dark mb-4 flex items-center">
+          <Calendar className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
           Season History
         </h2>
         {seasonStats &&
@@ -360,7 +360,72 @@ const PlayerDetailsPage: React.FC = () => {
                   className="bg-gray-50 p-4 cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => toggleSeasonExpansion(season.season_id)}
                 >
-                  <div className="flex items-center justify-between">
+                  {/* Mobile Layout */}
+                  <div className="block sm:hidden space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-dark truncate">
+                          {season.season_name}
+                        </h3>
+                        <p className="text-xs text-dark-300 mt-0.5">
+                          {season.league_name}
+                        </p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/teams/${season.team_id}`);
+                          }}
+                          className="text-xs text-primary-600 hover:text-primary-700 mt-0.5"
+                        >
+                          {season.team_name}
+                        </button>
+                      </div>
+                      <button className="btn btn-outline btn-xs ml-2 flex-shrink-0">
+                        {expandedSeasons.has(season.season_id) ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm font-semibold text-green-600">
+                          {season.total_wins}W
+                        </span>
+                        <span className="text-sm font-semibold text-red-600">
+                          {season.total_losses}L
+                        </span>
+                        <span className="text-sm font-semibold text-dark">
+                          {season.win_percentage.toFixed(1)}%
+                        </span>
+                        {season.table_runs > 0 && (
+                          <span className="flex items-center space-x-0.5">
+                            <Trophy className="h-3 w-3 text-yellow-600" />
+                            <span className="text-xs font-semibold">
+                              {season.table_runs}
+                            </span>
+                          </span>
+                        )}
+                        {season.eight_ball_breaks > 0 && (
+                          <span className="flex items-center space-x-0.5">
+                            <Flame className="h-3 w-3 text-orange-600" />
+                            <span className="text-xs font-semibold">
+                              {season.eight_ball_breaks}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditSeasonStats(season);
+                        }}
+                        className="btn btn-outline btn-xs flex items-center"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Desktop Layout */}
+                  <div className="hidden sm:flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
                         <h3 className="font-semibold text-dark">
@@ -380,7 +445,7 @@ const PlayerDetailsPage: React.FC = () => {
                         </button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-4 lg:space-x-6">
                       <div className="text-center">
                         <div className="text-sm font-semibold text-green-600">
                           {season.total_wins}W
@@ -443,7 +508,7 @@ const PlayerDetailsPage: React.FC = () => {
                       <h4 className="text-sm font-semibold text-dark mb-3">
                         Weekly Breakdown
                       </h4>
-                      <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-9 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-9 gap-2 sm:gap-3">
                         {season.weeks.map((week) => (
                           <div
                             key={week.week}
@@ -481,7 +546,7 @@ const PlayerDetailsPage: React.FC = () => {
       {/* Edit Season Stats Modal */}
       {editingSeasonStat && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full mx-2 sm:mx-4">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-dark">
                 Edit Season Stats
@@ -596,7 +661,7 @@ const PlayerDetailsPage: React.FC = () => {
       {/* Edit Week Stats Modal */}
       {editingWeekStat && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full mx-2 sm:mx-4">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-dark">
                 Edit Week Stats
@@ -676,7 +741,7 @@ const PlayerDetailsPage: React.FC = () => {
       {/* Edit Player Modal */}
       {isEditingPlayer && player && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full mx-2 sm:mx-4">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-dark">Edit Player</h3>
               <button

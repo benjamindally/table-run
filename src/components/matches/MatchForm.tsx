@@ -35,6 +35,7 @@ import type { IncomingMessage, TeamSide } from "../../types/websocket";
 interface MatchFormProps {
   match: Match;
   userTeamSide: TeamSide | null; // Which team is this user captain of (null = viewer only)
+  isLeagueOperator?: boolean; // League operators have full admin access to all match details
   onSuccess?: () => void;
   onCancel?: () => void;
   showCancelButton?: boolean;
@@ -43,6 +44,7 @@ interface MatchFormProps {
 const MatchForm: React.FC<MatchFormProps> = ({
   match,
   userTeamSide,
+  isLeagueOperator = false,
   onSuccess,
   onCancel,
   showCancelButton = false,
@@ -489,7 +491,8 @@ const MatchForm: React.FC<MatchFormProps> = ({
   });
 
   // Determine if user is in read-only mode (viewer or match completed)
-  const isReadOnly = userTeamSide === null || isMatchCompleted;
+  // League operators have full access and are never read-only (except for completed matches)
+  const isReadOnly = isMatchCompleted || (userTeamSide === null && !isLeagueOperator);
 
   // Determine submit button text and state
   const getSubmitButtonConfig = () => {
@@ -519,6 +522,16 @@ const MatchForm: React.FC<MatchFormProps> = ({
       };
     }
 
+    // League operators can finalize directly - they have final say
+    if (isLeagueOperator && userTeamSide === null) {
+      return {
+        text: `Finalize Match (${homeScore} - ${awayScore})`,
+        disabled: false,
+        className: "bg-green-600 text-white hover:bg-green-700",
+        hidden: false,
+      };
+    }
+
     if (userTeamSide === "away") {
       if (submittedBy === "away") {
         return {
@@ -536,7 +549,7 @@ const MatchForm: React.FC<MatchFormProps> = ({
       };
     }
 
-    // Home captain
+    // Home captain or league operator acting as home
     if (submittedBy === "away") {
       return {
         text: `Confirm & Finalize Match (${homeScore} - ${awayScore})`,
@@ -659,8 +672,10 @@ const MatchForm: React.FC<MatchFormProps> = ({
   );
 
   // Submit lineup (away or home team)
-  const handleSubmitLineup = useCallback(async () => {
-    const isAway = userTeamSide === "away";
+  // teamOverride allows league operators to submit on behalf of either team
+  const handleSubmitLineup = useCallback(async (teamOverride?: TeamSide) => {
+    const teamToSubmit = teamOverride || userTeamSide;
+    const isAway = teamToSubmit === "away";
     const lineupComplete = isAway ? isAwayLineupComplete : isHomeLineupComplete;
 
     if (!lineupComplete) {
@@ -736,8 +751,9 @@ const MatchForm: React.FC<MatchFormProps> = ({
   // Auto-assign players to games (works for single team during lineup phase)
   const autoAssignPlayers = useCallback(() => {
     // Determine which team we're assigning based on lineup phase
-    const isAwayAssigning = isAwayLineupPhase && userTeamSide === "away";
-    const isHomeAssigning = isHomeLineupPhase && userTeamSide === "home";
+    // League operators can assign for either team based on current phase
+    const isAwayAssigning = isAwayLineupPhase && (userTeamSide === "away" || isLeagueOperator);
+    const isHomeAssigning = isHomeLineupPhase && (userTeamSide === "home" || isLeagueOperator);
     const isBothTeams = isMatchLive; // Legacy mode for both teams
 
     if (isBothTeams) {
@@ -877,6 +893,18 @@ const MatchForm: React.FC<MatchFormProps> = ({
       return;
     }
 
+    // League operator (not a captain) can finalize directly
+    if (isLeagueOperator && userTeamSide === null) {
+      sendWebSocket({
+        type: "scorecard_confirmed",
+        home_score: homeScore,
+        away_score: awayScore,
+      });
+
+      toast.info("Finalizing match as league operator...");
+      return;
+    }
+
     // Home captain confirms and finalizes
     if (userTeamSide === "home") {
       // If away hasn't submitted yet, show warning but allow submission
@@ -999,8 +1027,8 @@ const MatchForm: React.FC<MatchFormProps> = ({
         </div>
       )}
 
-      {/* Fallback Begin Match Card - for home captain when both lineups ready */}
-      {userTeamSide === "home" && isReadyToStart && (
+      {/* Fallback Begin Match Card - for home captain or league operator when both lineups ready */}
+      {(userTeamSide === "home" || isLeagueOperator) && isReadyToStart && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-start gap-3 mb-4">
             <Users className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -1024,9 +1052,10 @@ const MatchForm: React.FC<MatchFormProps> = ({
       )}
 
       {/* Section 1: Rosters - Conditional based on phase and user role */}
-      {/* Show only during lineup phases for the appropriate team */}
+      {/* Show only during lineup phases for the appropriate team, or always for league operators */}
       {((userTeamSide === "away" && isAwayLineupPhase) ||
         (userTeamSide === "home" && isHomeLineupPhase) ||
+        (isLeagueOperator && (isAwayLineupPhase || isHomeLineupPhase)) ||
         isMatchLive ||
         isReadOnly) && (
         <div className="bg-white rounded-lg shadow-md">
@@ -1037,6 +1066,7 @@ const MatchForm: React.FC<MatchFormProps> = ({
             <div className="flex items-center gap-2">
               {((userTeamSide === "away" && presentAwayPlayers.length > 0) ||
                 (userTeamSide === "home" && presentHomePlayers.length > 0) ||
+                (isLeagueOperator && (presentHomePlayers.length > 0 || presentAwayPlayers.length > 0)) ||
                 (isMatchLive &&
                   presentHomePlayers.length > 0 &&
                   presentAwayPlayers.length > 0)) && (
@@ -1055,8 +1085,9 @@ const MatchForm: React.FC<MatchFormProps> = ({
 
           {!attendanceCollapsed && (
             <div className="p-4 pt-0 space-y-6">
-              {/* Away Team Roster - Show for away captain during their phase, or read-only after */}
+              {/* Away Team Roster - Show for away captain during their phase, league operators, or read-only after */}
               {(userTeamSide === "away" ||
+                isLeagueOperator ||
                 isHomeLineupPhase ||
                 isMatchLive ||
                 isReadOnly) && (
@@ -1084,9 +1115,9 @@ const MatchForm: React.FC<MatchFormProps> = ({
                     <div className="space-y-2">
                       {awayRoster.map((player) => {
                         const canEdit =
-                          userTeamSide === "away" &&
+                          !isReadOnly &&
                           isAwayLineupPhase &&
-                          !isReadOnly;
+                          (userTeamSide === "away" || isLeagueOperator);
                         return (
                           <button
                             key={player.playerId}
@@ -1122,8 +1153,8 @@ const MatchForm: React.FC<MatchFormProps> = ({
                 </div>
               )}
 
-              {/* Home Team Roster - Show for home captain during their phase, or read-only after */}
-              {(userTeamSide === "home" || isMatchLive || isReadOnly) &&
+              {/* Home Team Roster - Show for home captain during their phase, league operators, or read-only after */}
+              {(userTeamSide === "home" || isLeagueOperator || isMatchLive || isReadOnly) &&
                 !isAwayLineupPhase && (
                   <div>
                     <h3 className="font-medium text-dark-700 mb-3">
@@ -1146,9 +1177,9 @@ const MatchForm: React.FC<MatchFormProps> = ({
                       <div className="space-y-2">
                         {homeRoster.map((player) => {
                           const canEdit =
-                            userTeamSide === "home" &&
+                            !isReadOnly &&
                             isHomeLineupPhase &&
-                            !isReadOnly;
+                            (userTeamSide === "home" || isLeagueOperator);
                           return (
                             <button
                               key={player.playerId}
@@ -1185,23 +1216,19 @@ const MatchForm: React.FC<MatchFormProps> = ({
                 )}
 
               {/* Auto-assign and Manual assign buttons - only during active lineup phase */}
-              {((userTeamSide === "away" && isAwayLineupPhase) ||
-                (userTeamSide === "home" && isHomeLineupPhase)) && (
+              {(((userTeamSide === "away" || isLeagueOperator) && isAwayLineupPhase) ||
+                ((userTeamSide === "home" || isLeagueOperator) && isHomeLineupPhase)) && (
                 <div className="mt-4 flex flex-col items-center gap-3">
                   <div className="flex gap-3">
                     <button
                       onClick={autoAssignPlayers}
                       disabled={
-                        (userTeamSide === "away" &&
-                          presentAwayPlayers.length < 4) ||
-                        (userTeamSide === "home" &&
-                          presentHomePlayers.length < 4)
+                        (isAwayLineupPhase && presentAwayPlayers.length < 4) ||
+                        (isHomeLineupPhase && presentHomePlayers.length < 4)
                       }
                       className={`px-6 py-3 font-semibold rounded-lg shadow-md transition-colors flex items-center gap-2 ${
-                        (userTeamSide === "away" &&
-                          presentAwayPlayers.length < 4) ||
-                        (userTeamSide === "home" &&
-                          presentHomePlayers.length < 4)
+                        (isAwayLineupPhase && presentAwayPlayers.length < 4) ||
+                        (isHomeLineupPhase && presentHomePlayers.length < 4)
                           ? "bg-dark-200 text-dark-400 cursor-not-allowed"
                           : "bg-primary text-white hover:bg-primary-600"
                       }`}
@@ -1224,16 +1251,12 @@ const MatchForm: React.FC<MatchFormProps> = ({
                     <button
                       onClick={() => setAttendanceCollapsed(true)}
                       disabled={
-                        (userTeamSide === "away" &&
-                          presentAwayPlayers.length === 0) ||
-                        (userTeamSide === "home" &&
-                          presentHomePlayers.length === 0)
+                        (isAwayLineupPhase && presentAwayPlayers.length === 0) ||
+                        (isHomeLineupPhase && presentHomePlayers.length === 0)
                       }
                       className={`px-6 py-3 font-semibold rounded-lg shadow-md transition-colors flex items-center gap-2 ${
-                        (userTeamSide === "away" &&
-                          presentAwayPlayers.length === 0) ||
-                        (userTeamSide === "home" &&
-                          presentHomePlayers.length === 0)
+                        (isAwayLineupPhase && presentAwayPlayers.length === 0) ||
+                        (isHomeLineupPhase && presentHomePlayers.length === 0)
                           ? "bg-dark-200 text-dark-400 cursor-not-allowed"
                           : "bg-dark-600 text-white hover:bg-dark-700"
                       }`}
@@ -1254,13 +1277,11 @@ const MatchForm: React.FC<MatchFormProps> = ({
                       Manual Assign
                     </button>
                   </div>
-                  {((userTeamSide === "away" &&
-                    presentAwayPlayers.length < 4) ||
-                    (userTeamSide === "home" &&
-                      presentHomePlayers.length < 4)) && (
+                  {((isAwayLineupPhase && presentAwayPlayers.length < 4) ||
+                    (isHomeLineupPhase && presentHomePlayers.length < 4)) && (
                     <p className="text-xs text-dark-500 text-center">
                       Need at least 4 players for auto-assign (
-                      {userTeamSide === "away"
+                      {isAwayLineupPhase
                         ? `${presentAwayPlayers.length} present`
                         : `${presentHomePlayers.length} present`}
                       )
@@ -1276,13 +1297,13 @@ const MatchForm: React.FC<MatchFormProps> = ({
       {/* Section 2: Player Assignment / Score Entry */}
       {/* Show during lineup phases (for player assignment), match live (for scoring), or completed (read-only) */}
       {games.length > 0 &&
-        ((userTeamSide === "away" &&
+        (((userTeamSide === "away" || isLeagueOperator) &&
           isAwayLineupPhase &&
           presentAwayPlayers.length > 0) ||
-          (userTeamSide === "home" &&
+          ((userTeamSide === "home" || isLeagueOperator) &&
             isHomeLineupPhase &&
             presentHomePlayers.length > 0) ||
-          (userTeamSide === "home" && isReadyToStart) ||
+          ((userTeamSide === "home" || isLeagueOperator) && isReadyToStart) ||
           (userTeamSide === "away" && isReadyToStart) ||
           isMatchLive ||
           isMatchCompleted ||
@@ -1313,8 +1334,13 @@ const MatchForm: React.FC<MatchFormProps> = ({
                   away: setGames.filter((g) => g.winner === "away").length,
                 };
                 const setComplete = setGames.every((g) => g.winner !== null);
+                // For league operators, check based on current phase
                 const setPlayersAssigned =
-                  userTeamSide === "away"
+                  isAwayLineupPhase
+                    ? setGames.every((g) => g.awayPlayerId !== null)
+                    : isHomeLineupPhase
+                    ? setGames.every((g) => g.homePlayerId !== null)
+                    : userTeamSide === "away"
                     ? setGames.every((g) => g.awayPlayerId !== null)
                     : setGames.every((g) => g.homePlayerId !== null);
 
@@ -1356,14 +1382,15 @@ const MatchForm: React.FC<MatchFormProps> = ({
                           const game = games[gameIndex];
 
                           // Determine which dropdowns are editable
+                          // League operators can edit both teams during their respective phases or when match is live
                           const canEditHome =
-                            userTeamSide === "home" &&
-                            isHomeLineupPhase &&
-                            !isReadOnly;
+                            !isReadOnly &&
+                            (isHomeLineupPhase || (isLeagueOperator && isMatchLive)) &&
+                            (userTeamSide === "home" || isLeagueOperator);
                           const canEditAway =
-                            userTeamSide === "away" &&
-                            isAwayLineupPhase &&
-                            !isReadOnly;
+                            !isReadOnly &&
+                            (isAwayLineupPhase || (isLeagueOperator && isMatchLive)) &&
+                            (userTeamSide === "away" || isLeagueOperator);
 
                           return (
                             <div
@@ -1637,8 +1664,8 @@ const MatchForm: React.FC<MatchFormProps> = ({
               })}
             </div>
 
-            {/* Lineup Submission Button - Away Captain */}
-            {userTeamSide === "away" && isAwayLineupPhase && (
+            {/* Lineup Submission Button - Away Captain or League Operator */}
+            {(userTeamSide === "away" || isLeagueOperator) && isAwayLineupPhase && (
               <div className="mt-6">
                 <button
                   onClick={() => {
@@ -1657,7 +1684,7 @@ const MatchForm: React.FC<MatchFormProps> = ({
                       );
                       return;
                     }
-                    handleSubmitLineup();
+                    handleSubmitLineup("away");
                   }}
                   className={`w-full py-4 rounded-md font-bold text-lg transition-colors ${
                     isAwayLineupComplete
@@ -1674,8 +1701,8 @@ const MatchForm: React.FC<MatchFormProps> = ({
               </div>
             )}
 
-            {/* Lineup Submission Button - Home Captain */}
-            {userTeamSide === "home" && isHomeLineupPhase && (
+            {/* Lineup Submission Button - Home Captain or League Operator */}
+            {(userTeamSide === "home" || isLeagueOperator) && isHomeLineupPhase && (
               <div className="mt-6">
                 <button
                   onClick={() => {
@@ -1694,7 +1721,7 @@ const MatchForm: React.FC<MatchFormProps> = ({
                       );
                       return;
                     }
-                    handleSubmitLineup();
+                    handleSubmitLineup("home");
                   }}
                   className={`w-full py-4 rounded-md font-bold text-lg transition-colors ${
                     isHomeLineupComplete

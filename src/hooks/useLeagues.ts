@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leaguesApi } from '../api/leagues';
 import { League } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
+import { meKeys } from './useMe';
 
 // Query keys for caching
 export const leagueKeys = {
@@ -67,6 +68,8 @@ export const useCreateLeague = () => {
       // Invalidate both general league list and user's leagues
       queryClient.invalidateQueries({ queryKey: leagueKeys.lists() });
       queryClient.invalidateQueries({ queryKey: [...leagueKeys.all, 'my-leagues'] });
+      // Invalidate the /me endpoint so LeagueSeasonContext gets fresh data
+      queryClient.invalidateQueries({ queryKey: meKeys.all });
     },
   });
 };
