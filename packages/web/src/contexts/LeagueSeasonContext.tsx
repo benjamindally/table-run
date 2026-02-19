@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useMe } from '../hooks/useMe';
-import { MeLeague, MeSeason, MeTeam } from '../api';
+import { MeLeague, MeSeason, MeTeam, MeMatch } from '../api';
 
 const STORAGE_KEY_LEAGUE = 'admin_currentLeagueId';
 const STORAGE_KEY_SEASON = 'admin_currentSeasonId';
@@ -10,6 +10,7 @@ interface LeagueSeasonContextType {
   leagues: MeLeague[];
   seasons: MeSeason[];
   teams: MeTeam[];
+  upcomingMatches: MeMatch[];
   isLoading: boolean;
   error: Error | null;
 
@@ -47,6 +48,7 @@ export const LeagueSeasonProvider: React.FC<{ children: ReactNode }> = ({ childr
   const leagues = meData?.leagues || [];
   const seasons = meData?.seasons || [];
   const teams = meData?.teams || [];
+  const upcomingMatches = meData?.upcoming_matches || [];
 
   // Derived current league/season objects
   const currentLeague = currentLeagueId
@@ -139,6 +141,7 @@ export const LeagueSeasonProvider: React.FC<{ children: ReactNode }> = ({ childr
     leagues,
     seasons,
     teams,
+    upcomingMatches,
     isLoading,
     error: error as Error | null,
 

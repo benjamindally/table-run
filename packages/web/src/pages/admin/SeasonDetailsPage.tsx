@@ -41,6 +41,7 @@ import SeasonPlayerAnalytics from "../../components/seasons/SeasonPlayerAnalytic
 import SeasonVenues from "../../components/seasons/SeasonVenues";
 import NextMatchCard from "../../components/NextMatchCard";
 import { useCurrentTeams } from "../../hooks/usePlayers";
+import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import type { Match, Venue } from "../../api";
 
 const SeasonDetailsPage: React.FC = () => {
@@ -57,14 +58,21 @@ const SeasonDetailsPage: React.FC = () => {
   // ============================================================================
   const { data: season, isLoading, error } = useSeason(seasonId); // Core season info
   const { data: teams } = useSeasonTeams(seasonId); // Teams in this season
-  const { data: matches } = useSeasonMatches(seasonId); // All matches for season
+  const { data: matchesData } = useSeasonMatches(seasonId); // All matches and byes for season
+  const matches = matchesData?.matches;
+  const byes = matchesData?.byes;
   const { data: standings } = useSeasonStandings(seasonId); // Team standings/rankings
   const { data: playersData } = useSeasonPlayers(seasonId); // Player stats for season
   const { data: venues } = useSeasonVenues(seasonId); // Venues for season's league
   const { data: currentTeams } = useCurrentTeams(); // User's teams for Next Match card
+  const { upcomingMatches } = useLeagueSeason(); // Upcoming matches from /me/
 
   // Get user's team IDs for Next Match card
   const userTeamIds = currentTeams?.map((team) => team.id) || [];
+
+  // Find user's next match in this season
+  const myNextMatchInSeason =
+    upcomingMatches.find((m) => m.season_id === seasonId) || null;
 
   // ============================================================================
   // MUTATION HOOKS
@@ -111,6 +119,11 @@ const SeasonDetailsPage: React.FC = () => {
   });
 
   // ============================================================================
+  // ARCHIVE CONFIRMATION MODAL STATE
+  // ============================================================================
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+
+  // ============================================================================
   // VENUE MODAL STATE
   // For adding and editing venues
   // ============================================================================
@@ -119,11 +132,17 @@ const SeasonDetailsPage: React.FC = () => {
   const [venueFormData, setVenueFormData] = useState({
     name: "",
     address: "",
+    city: "",
+    state: "",
+    zip_code: "",
     table_count: 1,
   });
   const [originalVenueData, setOriginalVenueData] = useState<{
     name: string;
     address: string;
+    city: string;
+    state: string;
+    zip_code: string;
   } | null>(null);
 
   // ============================================================================
@@ -226,6 +245,24 @@ const SeasonDetailsPage: React.FC = () => {
     }
   };
 
+  /**
+   * Archives the season (sets is_archived: true, is_active: false)
+   */
+  const handleArchiveSeason = async () => {
+    try {
+      await updateSeasonMutation.mutateAsync({
+        id: seasonId,
+        data: { is_archived: true, is_active: false },
+      });
+      toast.success("Season archived successfully!");
+      setShowArchiveModal(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to archive season"
+      );
+    }
+  };
+
   // ============================================================================
   // VENUE HANDLER FUNCTIONS
   // ============================================================================
@@ -235,7 +272,14 @@ const SeasonDetailsPage: React.FC = () => {
    */
   const openAddVenueModal = () => {
     setVenueToEdit(null);
-    setVenueFormData({ name: "", address: "", table_count: 1 });
+    setVenueFormData({
+      name: "",
+      address: "",
+      city: "",
+      state: "",
+      zip_code: "",
+      table_count: 1,
+    });
     setOriginalVenueData(null);
     setShowVenueModal(true);
   };
@@ -248,11 +292,17 @@ const SeasonDetailsPage: React.FC = () => {
     setVenueFormData({
       name: venue.name,
       address: venue.address || "",
+      city: venue.city || "",
+      state: venue.state || "",
+      zip_code: venue.zip_code || "",
       table_count: venue.table_count,
     });
     setOriginalVenueData({
       name: venue.name,
       address: venue.address || "",
+      city: venue.city || "",
+      state: venue.state || "",
+      zip_code: venue.zip_code || "",
     });
     setShowVenueModal(true);
   };
@@ -274,7 +324,10 @@ const SeasonDetailsPage: React.FC = () => {
     venueToEdit &&
     originalVenueData &&
     (venueFormData.name !== originalVenueData.name ||
-      venueFormData.address !== originalVenueData.address);
+      venueFormData.address !== originalVenueData.address ||
+      venueFormData.city !== originalVenueData.city ||
+      venueFormData.state !== originalVenueData.state ||
+      venueFormData.zip_code !== originalVenueData.zip_code);
 
   /**
    * Saves the venue - creates new or updates existing
@@ -296,6 +349,9 @@ const SeasonDetailsPage: React.FC = () => {
             league: season.league,
             name: venueFormData.name,
             address: venueFormData.address || undefined,
+            city: venueFormData.city || undefined,
+            state: venueFormData.state || undefined,
+            zip_code: venueFormData.zip_code || undefined,
             table_count: venueFormData.table_count,
           });
           toast.success("Venue updated (previous version archived)");
@@ -313,6 +369,9 @@ const SeasonDetailsPage: React.FC = () => {
           league: season.league,
           name: venueFormData.name,
           address: venueFormData.address || undefined,
+          city: venueFormData.city || undefined,
+          state: venueFormData.state || undefined,
+          zip_code: venueFormData.zip_code || undefined,
           table_count: venueFormData.table_count,
         });
         toast.success("Venue created successfully!");
@@ -430,7 +489,9 @@ const SeasonDetailsPage: React.FC = () => {
             Back to Leagues
           </button>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-dark">{season.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-dark">
+              {season.name}
+            </h1>
             <p className="text-sm text-dark-300 mt-1">
               {season.league_detail?.name}
             </p>
@@ -446,9 +507,7 @@ const SeasonDetailsPage: React.FC = () => {
         season={season}
         editable={true}
         onEditSeason={openEditSeasonModal}
-        onArchive={() => {
-          // TODO: Implement archive functionality
-        }}
+        onArchive={() => setShowArchiveModal(true)}
         onImportCSV={() => setShowUploadModal(true)}
       />
 
@@ -456,7 +515,10 @@ const SeasonDetailsPage: React.FC = () => {
           NEXT MATCH CARD
           Shows user's next upcoming match (only if user is on a team)
           ===================================================================== */}
-      <NextMatchCard matches={matches} userTeamIds={userTeamIds} />
+      <NextMatchCard
+        userTeamIds={userTeamIds}
+        upcomingMatch={myNextMatchInSeason}
+      />
 
       {/* =====================================================================
           STANDINGS SECTION
@@ -492,9 +554,12 @@ const SeasonDetailsPage: React.FC = () => {
           </div>
           <div className="text-center py-8">
             <Calendar className="h-12 w-12 text-dark-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-dark mb-2">No Schedule Yet</h3>
+            <h3 className="text-lg font-semibold text-dark mb-2">
+              No Schedule Yet
+            </h3>
             <p className="text-dark-300 mb-6 max-w-md mx-auto">
-              Create a schedule to define when teams play each other, or import an existing schedule from a CSV file.
+              Create a schedule to define when teams play each other, or import
+              an existing schedule from a CSV file.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
@@ -520,10 +585,8 @@ const SeasonDetailsPage: React.FC = () => {
       {matches && matches.length > 0 && (
         <SeasonMatches
           matches={matches}
+          byes={byes}
           editable={true}
-          onScheduleMatch={() => {
-            navigate(`/admin/seasons/${seasonId}/schedule`);
-          }}
           onImportSchedule={() => setShowScheduleImportModal(true)}
           onEditMatch={handleEditMatch}
         />
@@ -978,8 +1041,62 @@ const SeasonDetailsPage: React.FC = () => {
               className="form-input w-full"
               value={venueFormData.address}
               onChange={(e) => handleVenueFormChange("address", e.target.value)}
-              placeholder="e.g., 123 Main St, Portland, OR"
+              placeholder="e.g., 123 Main St"
             />
+          </div>
+
+          {/* City, State, Zip */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="col-span-2 sm:col-span-1">
+              <label
+                htmlFor="venue-city"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                City
+              </label>
+              <input
+                type="text"
+                id="venue-city"
+                className="form-input w-full"
+                value={venueFormData.city}
+                onChange={(e) => handleVenueFormChange("city", e.target.value)}
+                placeholder="e.g., Portland"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="venue-state"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                State
+              </label>
+              <input
+                type="text"
+                id="venue-state"
+                className="form-input w-full"
+                value={venueFormData.state}
+                onChange={(e) => handleVenueFormChange("state", e.target.value)}
+                placeholder="e.g., OR"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="venue-zip"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Zip Code
+              </label>
+              <input
+                type="text"
+                id="venue-zip"
+                className="form-input w-full"
+                value={venueFormData.zip_code}
+                onChange={(e) =>
+                  handleVenueFormChange("zip_code", e.target.value)
+                }
+                placeholder="e.g., 97201"
+              />
+            </div>
           </div>
 
           {/* Table Count */}
@@ -996,7 +1113,10 @@ const SeasonDetailsPage: React.FC = () => {
               className="form-input w-full"
               value={venueFormData.table_count}
               onChange={(e) =>
-                handleVenueFormChange("table_count", parseInt(e.target.value) || 1)
+                handleVenueFormChange(
+                  "table_count",
+                  parseInt(e.target.value) || 1
+                )
               }
               min="1"
             />
@@ -1006,9 +1126,9 @@ const SeasonDetailsPage: React.FC = () => {
           {venueNameAddressChanged && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
               <p className="text-sm text-amber-800">
-                <strong>Note:</strong> Changing the venue name or address will
-                archive the current venue and create a new one. This preserves
-                historical match data.
+                <strong>Note:</strong> Changing venue details will archive the
+                current venue and create a new one. This preserves historical
+                match data.
               </p>
             </div>
           )}
@@ -1034,7 +1154,8 @@ const SeasonDetailsPage: React.FC = () => {
                 updateVenueMutation.isPending
               }
             >
-              {createVenueMutation.isPending || updateVenueMutation.isPending ? (
+              {createVenueMutation.isPending ||
+              updateVenueMutation.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
                   Saving...
@@ -1043,6 +1164,51 @@ const SeasonDetailsPage: React.FC = () => {
                 "Save Changes"
               ) : (
                 "Add Venue"
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* =====================================================================
+          MODAL: ARCHIVE CONFIRMATION
+          Confirms archiving the season before making it inactive
+          ===================================================================== */}
+      <Modal
+        isOpen={showArchiveModal}
+        onClose={() => setShowArchiveModal(false)}
+        title="Archive Season"
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-dark-300">
+            Are you sure you want to archive <strong>{season.name}</strong>?
+          </p>
+          <p className="text-sm text-dark-300">
+            Archiving will mark this season as inactive. Historical data will be
+            preserved, but the season will no longer appear as active.
+          </p>
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
+            <button
+              onClick={() => setShowArchiveModal(false)}
+              className="btn btn-outline w-full sm:w-auto"
+              disabled={updateSeasonMutation.isPending}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleArchiveSeason}
+              className="btn btn-primary bg-amber-600 hover:bg-amber-700 flex items-center justify-center w-full sm:w-auto"
+              disabled={updateSeasonMutation.isPending}
+            >
+              {updateSeasonMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                  Archiving...
+                </>
+              ) : (
+                "Archive Season"
               )}
             </button>
           </div>

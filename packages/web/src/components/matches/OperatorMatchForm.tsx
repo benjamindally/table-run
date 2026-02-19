@@ -319,10 +319,10 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
     [games, updateGame, setSubmittedBy, setLineupState, homeTeam, awayTeam, onSuccess, homeRoster, awayRoster, setHomeRoster, setAwayRoster]
   );
 
-  // Initialize WebSocket connection
+  // Initialize WebSocket connection - only after state is initialized to avoid race condition
   const { send: sendWebSocket, status } = useMatchWebSocket({
     matchId: match.id,
-    enabled: true,
+    enabled: !!state,
     onMessage: handleWebSocketMessage,
   });
 

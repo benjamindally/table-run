@@ -2,8 +2,10 @@
  * React Query hooks for teams API
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { teamsApi } from '../api';
+import type { TeamRegistrationData } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 
 // Query keys for teams
 export const teamsKeys = {
@@ -60,5 +62,64 @@ export const useTeamSeasons = (teamId: number) => {
     queryFn: () => teamsApi.getSeasons(teamId),
     staleTime: 1000 * 60 * 5,
     enabled: !!teamId,
+  });
+};
+
+/**
+ * Hook to create a new team
+ */
+export const useCreateTeam = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: (data: TeamRegistrationData) =>
+      teamsApi.create(data, getAuthToken() || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamsKeys.lists() });
+    },
+  });
+};
+
+/**
+ * Bulk create result for tracking individual team creation status
+ */
+export interface BulkCreateResult {
+  success: boolean;
+  data?: TeamRegistrationData;
+  error?: string;
+}
+
+/**
+ * Hook to bulk create teams (creates teams sequentially)
+ * Returns results for each team to show success/failure status
+ */
+export const useBulkCreateTeams = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: async (teams: TeamRegistrationData[]): Promise<BulkCreateResult[]> => {
+      const results: BulkCreateResult[] = [];
+      const token = getAuthToken() || undefined;
+
+      for (const team of teams) {
+        try {
+          await teamsApi.create(team, token);
+          results.push({ success: true, data: team });
+        } catch (error) {
+          results.push({
+            success: false,
+            data: team,
+            error: error instanceof Error ? error.message : 'Failed to create team',
+          });
+        }
+      }
+
+      return results;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamsKeys.lists() });
+    },
   });
 };

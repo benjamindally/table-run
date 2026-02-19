@@ -4,10 +4,10 @@ import {
   Users,
   Building2,
   LayoutGrid,
-  Hash,
   Repeat,
   Home,
   TreePine,
+  CalendarDays,
 } from "lucide-react";
 import type { ScheduleConfiguration, Venue, SeasonParticipation } from "../../api";
 
@@ -16,10 +16,10 @@ export type ParamModalType =
   | "teams"
   | "establishments"
   | "tables_per_establishment"
-  | "matches_per_week"
   | "times_play_each_other"
   | "alternating_home_away"
-  | "break_weeks";
+  | "break_weeks"
+  | "default_match_day";
 
 interface ParameterBoxProps {
   icon: React.ReactNode;
@@ -93,6 +93,24 @@ const ScheduleParameterGrid: React.FC<ScheduleParameterGridProps> = ({
     return `${totalTables} tables`;
   };
 
+  const formatVenueCount = () => {
+    if (venues.length === 0) return "None yet";
+    const selectedCount = config.selected_venue_ids?.length ?? venues.length;
+    if (selectedCount === venues.length) {
+      return `${venues.length} venues`;
+    }
+    return `${selectedCount} of ${venues.length}`;
+  };
+
+  const formatTeamCount = () => {
+    if (teams.length === 0) return "None yet";
+    const selectedCount = config.selected_team_ids?.length ?? teams.length;
+    if (selectedCount === teams.length) {
+      return `${teams.length} teams`;
+    }
+    return `${selectedCount} of ${teams.length}`;
+  };
+
   const formatBreakWeeks = () => {
     if (!config.break_weeks || config.break_weeks.length === 0) {
       return "None set";
@@ -109,6 +127,12 @@ const ScheduleParameterGrid: React.FC<ScheduleParameterGridProps> = ({
     return `${times} times`;
   };
 
+  const formatMatchDay = () => {
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const dayIndex = config.default_match_day ?? 2; // Default to Wednesday
+    return days[dayIndex] || "Wednesday";
+  };
+
   return (
     <div className="grid grid-cols-3 gap-3">
       {/* Row 1 */}
@@ -119,15 +143,21 @@ const ScheduleParameterGrid: React.FC<ScheduleParameterGridProps> = ({
         onClick={() => onOpenModal("start_date")}
       />
       <ParameterBox
+        icon={<CalendarDays className="h-6 w-6" />}
+        label="Match Day"
+        value={formatMatchDay()}
+        onClick={() => onOpenModal("default_match_day")}
+      />
+      <ParameterBox
         icon={<Users className="h-6 w-6" />}
         label="Teams"
-        value={teams.length === 0 ? "None yet" : `${teams.length} teams`}
+        value={formatTeamCount()}
         onClick={() => onOpenModal("teams")}
       />
       <ParameterBox
         icon={<Building2 className="h-6 w-6" />}
         label="Venues"
-        value={venues.length === 0 ? "None yet" : `${venues.length} venues`}
+        value={formatVenueCount()}
         onClick={() => onOpenModal("establishments")}
       />
 
@@ -137,12 +167,6 @@ const ScheduleParameterGrid: React.FC<ScheduleParameterGridProps> = ({
         label="Adjust Tables"
         value={formatTotalTables()}
         onClick={() => onOpenModal("tables_per_establishment")}
-      />
-      <ParameterBox
-        icon={<Hash className="h-6 w-6" />}
-        label="Matches/Week"
-        value={`${config.matches_per_week} matches`}
-        onClick={() => onOpenModal("matches_per_week")}
       />
       <ParameterBox
         icon={<Repeat className="h-6 w-6" />}

@@ -1,21 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { playerClaimsApi, ValidateActivationResponse } from '../api';
-import { UserCheck } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { playerClaimsApi, ValidateActivationResponse } from "../api";
+import { UserCheck } from "lucide-react";
 
 const ActivatePlayerPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
 
-  const [playerInfo, setPlayerInfo] = useState<ValidateActivationResponse | null>(null);
+  const [playerInfo, setPlayerInfo] =
+    useState<ValidateActivationResponse | null>(null);
   const [isValidating, setIsValidating] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,7 +25,7 @@ const ActivatePlayerPage: React.FC = () => {
   useEffect(() => {
     const validateToken = async () => {
       if (!token) {
-        setError('Invalid activation link');
+        setError("Invalid activation link");
         setIsValidating(false);
         return;
       }
@@ -33,7 +34,7 @@ const ActivatePlayerPage: React.FC = () => {
         const response = await playerClaimsApi.validateActivationToken(token);
         setPlayerInfo(response);
       } catch (err: any) {
-        setError(err.message || 'Invalid or expired activation link');
+        setError(err.message || "Invalid or expired activation link");
       } finally {
         setIsValidating(false);
       }
@@ -54,30 +55,36 @@ const ActivatePlayerPage: React.FC = () => {
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error("Passwords do not match");
       return;
     }
 
     if (formData.password.length < 8) {
-      toast.error('Password must be at least 8 characters');
+      toast.error("Password must be at least 8 characters");
       return;
     }
 
-    if (!formData.email || !formData.email.includes('@')) {
-      toast.error('Please enter a valid email address');
+    if (!formData.email || !formData.email.includes("@")) {
+      toast.error("Please enter a valid email address");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      await playerClaimsApi.completeActivation(token!, formData.email, formData.password);
+      await playerClaimsApi.completeActivation(
+        token!,
+        formData.email,
+        formData.password
+      );
 
-      toast.success('Account activated! Please log in with your new credentials.');
-      navigate('/login');
+      toast.success(
+        "Account activated! Please log in with your new credentials."
+      );
+      navigate("/login");
     } catch (err: any) {
-      console.error('Activation error:', err);
-      toast.error(err.message || 'Failed to activate account');
+      console.error("Activation error:", err);
+      toast.error(err.message || "Failed to activate account");
     } finally {
       setIsSubmitting(false);
     }
@@ -118,7 +125,7 @@ const ActivatePlayerPage: React.FC = () => {
           </h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => navigate("/login")}
             className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600"
           >
             Go to Login
@@ -137,9 +144,7 @@ const ActivatePlayerPage: React.FC = () => {
               <UserCheck className="h-8 w-8 text-orange-500" />
             </div>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">
-            Welcome back, {playerInfo?.first_name}!
-          </h2>
+          <h2 className="text-3xl font-bold text-gray-900">Welcome back!</h2>
           <p className="mt-2 text-gray-600">
             Activate your account by setting a real email and password
           </p>
@@ -213,7 +218,7 @@ const ActivatePlayerPage: React.FC = () => {
               disabled={isSubmitting}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Activating Account...' : 'Activate Account'}
+              {isSubmitting ? "Activating Account..." : "Activate Account"}
             </button>
           </form>
 

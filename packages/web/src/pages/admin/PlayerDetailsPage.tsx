@@ -20,10 +20,7 @@ import {
   useUpdatePlayer,
 } from "../../hooks/usePlayers";
 import { toast } from "react-toastify";
-import type {
-  PlayerSeasonStatDetail,
-  PlayerWeekStatDetail,
-} from "../../api";
+import type { PlayerSeasonStatDetail, PlayerWeekStatDetail } from "../../api";
 
 const PlayerDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -174,7 +171,6 @@ const PlayerDetailsPage: React.FC = () => {
     );
   }
 
-  console.log("Player: ", player);
   if (error || !player) {
     return (
       <div className="space-y-6">
@@ -198,7 +194,9 @@ const PlayerDetailsPage: React.FC = () => {
             <span className="hidden sm:inline">Back</span>
           </button>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold text-dark truncate">{player.full_name}</h1>
+            <h1 className="text-lg sm:text-2xl font-bold text-dark truncate">
+              {player.full_name}
+            </h1>
             <p className="text-xs sm:text-sm text-dark-300 mt-1 truncate">
               {player.user ? player.user.email : ""}
             </p>
@@ -381,7 +379,9 @@ const PlayerDetailsPage: React.FC = () => {
                         </button>
                       </div>
                       <button className="btn btn-outline btn-xs ml-2 flex-shrink-0">
-                        {expandedSeasons.has(season.season_id) ? "Hide" : "Show"}
+                        {expandedSeasons.has(season.season_id)
+                          ? "Hide"
+                          : "Show"}
                       </button>
                     </div>
                     <div className="flex items-center justify-between">

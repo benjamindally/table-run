@@ -1,23 +1,26 @@
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Clock } from "lucide-react";
-import type { Match } from "../api";
+import type { Match, MeMatch } from "../api";
 
 interface NextMatchCardProps {
-  matches: Match[] | undefined;
+  matches?: Match[] | undefined;
   userTeamIds: number[];
   isLoading?: boolean;
+  // Pre-filtered upcoming match from /me/ endpoint
+  upcomingMatch?: MeMatch | null;
 }
 
 const NextMatchCard: React.FC<NextMatchCardProps> = ({
   matches,
   userTeamIds,
   isLoading = false,
+  upcomingMatch,
 }) => {
   const isUserOnATeam = userTeamIds.length > 0;
 
-  // Find the next upcoming match for the user's team
-  const nextMatch = useMemo((): Match | null => {
+  // Find the next upcoming match for the user's team (from matches array)
+  const nextMatchFromMatches = useMemo((): Match | null => {
     if (!matches || !isUserOnATeam) return null;
 
     const today = new Date();
@@ -39,8 +42,24 @@ const NextMatchCard: React.FC<NextMatchCardProps> = ({
     return upcomingMatches[0] || null;
   }, [matches, isUserOnATeam, userTeamIds]);
 
-  // Don't render if user is not on a team
-  if (!isUserOnATeam) return null;
+  // Use upcomingMatch (from /me/) if provided, otherwise use computed match
+  const hasUpcomingMatch = upcomingMatch !== undefined;
+  const nextMatch = hasUpcomingMatch ? upcomingMatch : nextMatchFromMatches;
+
+  // Don't render if user is not on a team (only when using matches array)
+  if (!hasUpcomingMatch && !isUserOnATeam) return null;
+
+  // Normalize match data (MeMatch uses _id/_name, Match uses nested _detail)
+  const homeTeamId = hasUpcomingMatch
+    ? (nextMatch as MeMatch | null)?.home_team_id
+    : (nextMatch as Match | null)?.home_team;
+  const homeTeamName = hasUpcomingMatch
+    ? (nextMatch as MeMatch | null)?.home_team_name
+    : (nextMatch as Match | null)?.home_team_detail?.name || "Home Team";
+  const awayTeamName = hasUpcomingMatch
+    ? (nextMatch as MeMatch | null)?.away_team_name
+    : (nextMatch as Match | null)?.away_team_detail?.name || "Away Team";
+  const isHome = homeTeamId !== undefined && userTeamIds.includes(homeTeamId);
 
   const cardContent = (
     <>
@@ -60,18 +79,16 @@ const NextMatchCard: React.FC<NextMatchCardProps> = ({
             })}
           </p>
           <p className="text-sm font-medium text-dark">
-            {userTeamIds.includes(nextMatch.home_team)
-              ? `vs ${nextMatch.away_team_detail?.name || "Away Team"}`
-              : `@ ${nextMatch.home_team_detail?.name || "Home Team"}`}
+            {isHome ? `vs ${awayTeamName}` : `@ ${homeTeamName}`}
           </p>
           <span
             className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
-              userTeamIds.includes(nextMatch.home_team)
+              isHome
                 ? "bg-secondary-100 text-secondary-800"
                 : "bg-gray-100 text-gray-600"
             }`}
           >
-            {userTeamIds.includes(nextMatch.home_team) ? "Home" : "Away"}
+            {isHome ? "Home" : "Away"}
           </span>
         </div>
       ) : (

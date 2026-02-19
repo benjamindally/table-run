@@ -3,24 +3,23 @@
  * Navigate to /websocket-test to use this
  */
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function WebSocketTest() {
   const { accessToken, user } = useAuth();
   const [logs, setLogs] = useState<string[]>([]);
   const [ws, setWs] = useState<WebSocket | null>(null);
-  const [status, setStatus] = useState('Not connected');
+  const [status, setStatus] = useState("Not connected");
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [`[${timestamp}] ${message}`, ...prev]);
-    console.log(`[WebSocket Test] ${message}`);
+    setLogs((prev) => [`[${timestamp}] ${message}`, ...prev]);
   };
 
   const connectWebSocket = () => {
     if (!accessToken) {
-      addLog('ERROR: No access token available');
+      addLog("ERROR: No access token available");
       return;
     }
 
@@ -31,8 +30,8 @@ export default function WebSocketTest() {
       const websocket = new WebSocket(wsUrl);
 
       websocket.onopen = () => {
-        addLog('✅ WebSocket CONNECTED');
-        setStatus('Connected');
+        addLog("✅ WebSocket CONNECTED");
+        setStatus("Connected");
       };
 
       websocket.onmessage = (event) => {
@@ -41,12 +40,16 @@ export default function WebSocketTest() {
 
       websocket.onerror = (error) => {
         addLog(`❌ WebSocket ERROR: ${JSON.stringify(error)}`);
-        setStatus('Error');
+        setStatus("Error");
       };
 
       websocket.onclose = (event) => {
-        addLog(`🔌 WebSocket CLOSED - Code: ${event.code}, Reason: ${event.reason || 'No reason'}, Clean: ${event.wasClean}`);
-        setStatus('Disconnected');
+        addLog(
+          `🔌 WebSocket CLOSED - Code: ${event.code}, Reason: ${
+            event.reason || "No reason"
+          }, Clean: ${event.wasClean}`
+        );
+        setStatus("Disconnected");
       };
 
       setWs(websocket);
@@ -57,7 +60,7 @@ export default function WebSocketTest() {
 
   const disconnect = () => {
     if (ws) {
-      addLog('Manually closing connection...');
+      addLog("Manually closing connection...");
       ws.close();
       setWs(null);
     }
@@ -80,10 +83,17 @@ export default function WebSocketTest() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Auth Status</h2>
           <div className="space-y-2 text-sm">
-            <p><strong>User:</strong> {user ? `${user.email} (ID: ${user.id})` : 'Not logged in'}</p>
-            <p><strong>Has Token:</strong> {accessToken ? '✅ Yes' : '❌ No'}</p>
+            <p>
+              <strong>User:</strong>{" "}
+              {user ? `${user.email} (ID: ${user.id})` : "Not logged in"}
+            </p>
+            <p>
+              <strong>Has Token:</strong> {accessToken ? "✅ Yes" : "❌ No"}
+            </p>
             {accessToken && (
-              <p className="break-all"><strong>Token:</strong> {accessToken.substring(0, 50)}...</p>
+              <p className="break-all">
+                <strong>Token:</strong> {accessToken.substring(0, 50)}...
+              </p>
             )}
           </div>
         </div>
@@ -115,7 +125,15 @@ export default function WebSocketTest() {
           </div>
           <p className="text-lg">
             <strong>Status:</strong>
-            <span className={`ml-2 ${status === 'Connected' ? 'text-green-600' : status === 'Error' ? 'text-red-600' : 'text-gray-600'}`}>
+            <span
+              className={`ml-2 ${
+                status === "Connected"
+                  ? "text-green-600"
+                  : status === "Error"
+                  ? "text-red-600"
+                  : "text-gray-600"
+              }`}
+            >
               {status}
             </span>
           </p>
@@ -126,10 +144,14 @@ export default function WebSocketTest() {
           <h2 className="text-xl font-semibold mb-4">Connection Logs</h2>
           <div className="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto">
             {logs.length === 0 ? (
-              <p className="text-gray-500">No logs yet. Click "Connect" to start.</p>
+              <p className="text-gray-500">
+                No logs yet. Click "Connect" to start.
+              </p>
             ) : (
               logs.map((log, i) => (
-                <div key={i} className="mb-1">{log}</div>
+                <div key={i} className="mb-1">
+                  {log}
+                </div>
               ))
             )}
           </div>
@@ -144,7 +166,9 @@ export default function WebSocketTest() {
             <li>Check the logs for connection success or error details</li>
             <li>In another tab/browser, create a new announcement</li>
             <li>Watch this page for incoming messages</li>
-            <li>If you see "WebSocket CLOSED" immediately, check the backend logs</li>
+            <li>
+              If you see "WebSocket CLOSED" immediately, check the backend logs
+            </li>
           </ol>
         </div>
 
@@ -156,7 +180,13 @@ export default function WebSocketTest() {
             <li>Does the WebSocket consumer accept token in query params?</li>
             <li>Check Django logs for WebSocket connection attempts</li>
             <li>Verify CORS/CSRF settings allow WebSocket connections</li>
-            <li>Test the token is valid: <code className="bg-yellow-100 px-2 py-1 rounded">curl -H "Authorization: Bearer [token]" http://localhost:8000/api/notifications/</code></li>
+            <li>
+              Test the token is valid:{" "}
+              <code className="bg-yellow-100 px-2 py-1 rounded">
+                curl -H "Authorization: Bearer [token]"
+                http://localhost:8000/api/notifications/
+              </code>
+            </li>
           </ul>
         </div>
       </div>

@@ -184,6 +184,19 @@ export interface Match {
   match_started?: boolean;
 }
 
+export interface ScheduleBye {
+  id: number;
+  week_number: number;
+  date: string;
+  team: number;
+  team_name?: string;
+}
+
+export interface SeasonMatchesResponse {
+  matches: Match[];
+  byes: ScheduleBye[];
+}
+
 export interface TeamMembership {
   id: number;
   team: number;
@@ -274,6 +287,7 @@ export interface Venue {
   address?: string;
   city?: string;
   state?: string;
+  zip_code?: string;
   table_count: number;
   is_active?: boolean;
   created_at?: string;
@@ -282,12 +296,14 @@ export interface Venue {
 // Schedule configuration for generation
 export interface ScheduleConfiguration {
   start_date: string;
-  matches_per_week: number;
   break_weeks?: number[];           // Holiday/break weeks (no matches for anyone)
   bye_weeks?: number[];             // Weeks with reduced matches (some teams have byes)
   alternating_home_away: boolean;   // Whether to alternate home/away for teams
   times_play_each_other: number;    // 1 = single round robin, 2 = double, etc.
   tables_per_establishment?: Record<number, number>; // venue_id -> table count
+  selected_venue_ids?: number[];    // Venues to use for scheduling (if not set, use all)
+  selected_team_ids?: number[];     // Teams to include in scheduling (if not set, use all)
+  default_match_day?: number;       // Day of week for matches: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun (default: 2)
 }
 
 // API response from generate-schedule
@@ -397,6 +413,7 @@ export interface MeSeason {
   league_id: number;
   league_name: string;
   is_active: boolean;
+  is_favorite?: boolean;  // Optional until backend supports it
   start_date: string;
   end_date: string | null;
 }
@@ -420,11 +437,26 @@ export interface MePlayer {
   skill_level: number | null;
 }
 
+export interface MeMatch {
+  id: number;
+  date: string;
+  home_team_id: number;
+  home_team_name: string;
+  away_team_id: number;
+  away_team_name: string;
+  season_id: number;
+  season_name: string;
+  league_name: string;
+  venue_name: string | null;
+  status: 'scheduled' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled';
+}
+
 export interface MeResponse {
   player: MePlayer | null;
   teams: MeTeam[];
   seasons: MeSeason[];
   leagues: MeLeague[];
+  upcoming_matches: MeMatch[];
 }
 
 /**

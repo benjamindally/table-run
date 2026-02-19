@@ -110,18 +110,6 @@ const SeasonsModal: React.FC<SeasonsModalProps> = ({
                   </span>
                 </div>
 
-                {season.end_date && (
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      <span>End Date</span>
-                    </div>
-                    <span className="font-medium text-gray-900">
-                      {new Date(season.end_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center text-gray-600">
                     <Users className="h-4 w-4 mr-2" />

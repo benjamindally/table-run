@@ -83,10 +83,10 @@ const MatchesPage: React.FC = () => {
 
   // Sort matches by date (everyone can see all matches, editing is permission-based)
   const displayMatches = useMemo(() => {
-    if (!matchesData) return [];
+    if (!matchesData?.matches) return [];
 
     // Sort by date (upcoming first, then by week_number)
-    return [...matchesData].sort((a: Match, b: Match) => {
+    return [...matchesData.matches].sort((a: Match, b: Match) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
 

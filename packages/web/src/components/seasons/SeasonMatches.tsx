@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { ChevronDown, ChevronUp, Upload } from "lucide-react";
-import type { Match } from "../../api";
+import type { Match, ScheduleBye } from "../../api";
 
 interface SeasonMatchesProps {
   matches?: Match[];
+  byes?: ScheduleBye[];
   editable?: boolean | ((match: Match) => boolean);
-  onScheduleMatch?: () => void;
   onImportSchedule?: () => void;
   onEditMatch?: (match: Match) => void;
   initialWeeksToShow?: number;
@@ -14,8 +14,8 @@ interface SeasonMatchesProps {
 
 const SeasonMatches: React.FC<SeasonMatchesProps> = ({
   matches,
+  byes,
   editable = false,
-  onScheduleMatch,
   onImportSchedule,
   onEditMatch,
   initialWeeksToShow = 3,
@@ -23,6 +23,21 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  // Group byes by week for easy lookup
+  const byesByWeek = useMemo(() => {
+    if (!byes || byes.length === 0) return {};
+
+    return byes.reduce((acc, bye) => {
+      const week = bye.week_number;
+      if (!acc[week]) acc[week] = [];
+      acc[week].push({
+        id: bye.team,
+        name: bye.team_name || `Team ${bye.team}`,
+      });
+      return acc;
+    }, {} as Record<number, { id: number; name: string }[]>);
+  }, [byes]);
 
   if (!matches || matches.length === 0) {
     return (
@@ -211,6 +226,25 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
                       </div>
                     );
                   })}
+                  {/* Bye cards for this week */}
+                  {byesByWeek[weekNum]?.map((byeTeam) => (
+                    <div
+                      key={`bye-${byeTeam.id}`}
+                      className="p-3 rounded-lg bg-yellow-50 border-2 border-yellow-200"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-sm text-dark truncate">
+                            {byeTeam.name}
+                          </p>
+                          <span className="px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded text-xs font-medium">
+                            BYE
+                          </span>
+                        </div>
+                        <p className="text-xs text-dark-400">No opponent this week</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

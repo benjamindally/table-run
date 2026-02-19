@@ -43,7 +43,6 @@ const SeasonSchedulerPage: React.FC = () => {
   // Configuration state
   const [config, setConfig] = useState<ScheduleConfiguration>({
     start_date: "",
-    matches_per_week: 4,
     break_weeks: [],
     bye_weeks: [],
     alternating_home_away: true,
@@ -76,14 +75,25 @@ const SeasonSchedulerPage: React.FC = () => {
     }
   }, [season]);
 
+  // Initialize selected teams when teams load (default to all selected)
   React.useEffect(() => {
-    if (teams && teams.length > 0) {
+    if (teams && teams.length > 0 && !config.selected_team_ids) {
       setConfig((prev) => ({
         ...prev,
-        matches_per_week: Math.floor(teams.length / 2),
+        selected_team_ids: teams.map((t) => t.id),
       }));
     }
   }, [teams]);
+
+  // Initialize selected venues when venues load (default to all selected)
+  React.useEffect(() => {
+    if (venues && venues.length > 0 && !config.selected_venue_ids) {
+      setConfig((prev) => ({
+        ...prev,
+        selected_venue_ids: venues.map((v) => v.id),
+      }));
+    }
+  }, [venues]);
 
   // Update config
   const handleUpdateConfig = useCallback((updates: Partial<ScheduleConfiguration>) => {
@@ -112,8 +122,36 @@ const SeasonSchedulerPage: React.FC = () => {
         seasonId,
         config,
       });
-      setSchedule(result.schedule);
-      setWarnings(result.warnings || []);
+      // Backend returns "weeks" instead of "schedule", and uses different field names
+      const rawWeeks = (result as any).weeks || result.schedule || [];
+      const transformedSchedule = rawWeeks.map((week: any) => {
+        // Transform regular matches
+        const transformedMatches = week.matches.map((match: any) => ({
+          ...match,
+          date: match.date || week.date,
+          venue_name: match.venue_name || match.location,
+        }));
+        // Transform byes into match-like objects
+        const byeMatches = (week.byes || []).map((bye: any) => ({
+          is_bye: true,
+          bye_team_id: bye.team_id,
+          bye_team_name: bye.team_name,
+          date: week.date,
+        }));
+        return {
+          ...week,
+          matches: [...transformedMatches, ...byeMatches],
+        };
+      });
+      setSchedule(transformedSchedule);
+      // Transform warnings from strings to objects if needed
+      const rawWarnings = result.warnings || [];
+      const transformedWarnings = rawWarnings.map((w: any) =>
+        typeof w === 'string'
+          ? { type: 'venue_conflict' as const, message: w }
+          : w
+      );
+      setWarnings(transformedWarnings);
       setIsManualMode(false);
       setHasEdits(false);
       toast.success("Schedule generated! Review and save when ready.");
@@ -139,13 +177,38 @@ const SeasonSchedulerPage: React.FC = () => {
     }
 
     try {
+      // Flatten weeks into a flat matches array, filtering out byes
+      const matches = schedule.flatMap((week) =>
+        week.matches
+          .filter((m) => !m.is_bye)
+          .map((m) => ({
+            week_number: week.week_number,
+            date: m.date || week.date,
+            home_team_id: m.home_team_id,
+            away_team_id: m.away_team_id,
+            location: m.venue_name,
+          }))
+      );
+
+      // Extract byes into a flat array
+      const byes = schedule.flatMap((week) =>
+        week.matches
+          .filter((m) => m.is_bye)
+          .map((m) => ({
+            week_number: week.week_number,
+            date: m.date || week.date,
+            team_id: m.bye_team_id,
+          }))
+      );
+
       await saveScheduleMutation.mutateAsync({
         seasonId,
         data: {
-          schedule,
-          configuration: config,
-          is_manual: isManualMode,
-        },
+          matches,
+          byes,
+          replace_existing: false,
+          schedule_config: config,
+        } as any,
       });
       toast.success("Schedule saved successfully!");
       navigate(`/admin/seasons/${seasonId}`);
@@ -254,13 +317,9 @@ const SeasonSchedulerPage: React.FC = () => {
     );
   }
 
-  // Calculate season weeks estimate
-  const seasonWeeksEstimate = teams
-    ? Math.ceil(
-        (teams.length * (teams.length - 1) * (config.times_play_each_other || 1)) /
-          2 /
-          (config.matches_per_week || 1)
-      )
+  // Calculate season weeks estimate (n-1 weeks for n teams in single round-robin)
+  const seasonWeeksEstimate = teams && teams.length > 1
+    ? (teams.length - 1) * (config.times_play_each_other || 1)
     : 14;
 
   const currentEditingMatch = editingMatch && schedule
@@ -376,7 +435,6 @@ const SeasonSchedulerPage: React.FC = () => {
         onUpdateConfig={handleUpdateConfig}
         onUpdateVenueTables={handleUpdateVenueTables}
         seasonWeeksEstimate={seasonWeeksEstimate}
-        seasonId={seasonId}
       />
 
       {/* Match Edit Modal */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { X, Info, Plus, Minus, Trash2, Calendar } from "lucide-react";
 import type { ScheduleConfiguration, Venue, SeasonParticipation } from "../../api";
 import type { ParamModalType } from "./ScheduleParameterGrid";
@@ -25,7 +25,6 @@ interface ScheduleParameterModalProps {
   onUpdateConfig: (updates: Partial<ScheduleConfiguration>) => void;
   onUpdateVenueTables?: (updates: VenueTableUpdate[]) => Promise<void>;
   seasonWeeksEstimate?: number; // Estimated number of weeks based on teams and times_play_each_other
-  seasonId: number;
 }
 
 const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
@@ -38,7 +37,6 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
   onUpdateConfig,
   onUpdateVenueTables,
   seasonWeeksEstimate = 14,
-  seasonId,
 }) => {
   const navigate = useNavigate();
 
@@ -52,6 +50,12 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
   // Venue tables specific state
   const [editingVenueTableCounts, setEditingVenueTableCounts] = useState<Record<number, number>>({});
   const [isSavingVenues, setIsSavingVenues] = useState(false);
+
+  // Selected venues state (for establishments modal)
+  const [selectedVenueIds, setSelectedVenueIds] = useState<Set<number>>(new Set());
+
+  // Selected teams state (for teams modal)
+  const [selectedTeamIds, setSelectedTeamIds] = useState<Set<number>>(new Set());
 
   // Helper: Calculate week number from a date based on start_date
   const calculateWeekNumber = (date: string, startDate: string): number => {
@@ -140,14 +144,32 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
           setEditingVenueTableCounts(counts);
           setLocalValue(null); // Not used for this type
           break;
-        case "matches_per_week":
-          setLocalValue(config.matches_per_week || 2);
+        case "establishments":
+          // Initialize selected venues from config, or select all if not set
+          if (config.selected_venue_ids && config.selected_venue_ids.length > 0) {
+            setSelectedVenueIds(new Set(config.selected_venue_ids));
+          } else {
+            // Default to all venues selected
+            setSelectedVenueIds(new Set(venues.map((v) => v.id)));
+          }
+          break;
+        case "teams":
+          // Initialize selected teams from config, or select all if not set
+          if (config.selected_team_ids && config.selected_team_ids.length > 0) {
+            setSelectedTeamIds(new Set(config.selected_team_ids));
+          } else {
+            // Default to all teams selected
+            setSelectedTeamIds(new Set(teams.map((t) => t.id)));
+          }
           break;
         case "times_play_each_other":
           setLocalValue(config.times_play_each_other || 1);
           break;
         case "alternating_home_away":
           setLocalValue(config.alternating_home_away ?? true);
+          break;
+        case "default_match_day":
+          setLocalValue(config.default_match_day ?? 2); // Default to Wednesday
           break;
         case "break_weeks":
           // Convert existing week numbers to BreakWeekEntry format
@@ -200,6 +222,14 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
       case "start_date":
         onUpdateConfig({ start_date: localValue });
         break;
+      case "establishments":
+        // Save selected venue IDs
+        onUpdateConfig({ selected_venue_ids: Array.from(selectedVenueIds) });
+        break;
+      case "teams":
+        // Save selected team IDs
+        onUpdateConfig({ selected_team_ids: Array.from(selectedTeamIds) });
+        break;
       case "tables_per_establishment":
         // Save venue table counts via API
         if (onUpdateVenueTables && pendingVenueChanges.length > 0) {
@@ -215,14 +245,14 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
           }
         }
         break;
-      case "matches_per_week":
-        onUpdateConfig({ matches_per_week: localValue });
-        break;
       case "times_play_each_other":
         onUpdateConfig({ times_play_each_other: localValue });
         break;
       case "alternating_home_away":
         onUpdateConfig({ alternating_home_away: localValue });
+        break;
+      case "default_match_day":
+        onUpdateConfig({ default_match_day: localValue });
         break;
       case "break_weeks":
         // Extract just the week numbers from BreakWeekEntry array
@@ -243,12 +273,12 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
         return "Establishments";
       case "tables_per_establishment":
         return "Adjust Tables";
-      case "matches_per_week":
-        return "Matches per Week";
       case "times_play_each_other":
         return "Times Teams Play Each Other";
       case "alternating_home_away":
         return "Home/Away Assignment";
+      case "default_match_day":
+        return "Match Day";
       case "break_weeks":
         return "Break Weeks (Holidays)";
       default:
@@ -274,75 +304,135 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
         );
 
       case "teams":
+        const toggleTeamSelection = (teamId: number) => {
+          setSelectedTeamIds((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(teamId)) {
+              newSet.delete(teamId);
+            } else {
+              newSet.add(teamId);
+            }
+            return newSet;
+          });
+        };
+
         return (
           <div className="space-y-4">
             <p className="text-sm text-dark-400">
-              Teams participating in this season. This is determined by team registrations.
+              Select the teams to include in the schedule.
             </p>
-            {teams.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-dark-400 mb-4">No teams registered yet.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-72 overflow-y-auto">
+              {teams.map((participation) => (
                 <button
+                  key={participation.id}
                   type="button"
-                  onClick={() => navigate(`/admin/seasons/${seasonId}/teams`)}
-                  className="btn btn-primary inline-flex items-center"
+                  onClick={() => toggleTeamSelection(participation.id)}
+                  className={`p-3 rounded-lg border-2 text-left transition-all ${
+                    selectedTeamIds.has(participation.id)
+                      ? "border-primary bg-primary-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Teams
+                  <p className="font-medium text-dark text-sm truncate">
+                    {participation.team_detail?.name || `Team ${participation.team}`}
+                  </p>
+                  {participation.team_detail?.establishment && (
+                    <p className="text-xs text-dark-300 truncate mt-1">
+                      {participation.team_detail.establishment}
+                    </p>
+                  )}
                 </button>
+              ))}
+              {/* Create Team Tile */}
+              <Link
+                to="/admin/teams/register"
+                className="p-3 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:border-primary hover:bg-primary-50 transition-all flex flex-col items-center justify-center text-center"
+              >
+                <Plus className="h-5 w-5 text-dark-300 mb-1" />
+                <p className="text-sm font-medium text-dark-300">
+                  Add Team
+                </p>
+              </Link>
+            </div>
+            {selectedTeamIds.size === 0 && teams.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                <Info className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-700">
+                  Please select at least one team for scheduling.
+                </p>
               </div>
-            ) : (
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {teams.map((participation) => (
-                  <div
-                    key={participation.id}
-                    className="p-3 bg-cream-50 rounded-lg border border-cream-200"
-                  >
-                    <p className="font-medium text-dark">
-                      {participation.team_detail?.name || `Team ${participation.team}`}
-                    </p>
-                    <p className="text-sm text-dark-400">
-                      {participation.team_detail?.establishment || "No venue"}
-                    </p>
-                  </div>
-                ))}
-              </div>
+            )}
+            {selectedTeamIds.size > 0 && (
+              <p className="text-sm text-dark-400">
+                {selectedTeamIds.size} of {teams.length} teams selected
+              </p>
             )}
           </div>
         );
 
       case "establishments":
+        const toggleVenueSelection = (venueId: number) => {
+          setSelectedVenueIds((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(venueId)) {
+              newSet.delete(venueId);
+            } else {
+              newSet.add(venueId);
+            }
+            return newSet;
+          });
+        };
+
         return (
           <div className="space-y-4">
             <p className="text-sm text-dark-400">
-              Venues available for scheduling matches. Managed at the league level.
+              Select the venues to use for scheduling matches.
             </p>
-            {venues.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-dark-400 mb-4">No venues configured yet.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-72 overflow-y-auto">
+              {venues.map((venue) => (
                 <button
+                  key={venue.id}
                   type="button"
-                  onClick={() => navigate(`/admin/seasons/${seasonId}/venues`)}
-                  className="btn btn-primary inline-flex items-center"
+                  onClick={() => toggleVenueSelection(venue.id)}
+                  className={`p-3 rounded-lg border-2 text-left transition-all ${
+                    selectedVenueIds.has(venue.id)
+                      ? "border-primary bg-primary-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Venues
+                  <p className="font-medium text-dark text-sm truncate">
+                    {venue.name}
+                  </p>
+                  {venue.address && (
+                    <p className="text-xs text-dark-300 truncate mt-1">
+                      {venue.address}
+                    </p>
+                  )}
                 </button>
+              ))}
+              {/* Create Venue Tile */}
+              <Link
+                to="/admin/venues/register"
+                className="p-3 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:border-primary hover:bg-primary-50 transition-all flex flex-col items-center justify-center text-center"
+              >
+                <Plus className="h-5 w-5 text-dark-300 mb-1" />
+                <p className="text-sm font-medium text-dark-300">
+                  Create Venue
+                </p>
+              </Link>
+            </div>
+            {selectedVenueIds.size === 0 && venues.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                <Info className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-700">
+                  Please select at least one venue for scheduling.
+                </p>
               </div>
-            ) : (
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {venues.map((venue) => (
-                  <div
-                    key={venue.id}
-                    className="p-3 bg-cream-50 rounded-lg border border-cream-200"
-                  >
-                    <p className="font-medium text-dark">{venue.name}</p>
-                    {venue.address && (
-                      <p className="text-sm text-dark-400">{venue.address}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
+            )}
+            {selectedVenueIds.size > 0 && (
+              <p className="text-sm text-dark-400">
+                {selectedVenueIds.size} of {venues.length} venues selected
+              </p>
             )}
           </div>
         );
@@ -359,11 +449,11 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
                 <p className="text-dark-400 mb-4">No venues configured yet.</p>
                 <button
                   type="button"
-                  onClick={() => navigate(`/admin/seasons/${seasonId}/venues`)}
+                  onClick={() => navigate('/admin/venues/register')}
                   className="btn btn-primary inline-flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Venues
+                  Add Venue
                 </button>
               </div>
             ) : (
@@ -422,36 +512,6 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
                 </p>
               </div>
             )}
-          </div>
-        );
-
-      case "matches_per_week":
-        return (
-          <div className="space-y-4">
-            <p className="text-sm text-dark-400">
-              Number of matches to schedule each week. Maximum is {Math.floor(teams.length / 2)} based on {teams.length} teams.
-            </p>
-            <div className="flex items-center gap-4">
-              <input
-                type="range"
-                min="1"
-                max={Math.max(1, Math.floor(teams.length / 2))}
-                value={localValue || 1}
-                onChange={(e) => setLocalValue(parseInt(e.target.value))}
-                className="flex-1"
-              />
-              <span className="text-lg font-semibold text-dark w-16 text-center">
-                {localValue}
-              </span>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-              <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-700">
-                With {teams.length} teams playing each other {config.times_play_each_other || 1} time(s),
-                scheduling {localValue} matches per week will require approximately{" "}
-                {Math.ceil((teams.length * (teams.length - 1) * (config.times_play_each_other || 1)) / 2 / (localValue || 1))} weeks.
-              </p>
-            </div>
           </div>
         );
 
@@ -525,6 +585,40 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
                   Home/away determined by scheduling algorithm without alternation.
                 </p>
               </button>
+            </div>
+          </div>
+        );
+
+      case "default_match_day":
+        const days = [
+          { value: 0, label: "Monday", short: "Mon" },
+          { value: 1, label: "Tuesday", short: "Tue" },
+          { value: 2, label: "Wednesday", short: "Wed" },
+          { value: 3, label: "Thursday", short: "Thu" },
+          { value: 4, label: "Friday", short: "Fri" },
+          { value: 5, label: "Saturday", short: "Sat" },
+          { value: 6, label: "Sunday", short: "Sun" },
+        ];
+        return (
+          <div className="space-y-4">
+            <p className="text-sm text-dark-400">
+              Which day of the week are matches played?
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {days.map((day) => (
+                <button
+                  key={day.value}
+                  type="button"
+                  onClick={() => setLocalValue(day.value)}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    localValue === day.value
+                      ? "border-primary-500 bg-primary-50 text-primary-700"
+                      : "border-cream-300 bg-white hover:border-cream-400"
+                  }`}
+                >
+                  <span className="text-sm font-semibold">{day.short}</span>
+                </button>
+              ))}
             </div>
           </div>
         );
@@ -641,7 +735,7 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
     }
   };
 
-  const isReadOnly = type === "teams" || type === "establishments";
+  const isReadOnly = false;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -685,7 +779,12 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={isSavingVenues || (type === "tables_per_establishment" && pendingVenueChanges.length === 0)}
+                disabled={
+                  isSavingVenues ||
+                  (type === "tables_per_establishment" && pendingVenueChanges.length === 0) ||
+                  (type === "establishments" && selectedVenueIds.size === 0) ||
+                  (type === "teams" && selectedTeamIds.size === 0)
+                }
                 className="btn btn-primary disabled:opacity-50"
               >
                 {isSavingVenues ? "Saving..." : "Save"}

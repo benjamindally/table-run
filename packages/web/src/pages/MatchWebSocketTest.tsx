@@ -3,24 +3,23 @@
  * Navigate to /match-websocket-test to use this
  */
 
-import { useState } from 'react';
-import { useMatchWebSocket } from '../hooks/useMatchWebSocket';
-import { useAuth } from '../contexts/AuthContext';
-import type { IncomingMessage } from '../types/websocket';
+import { useState } from "react";
+import { useMatchWebSocket } from "../hooks/useMatchWebSocket";
+import { useAuth } from "../contexts/AuthContext";
+import type { IncomingMessage } from "../types/websocket";
 
 export default function MatchWebSocketTest() {
   const { accessToken, user } = useAuth();
   const [matchId, setMatchId] = useState<number>(1);
   const [enabled, setEnabled] = useState(false);
   const [messages, setMessages] = useState<IncomingMessage[]>([]);
-  const [testMessage, setTestMessage] = useState('');
+  const [testMessage, setTestMessage] = useState("");
 
   const { send, status, isConnected, reconnect } = useMatchWebSocket({
     matchId,
     enabled,
     onMessage: (message) => {
       const timestamp = new Date().toLocaleTimeString();
-      console.log(`[${timestamp}] Received:`, message);
       setMessages((prev) => [{ ...message, timestamp }, ...prev]);
     },
   });
@@ -38,16 +37,16 @@ export default function MatchWebSocketTest() {
     if (!testMessage.trim()) return;
 
     send({
-      type: 'test_message',
+      type: "test_message",
       data: { message: testMessage },
     });
 
-    setTestMessage('');
+    setTestMessage("");
   };
 
   const handleSendScoreUpdate = () => {
     send({
-      type: 'score_update',
+      type: "score_update",
       data: {
         team1_score: Math.floor(Math.random() * 10),
         team2_score: Math.floor(Math.random() * 10),
@@ -57,16 +56,16 @@ export default function MatchWebSocketTest() {
 
   const getStatusColor = () => {
     switch (status) {
-      case 'connected':
-        return 'text-green-600';
-      case 'connecting':
-        return 'text-yellow-600';
-      case 'disconnected':
-        return 'text-gray-600';
-      case 'error':
-        return 'text-red-600';
+      case "connected":
+        return "text-green-600";
+      case "connecting":
+        return "text-yellow-600";
+      case "disconnected":
+        return "text-gray-600";
+      case "error":
+        return "text-red-600";
       default:
-        return 'text-gray-600';
+        return "text-gray-600";
     }
   };
 
@@ -81,11 +80,11 @@ export default function MatchWebSocketTest() {
           <h2 className="text-xl font-semibold mb-4">Auth Status</h2>
           <div className="space-y-2 text-sm">
             <p>
-              <strong>User:</strong>{' '}
-              {user ? `${user.email} (ID: ${user.id})` : 'Not logged in'}
+              <strong>User:</strong>{" "}
+              {user ? `${user.email} (ID: ${user.id})` : "Not logged in"}
             </p>
             <p>
-              <strong>Has Token:</strong> {accessToken ? '✅ Yes' : '❌ No'}
+              <strong>Has Token:</strong> {accessToken ? "✅ Yes" : "❌ No"}
             </p>
             {!accessToken && (
               <p className="text-red-600 mt-2">
@@ -156,7 +155,7 @@ export default function MatchWebSocketTest() {
 
             {enabled && (
               <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
-                <strong>WebSocket URL:</strong>{' '}
+                <strong>WebSocket URL:</strong>{" "}
                 <code className="break-all">
                   ws(s)://host/ws/8ball-match/{matchId}/?token=[token]
                 </code>
@@ -180,7 +179,7 @@ export default function MatchWebSocketTest() {
                   type="text"
                   value={testMessage}
                   onChange={(e) => setTestMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendTest()}
+                  onKeyPress={(e) => e.key === "Enter" && handleSendTest()}
                   placeholder="Enter test message..."
                   disabled={!isConnected}
                   className="flex-1 border rounded px-3 py-2 disabled:bg-gray-100"
@@ -245,7 +244,7 @@ export default function MatchWebSocketTest() {
                       {message.type}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {message.timestamp || ''} (#{messages.length - index})
+                      {message.timestamp || ""} (#{messages.length - index})
                     </span>
                   </div>
                   <pre className="whitespace-pre-wrap text-xs overflow-x-auto">
@@ -282,9 +281,9 @@ export default function MatchWebSocketTest() {
           <ul className="list-disc list-inside text-sm space-y-2">
             <li>Is Django server running?</li>
             <li>
-              Does the backend have a WebSocket consumer at{' '}
+              Does the backend have a WebSocket consumer at{" "}
               <code className="bg-yellow-100 px-1 rounded">
-                /ws/8ball-match/{'<match_id>'}/?token={'<token>'}
+                /ws/8ball-match/{"<match_id>"}/?token={"<token>"}
               </code>
               ?
             </li>
@@ -303,13 +302,15 @@ export default function MatchWebSocketTest() {
           <h3 className="font-semibold mb-3">useMatchWebSocket Hook Info:</h3>
           <ul className="list-disc list-inside text-sm space-y-2">
             <li>
-              Located at:{' '}
+              Located at:{" "}
               <code className="bg-green-100 px-1 rounded">
                 src/hooks/useMatchWebSocket.ts
               </code>
             </li>
             <li>Uses react-use-websocket library for connection management</li>
-            <li>Automatically reconnects on disconnect (5 attempts, 3s interval)</li>
+            <li>
+              Automatically reconnects on disconnect (5 attempts, 3s interval)
+            </li>
             <li>Requires authentication token from AuthContext</li>
             <li>Returns: send(), status, isConnected, reconnect()</li>
           </ul>

@@ -67,11 +67,6 @@ export function useNotifications() {
               message: message.message,
             },
           };
-
-          console.log(
-            "[useNotifications] Adding notification to state:",
-            newNotification
-          );
           setNotifications((prev) => [newNotification, ...prev]);
 
           if (message.unread_count !== undefined) {
@@ -163,10 +158,6 @@ export function useNotifications() {
       if (!accessToken) return;
 
       try {
-        console.log(
-          "[useNotifications] Marking notification as read:",
-          notificationId
-        );
         await notificationsApi.markAsRead(notificationId, accessToken);
 
         // Update local state
