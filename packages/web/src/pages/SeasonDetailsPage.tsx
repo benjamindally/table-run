@@ -29,7 +29,8 @@ const SeasonDetailsPage: React.FC = () => {
 
   const { data: season, isLoading, error } = useSeason(seasonId);
   const { data: teams } = useSeasonTeams(seasonId);
-  const { data: matches } = useSeasonMatches(seasonId);
+  const { data: matchesData } = useSeasonMatches(seasonId);
+  const matches = matchesData?.matches;
   const { data: standings } = useSeasonStandings(seasonId);
   const { data: playersData } = useSeasonPlayers(seasonId);
   const { data: currentTeams } = useCurrentTeams();

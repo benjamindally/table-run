@@ -32,7 +32,8 @@ const CurrentSeasonCards: React.FC<CurrentSeasonCardsProps> = ({
   userTeamIds,
   setLeagueAndSeason,
 }) => {
-  const { data: matches, isLoading } = useSeasonMatches(season.id);
+  const { data: matchesData, isLoading } = useSeasonMatches(season.id);
+  const matches = matchesData?.matches;
 
   return (
     <>
@@ -69,7 +70,7 @@ const CurrentSeasonCards: React.FC<CurrentSeasonCardsProps> = ({
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { leagues, seasons, teams, isLoading, setLeagueAndSeason } =
+  const { leagues, seasons, teams, upcomingMatches, isLoading, setLeagueAndSeason } =
     useLeagueSeason();
   const hasLeagues = leagues.length > 0;
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -214,6 +215,14 @@ const DashboardPage: React.FC = () => {
         <h1 className="text-xl sm:text-2xl font-bold text-dark">Dashboard</h1>
         <p className="text-sm text-dark-300 mt-1">Overview of your leagues</p>
       </div>
+
+      {/* Global Next Match Card */}
+      {userTeamIds.length > 0 && (
+        <NextMatchCard
+          userTeamIds={userTeamIds}
+          upcomingMatch={upcomingMatches[0] || null}
+        />
+      )}
 
       {/* Your Leagues */}
       <div className="bg-white rounded-lg shadow-sm p-6">

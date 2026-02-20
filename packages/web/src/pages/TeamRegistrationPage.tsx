@@ -128,7 +128,6 @@ const TeamRegistrationPage: React.FC = () => {
 
     if (isValid) {
       // In a real app, this would be an API call
-      console.log("Submitting team registration:", formData);
 
       // Simulate API call
       setTimeout(() => {
@@ -160,7 +159,9 @@ const TeamRegistrationPage: React.FC = () => {
             >
               1
             </div>
-            <span className="mt-2 text-xs md:text-sm text-center">Team Info</span>
+            <span className="mt-2 text-xs md:text-sm text-center">
+              Team Info
+            </span>
           </div>
           <div
             className={`flex-1 h-0.5 md:h-1 mx-1 md:mx-2 ${

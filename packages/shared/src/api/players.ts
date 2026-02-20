@@ -9,8 +9,19 @@ export const playersApi = {
   /**
    * Get all players (paginated)
    */
-  getAll: (token?: string) =>
-    api.get<PaginatedResponse<Player>>('/players/', token),
+  getAll: (
+    token?: string,
+    options?: { leagueId?: number; page?: number }
+  ) => {
+    const params = new URLSearchParams();
+    if (options?.leagueId) params.append('league_id', options.leagueId.toString());
+    if (options?.page) params.append('page', options.page.toString());
+    const queryString = params.toString();
+    return api.get<PaginatedResponse<Player>>(
+      `/players/${queryString ? `?${queryString}` : ''}`,
+      token
+    );
+  },
 
   /**
    * Get a single player by ID

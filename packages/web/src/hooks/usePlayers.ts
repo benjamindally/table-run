@@ -2,7 +2,7 @@
  * React Query hooks for player-related operations
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { playersApi } from '../api';
 import { Player, PlayerUpdateData } from '../api';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,14 +20,37 @@ export const playerKeys = {
 };
 
 /**
- * Get all players (paginated)
+ * Get all players (paginated) - single page
+ * @param leagueId - Optional league ID to filter players by league
  */
-export const usePlayers = () => {
+export const usePlayers = (leagueId?: number) => {
   const { getAuthToken } = useAuth();
 
   return useQuery({
-    queryKey: playerKeys.list(),
-    queryFn: () => playersApi.getAll(getAuthToken() || undefined),
+    queryKey: playerKeys.list(leagueId ? `league_${leagueId}` : undefined),
+    queryFn: () => playersApi.getAll(getAuthToken() || undefined, { leagueId }),
+  });
+};
+
+/**
+ * Get players with infinite loading (load more)
+ * @param leagueId - Optional league ID to filter players by league
+ */
+export const useInfinitePlayers = (leagueId?: number) => {
+  const { getAuthToken } = useAuth();
+
+  return useInfiniteQuery({
+    queryKey: [...playerKeys.list(leagueId ? `league_${leagueId}` : undefined), 'infinite'],
+    queryFn: ({ pageParam = 1 }) =>
+      playersApi.getAll(getAuthToken() || undefined, { leagueId, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      // If there's a next URL, return the next page number
+      if (lastPage.next) {
+        return allPages.length + 1;
+      }
+      return undefined;
+    },
   });
 };
 

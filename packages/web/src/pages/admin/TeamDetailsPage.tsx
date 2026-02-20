@@ -10,8 +10,11 @@ import {
   MapPin,
   X,
   Check,
+  UserPlus,
 } from "lucide-react";
 import { useTeam, useTeamRoster, useTeamSeasons } from "../../hooks/useTeams";
+import { useInfinitePlayers } from "../../hooks/usePlayers";
+import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamsApi } from "../../api";
 import { useAuth } from "../../contexts/AuthContext";
@@ -25,6 +28,8 @@ const TeamDetailsPage: React.FC = () => {
   const { getAuthToken } = useAuth();
   const queryClient = useQueryClient();
 
+  const { currentLeagueId } = useLeagueSeason();
+
   const { data: team, isLoading, error } = useTeam(teamId);
   const { data: roster } = useTeamRoster(teamId);
   const { data: seasons } = useTeamSeasons(teamId);
@@ -34,6 +39,19 @@ const TeamDetailsPage: React.FC = () => {
   const [editedEstablishment, setEditedEstablishment] = useState("");
   const [editedActive, setEditedActive] = useState(true);
   const [showCaptainModal, setShowCaptainModal] = useState(false);
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+  const [playerSearchTerm, setPlayerSearchTerm] = useState("");
+
+  // Get players for the add player modal (filtered by current league)
+  const {
+    data: playersData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfinitePlayers(currentLeagueId ?? undefined);
+
+  // Flatten all pages into a single array of players
+  const allPlayers = playersData?.pages.flatMap((page) => page.results) ?? [];
 
   // Update mutation
   const updateMutation = useMutation({
@@ -75,6 +93,21 @@ const TeamDetailsPage: React.FC = () => {
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to remove captain");
+    },
+  });
+
+  // Add member mutation
+  const addMemberMutation = useMutation({
+    mutationFn: (playerId: number) =>
+      teamsApi.addMember(teamId, playerId, getAuthToken() || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamsKeys.roster(teamId) });
+      toast.success("Player added to team!");
+      setShowAddPlayerModal(false);
+      setPlayerSearchTerm("");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to add player");
     },
   });
 
@@ -320,7 +353,12 @@ const TeamDetailsPage: React.FC = () => {
               {roster?.length || 0}{" "}
               {roster?.length === 1 ? "Player" : "Players"}
             </span>
-            <button className="btn btn-primary btn-sm">Add Player</button>
+            <button
+              onClick={() => setShowAddPlayerModal(true)}
+              className="btn btn-primary btn-sm"
+            >
+              Add Player
+            </button>
           </div>
         </div>
         {roster && roster.length > 0 ? (
@@ -710,6 +748,136 @@ const TeamDetailsPage: React.FC = () => {
             <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
               <button
                 onClick={() => setShowCaptainModal(false)}
+                className="btn btn-outline btn-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Player Modal */}
+      {showAddPlayerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-2xl w-full mx-2 sm:mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-dark">
+                Add Player to Team
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAddPlayerModal(false);
+                  setPlayerSearchTerm("");
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              {/* Create New Player Button */}
+              <button
+                onClick={() => {
+                  // TODO: Navigate to create player page
+                  toast.info("Create new player - coming soon!");
+                }}
+                className="w-full mb-4 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors flex items-center justify-center gap-2 text-dark-300 hover:text-primary-600"
+              >
+                <UserPlus className="h-5 w-5" />
+                <span className="font-medium">Create New Player</span>
+              </button>
+
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Search players by name or email..."
+                  value={playerSearchTerm}
+                  onChange={(e) => setPlayerSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                {(() => {
+                  const rosterPlayerIds = new Set(roster?.map((m) => m.player) || []);
+                  const availablePlayers = allPlayers.filter(
+                    (player) =>
+                      !rosterPlayerIds.has(player.id) &&
+                      (playerSearchTerm === "" ||
+                        player.full_name?.toLowerCase().includes(playerSearchTerm.toLowerCase()) ||
+                        player.email?.toLowerCase().includes(playerSearchTerm.toLowerCase()))
+                  );
+
+                  if (availablePlayers.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-dark-300">
+                        {playerSearchTerm
+                          ? "No players found matching your search."
+                          : "No players available to add."}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      {availablePlayers.map((player) => (
+                        <div
+                          key={player.id}
+                          className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                              <span className="text-sm font-semibold text-primary-600">
+                                {player.full_name
+                                  ?.split(" ")
+                                  .map((n: string) => n[0])
+                                  .join("")}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-dark">
+                                {player.full_name}
+                              </p>
+                              <p className="text-sm text-dark-300">
+                                {player.email}
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => addMemberMutation.mutate(player.id)}
+                            disabled={addMemberMutation.isPending}
+                            className="btn btn-primary btn-sm"
+                          >
+                            {addMemberMutation.isPending ? "Adding..." : "Add"}
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Load More Button */}
+                      {hasNextPage && (
+                        <button
+                          onClick={() => fetchNextPage()}
+                          disabled={isFetchingNextPage}
+                          className="w-full mt-4 py-3 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+                        >
+                          {isFetchingNextPage ? "Loading..." : "Load More Players"}
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={() => {
+                  setShowAddPlayerModal(false);
+                  setPlayerSearchTerm("");
+                }}
                 className="btn btn-outline btn-sm"
               >
                 Close

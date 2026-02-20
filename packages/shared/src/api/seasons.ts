@@ -7,13 +7,13 @@ import type {
   Season,
   PaginatedResponse,
   SeasonParticipation,
-  Match,
   Venue,
   ScheduleConfiguration,
   GeneratedScheduleResponse,
   SaveScheduleRequest,
   SeasonStandingsResponse,
   SeasonPlayersResponse,
+  SeasonMatchesResponse,
 } from '../types';
 
 export const seasonsApi = {
@@ -48,10 +48,10 @@ export const seasonsApi = {
     api.get<SeasonParticipation[]>(`/seasons/${seasonId}/teams/`, token),
 
   /**
-   * Get all matches in a season
+   * Get all matches in a season (returns matches and byes)
    */
   getMatches: (seasonId: number, token?: string) =>
-    api.get<Match[]>(`/seasons/${seasonId}/matches/`, token),
+    api.get<SeasonMatchesResponse>(`/seasons/${seasonId}/matches/`, token),
 
   /**
    * Join a season with a team using invite code
@@ -161,6 +161,19 @@ export const seasonsApi = {
   /**
    * Create a new venue for a league
    */
-  createVenue: (data: { league: number; name: string; address?: string; table_count: number }, token?: string) =>
+  createVenue: (data: { league: number; name: string; address?: string; city?: string; state?: string; zip_code?: string; table_count: number }, token?: string) =>
     api.post<Venue>('/venues/', data, token),
+
+  /**
+   * Add a team to a season (league operators only, no invite code needed)
+   */
+  addTeam: (seasonId: number, data: { team_id: number; venue_id?: number }, token?: string) =>
+    api.post<SeasonParticipation>(`/seasons/${seasonId}/add-team/`, data, token),
+
+  /**
+   * Toggle favorite status for a season
+   * Returns the updated favorite status
+   */
+  toggleFavorite: (seasonId: number, token?: string) =>
+    api.post<{ is_favorite: boolean }>(`/seasons/${seasonId}/favorite/`, {}, token),
 };

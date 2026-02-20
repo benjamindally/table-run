@@ -3,9 +3,17 @@
  * Uses React Context for state with localStorage persistence
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
-import type { TeamSide } from '../types/websocket';
-import type { LineupState } from '../api';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  ReactNode,
+} from "react";
+import type { TeamSide } from "../types/websocket";
+import type { LineupState } from "../api";
 
 export interface PlayerAttendance {
   playerId: number;
@@ -38,7 +46,11 @@ export interface MatchState {
 interface MatchScoringContextType {
   state: MatchState | null;
   // Initialize/reset
-  initializeMatch: (matchId: number, gamesCount?: number, initialLineupState?: LineupState) => void;
+  initializeMatch: (
+    matchId: number,
+    gamesCount?: number,
+    initialLineupState?: LineupState
+  ) => void;
   clearMatch: () => void;
   // Roster management
   setHomeRoster: (roster: PlayerAttendance[]) => void;
@@ -47,7 +59,11 @@ interface MatchScoringContextType {
   toggleAwayAttendance: (playerId: number) => void;
   // Game management
   updateGame: (gameIndex: number, updates: Partial<GameState>) => void;
-  setGamePlayers: (gameIndex: number, homePlayerId: number, awayPlayerId: number) => void;
+  setGamePlayers: (
+    gameIndex: number,
+    homePlayerId: number,
+    awayPlayerId: number
+  ) => void;
   setWinner: (gameIndex: number, winner: TeamSide) => void;
   toggleTableRun: (gameIndex: number, team: TeamSide) => void;
   toggle8Ball: (gameIndex: number, team: TeamSide) => void;
@@ -64,9 +80,11 @@ interface MatchScoringContextType {
   isHomeLineupComplete: boolean;
 }
 
-const MatchScoringContext = createContext<MatchScoringContextType | undefined>(undefined);
+const MatchScoringContext = createContext<MatchScoringContextType | undefined>(
+  undefined
+);
 
-const STORAGE_PREFIX = 'match_state_';
+const STORAGE_PREFIX = "match_state_";
 
 function getStoredState(matchId: number): MatchState | null {
   const storageKey = `${STORAGE_PREFIX}${matchId}`;
@@ -76,18 +94,26 @@ function getStoredState(matchId: number): MatchState | null {
     try {
       const parsed = JSON.parse(stored);
       // Validate the stored state has the correct structure
-      if (parsed.games && Array.isArray(parsed.games) && parsed.matchId === matchId) {
+      if (
+        parsed.games &&
+        Array.isArray(parsed.games) &&
+        parsed.matchId === matchId
+      ) {
         return parsed;
       }
     } catch (error) {
-      console.error('Failed to parse stored match state:', error);
+      console.error("Failed to parse stored match state:", error);
     }
   }
 
   return null;
 }
 
-function createInitialState(matchId: number, gamesCount: number, lineupState: LineupState = 'awaiting_away_lineup'): MatchState {
+function createInitialState(
+  matchId: number,
+  gamesCount: number,
+  lineupState: LineupState = "awaiting_away_lineup"
+): MatchState {
   return {
     matchId,
     homeRoster: [],
@@ -109,7 +135,9 @@ function createInitialState(matchId: number, gamesCount: number, lineupState: Li
   };
 }
 
-export const MatchScoringProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const MatchScoringProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [state, setState] = useState<MatchState | null>(null);
 
   // Persist to localStorage whenever state changes
@@ -121,21 +149,28 @@ export const MatchScoringProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, [state]);
 
   // Initialize match (try to load from localStorage first)
-  const initializeMatch = useCallback((matchId: number, gamesCount = 16, initialLineupState?: LineupState) => {
-    const stored = getStoredState(matchId);
-    if (stored) {
-      console.log('Loaded match state from localStorage:', matchId);
-      // If backend provides a different lineup state, use that (it's the source of truth)
-      if (initialLineupState && stored.lineupState !== initialLineupState) {
-        setState({ ...stored, lineupState: initialLineupState });
+  const initializeMatch = useCallback(
+    (matchId: number, gamesCount = 16, initialLineupState?: LineupState) => {
+      const stored = getStoredState(matchId);
+      if (stored) {
+        // If backend provides a different lineup state, use that (it's the source of truth)
+        if (initialLineupState && stored.lineupState !== initialLineupState) {
+          setState({ ...stored, lineupState: initialLineupState });
+        } else {
+          setState(stored);
+        }
       } else {
-        setState(stored);
+        setState(
+          createInitialState(
+            matchId,
+            gamesCount,
+            initialLineupState || "awaiting_away_lineup"
+          )
+        );
       }
-    } else {
-      console.log('Creating new match state:', matchId);
-      setState(createInitialState(matchId, gamesCount, initialLineupState || 'awaiting_away_lineup'));
-    }
-  }, []);
+    },
+    []
+  );
 
   // Clear match state
   const clearMatch = useCallback(() => {
@@ -148,51 +183,74 @@ export const MatchScoringProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   // Roster management
   const setHomeRoster = useCallback((roster: PlayerAttendance[]) => {
-    setState((prev) => prev ? {
-      ...prev,
-      homeRoster: roster,
-      lastUpdated: Date.now(),
-    } : prev);
+    setState((prev) =>
+      prev
+        ? {
+            ...prev,
+            homeRoster: roster,
+            lastUpdated: Date.now(),
+          }
+        : prev
+    );
   }, []);
 
   const setAwayRoster = useCallback((roster: PlayerAttendance[]) => {
-    setState((prev) => prev ? {
-      ...prev,
-      awayRoster: roster,
-      lastUpdated: Date.now(),
-    } : prev);
+    setState((prev) =>
+      prev
+        ? {
+            ...prev,
+            awayRoster: roster,
+            lastUpdated: Date.now(),
+          }
+        : prev
+    );
   }, []);
 
   const toggleHomeAttendance = useCallback((playerId: number) => {
-    setState((prev) => prev ? {
-      ...prev,
-      homeRoster: prev.homeRoster.map((p) =>
-        p.playerId === playerId ? { ...p, present: !p.present } : p
-      ),
-      lastUpdated: Date.now(),
-    } : prev);
+    setState((prev) =>
+      prev
+        ? {
+            ...prev,
+            homeRoster: prev.homeRoster.map((p) =>
+              p.playerId === playerId ? { ...p, present: !p.present } : p
+            ),
+            lastUpdated: Date.now(),
+          }
+        : prev
+    );
   }, []);
 
   const toggleAwayAttendance = useCallback((playerId: number) => {
-    setState((prev) => prev ? {
-      ...prev,
-      awayRoster: prev.awayRoster.map((p) =>
-        p.playerId === playerId ? { ...p, present: !p.present } : p
-      ),
-      lastUpdated: Date.now(),
-    } : prev);
+    setState((prev) =>
+      prev
+        ? {
+            ...prev,
+            awayRoster: prev.awayRoster.map((p) =>
+              p.playerId === playerId ? { ...p, present: !p.present } : p
+            ),
+            lastUpdated: Date.now(),
+          }
+        : prev
+    );
   }, []);
 
   // Game management
-  const updateGame = useCallback((gameIndex: number, updates: Partial<GameState>) => {
-    setState((prev) => prev ? {
-      ...prev,
-      games: prev.games.map((game, idx) =>
-        idx === gameIndex ? { ...game, ...updates } : game
-      ),
-      lastUpdated: Date.now(),
-    } : prev);
-  }, []);
+  const updateGame = useCallback(
+    (gameIndex: number, updates: Partial<GameState>) => {
+      setState((prev) =>
+        prev
+          ? {
+              ...prev,
+              games: prev.games.map((game, idx) =>
+                idx === gameIndex ? { ...game, ...updates } : game
+              ),
+              lastUpdated: Date.now(),
+            }
+          : prev
+      );
+    },
+    []
+  );
 
   const setGamePlayers = useCallback(
     (gameIndex: number, homePlayerId: number, awayPlayerId: number) => {
@@ -218,8 +276,10 @@ export const MatchScoringProvider: React.FC<{ children: ReactNode }> = ({ childr
           idx === gameIndex
             ? {
                 ...g,
-                homeTableRun: team === 'home' ? !game.homeTableRun : game.homeTableRun,
-                awayTableRun: team === 'away' ? !game.awayTableRun : game.awayTableRun,
+                homeTableRun:
+                  team === "home" ? !game.homeTableRun : game.homeTableRun,
+                awayTableRun:
+                  team === "away" ? !game.awayTableRun : game.awayTableRun,
               }
             : g
         ),
@@ -238,8 +298,8 @@ export const MatchScoringProvider: React.FC<{ children: ReactNode }> = ({ childr
           idx === gameIndex
             ? {
                 ...g,
-                home8Ball: team === 'home' ? !game.home8Ball : game.home8Ball,
-                away8Ball: team === 'away' ? !game.away8Ball : game.away8Ball,
+                home8Ball: team === "home" ? !game.home8Ball : game.home8Ball,
+                away8Ball: team === "away" ? !game.away8Ball : game.away8Ball,
               }
             : g
         ),
@@ -250,25 +310,33 @@ export const MatchScoringProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   // Submission
   const setSubmittedBy = useCallback((team: TeamSide | null) => {
-    setState((prev) => prev ? {
-      ...prev,
-      submittedBy: team,
-      lastUpdated: Date.now(),
-    } : prev);
+    setState((prev) =>
+      prev
+        ? {
+            ...prev,
+            submittedBy: team,
+            lastUpdated: Date.now(),
+          }
+        : prev
+    );
   }, []);
 
   // Lineup workflow
   const setLineupState = useCallback((lineupState: LineupState) => {
-    setState((prev) => prev ? {
-      ...prev,
-      lineupState,
-      lastUpdated: Date.now(),
-    } : prev);
+    setState((prev) =>
+      prev
+        ? {
+            ...prev,
+            lineupState,
+            lastUpdated: Date.now(),
+          }
+        : prev
+    );
   }, []);
 
   // Computed values
-  const homeScore = state?.games.filter((g) => g.winner === 'home').length ?? 0;
-  const awayScore = state?.games.filter((g) => g.winner === 'away').length ?? 0;
+  const homeScore = state?.games.filter((g) => g.winner === "home").length ?? 0;
+  const awayScore = state?.games.filter((g) => g.winner === "away").length ?? 0;
   const presentHomePlayers = state?.homeRoster.filter((p) => p.present) ?? [];
   const presentAwayPlayers = state?.awayRoster.filter((p) => p.present) ?? [];
 
@@ -321,7 +389,9 @@ export const MatchScoringProvider: React.FC<{ children: ReactNode }> = ({ childr
 export const useMatchScoring = () => {
   const context = useContext(MatchScoringContext);
   if (context === undefined) {
-    throw new Error('useMatchScoring must be used within a MatchScoringProvider');
+    throw new Error(
+      "useMatchScoring must be used within a MatchScoringProvider"
+    );
   }
   return context;
 };

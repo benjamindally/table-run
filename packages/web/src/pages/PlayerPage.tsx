@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
-import { playerClaimsApi, PlayerSearchResult, playersApi, PlayerUpdateData } from "../api";
+import {
+  playerClaimsApi,
+  PlayerSearchResult,
+  playersApi,
+  PlayerUpdateData,
+} from "../api";
 import PendingClaimReviews from "../components/player-management/PendingClaimReviews";
 import PlayersNeedingActivation from "../components/player-management/PlayersNeedingActivation";
 import PlayersList from "../components/player-management/PlayersList";
@@ -69,7 +74,6 @@ const PlayerPage: React.FC = () => {
           50,
           accessToken || undefined
         );
-        console.log(response);
         setSearchResults(response.results);
       } catch (err: any) {
         console.error("Search error:", err);

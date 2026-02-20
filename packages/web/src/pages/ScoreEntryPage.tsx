@@ -27,7 +27,8 @@ const ScoreEntryPage: React.FC = () => {
 
   // Fetch season data and matches for this season
   const { data: season } = useSeason(seasonId);
-  const { data: matchesData, isLoading: matchesLoading } = useSeasonMatches(seasonId);
+  const { data: matchesData, isLoading: matchesLoading } =
+    useSeasonMatches(seasonId);
   const { data: currentTeams } = useCurrentTeams();
   const { leagueData, player } = useAuth();
 
@@ -46,14 +47,13 @@ const ScoreEntryPage: React.FC = () => {
       (team) => team.id === selectedMatch.away_team
     );
 
-    if (isHomeCaptain) return 'home';
-    if (isAwayCaptain) return 'away';
+    if (isHomeCaptain) return "home";
+    if (isAwayCaptain) return "away";
     return null;
   }, [selectedMatch, currentTeams]);
 
   // WebSocket message handler
   const handleWebSocketMessage = useCallback((message: IncomingMessage) => {
-    console.log('WebSocket message received:', message);
     // Message handling will be implemented in MatchForm
   }, []);
 
@@ -79,25 +79,34 @@ const ScoreEntryPage: React.FC = () => {
   }, [selectedMatch, gamesCount, initializeMatch]);
 
   // Determine if user is a league operator for this season's league
-  const isLeagueOperator = season?.league ? leagueData.isLeagueOperator(season.league) : false;
+  const isLeagueOperator = season?.league
+    ? leagueData.isLeagueOperator(season.league)
+    : false;
 
   // Filter matches to show only relevant unscored matches
   const availableMatches = useMemo(() => {
-    if (!matchesData) return [];
+    if (!matchesData?.matches) return [];
 
     // Filter to only scheduled matches (not completed or cancelled)
-    let filteredMatches = matchesData.filter((match: Match) => match.status === 'scheduled');
+    let filteredMatches = matchesData.matches.filter(
+      (match: Match) => match.status === "scheduled"
+    );
 
     // If not a league operator, filter by user's teams
     if (!isLeagueOperator && currentTeams) {
-      const userTeamIds = currentTeams.map(team => team.id);
+      const userTeamIds = currentTeams.map((team) => team.id);
       filteredMatches = filteredMatches.filter(
-        (match: Match) => userTeamIds.includes(match.home_team) || userTeamIds.includes(match.away_team)
+        (match: Match) =>
+          userTeamIds.includes(match.home_team) ||
+          userTeamIds.includes(match.away_team)
       );
     }
 
     // Sort by date (upcoming first)
-    return filteredMatches.sort((a: Match, b: Match) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return filteredMatches.sort(
+      (a: Match, b: Match) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
   }, [matchesData, currentTeams, isLeagueOperator]);
 
   const homeTeam = selectedMatch?.home_team_detail;
@@ -126,7 +135,10 @@ const ScoreEntryPage: React.FC = () => {
         <div className="bg-primary text-white p-6">
           <div className="container mx-auto max-w-7xl">
             <button
-              onClick={() => season && navigate(`/leagues/${season.league}/seasons/${seasonId}`)}
+              onClick={() =>
+                season &&
+                navigate(`/leagues/${season.league}/seasons/${seasonId}`)
+              }
               className="flex items-center text-white hover:text-cream-200 transition-colors mb-4"
               disabled={!season}
             >
@@ -134,7 +146,9 @@ const ScoreEntryPage: React.FC = () => {
               Back to Season
             </button>
             <h1 className="text-2xl font-bold">
-              {season ? `${season.league_detail?.name} - ${season.name}` : 'Score Sheet Entry'}
+              {season
+                ? `${season.league_detail?.name} - ${season.name}`
+                : "Score Sheet Entry"}
             </h1>
             <p className="text-sm text-cream-200 mt-1">
               Select a match to enter scores
@@ -159,7 +173,9 @@ const ScoreEntryPage: React.FC = () => {
           ) : (
             <SeasonMatches
               matches={availableMatches}
-              editable={(match: Match) => leagueData.canEditMatch(match, season?.league)}
+              editable={(match: Match) =>
+                leagueData.canEditMatch(match, season?.league)
+              }
               onEditMatch={handleMatchSelect}
               initialWeeksToShow={4}
             />
@@ -187,7 +203,7 @@ const ScoreEntryPage: React.FC = () => {
               {!isConnected && selectedMatch && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-500 text-white text-xs font-semibold rounded-full">
                   <WifiOff className="h-3 w-3" />
-                  {wsStatus === 'connecting' ? 'CONNECTING...' : 'OFFLINE'}
+                  {wsStatus === "connecting" ? "CONNECTING..." : "OFFLINE"}
                 </span>
               )}
             </div>
@@ -217,8 +233,9 @@ const ScoreEntryPage: React.FC = () => {
               League Configuration Error
             </p>
             <p className="text-red-600 text-sm">
-              This season's league is missing required configuration (sets per match and games per set).
-              Please contact your league operator to fix this before entering scores.
+              This season's league is missing required configuration (sets per
+              match and games per set). Please contact your league operator to
+              fix this before entering scores.
             </p>
           </div>
         ) : (

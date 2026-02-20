@@ -134,6 +134,8 @@ export const useUpdateSeason = () => {
       // Invalidate the specific season and the list
       queryClient.invalidateQueries({ queryKey: seasonKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: seasonKeys.lists() });
+      // Also invalidate /me endpoint so LeagueSeasonContext gets fresh data
+      queryClient.invalidateQueries({ queryKey: meKeys.all });
     },
   });
 };
@@ -264,11 +266,104 @@ export const useCreateVenue = () => {
   const { getAuthToken } = useAuth();
 
   return useMutation({
-    mutationFn: (data: { league: number; name: string; address?: string; table_count: number }) =>
+    mutationFn: (data: { league: number; name: string; address?: string; city?: string; state?: string; zip_code?: string; table_count: number }) =>
       seasonsApi.createVenue(data, getAuthToken() || undefined),
     onSuccess: () => {
       // Invalidate all season venue queries to refresh the data
       queryClient.invalidateQueries({ queryKey: seasonKeys.all });
+    },
+  });
+};
+
+/**
+ * Venue data for bulk creation
+ */
+export interface VenueCreateData {
+  league: number;
+  name: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  table_count: number;
+}
+
+/**
+ * Bulk create result for tracking individual venue creation status
+ */
+export interface BulkVenueCreateResult {
+  success: boolean;
+  data?: VenueCreateData;
+  error?: string;
+}
+
+/**
+ * Add a team to a season (league operators only)
+ */
+export const useAddTeamToSeason = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ seasonId, teamId, venueId }: { seasonId: number; teamId: number; venueId?: number }) =>
+      seasonsApi.addTeam(seasonId, { team_id: teamId, venue_id: venueId }, getAuthToken() || undefined),
+    onSuccess: (_, variables) => {
+      // Invalidate season teams to show the newly added team
+      queryClient.invalidateQueries({ queryKey: seasonKeys.teams(variables.seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.detail(variables.seasonId) });
+    },
+  });
+};
+
+/**
+ * Bulk create venues (creates venues sequentially)
+ * Returns results for each venue to show success/failure status
+ */
+export const useBulkCreateVenues = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: async (venues: VenueCreateData[]): Promise<BulkVenueCreateResult[]> => {
+      const results: BulkVenueCreateResult[] = [];
+      const token = getAuthToken() || undefined;
+
+      for (const venue of venues) {
+        try {
+          await seasonsApi.createVenue(venue, token);
+          results.push({ success: true, data: venue });
+        } catch (error) {
+          results.push({
+            success: false,
+            data: venue,
+            error: error instanceof Error ? error.message : 'Failed to create venue',
+          });
+        }
+      }
+
+      return results;
+    },
+    onSuccess: () => {
+      // Invalidate all season venue queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: seasonKeys.all });
+    },
+  });
+};
+
+/**
+ * Toggle favorite status for a season
+ * Optimistically updates the UI and invalidates /me endpoint on success
+ */
+export const useToggleFavorite = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: (seasonId: number) =>
+      seasonsApi.toggleFavorite(seasonId, getAuthToken() || undefined),
+    onSuccess: () => {
+      // Invalidate the /me endpoint to refresh seasons with updated favorite status
+      queryClient.invalidateQueries({ queryKey: meKeys.all });
     },
   });
 };
