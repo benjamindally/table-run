@@ -33,7 +33,7 @@ export default function ProfileHeaderButton() {
   return (
     <TouchableOpacity
       onPress={handlePress}
-      className="mr-3 mb-3"
+      className="mr-3"
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
       {isAuthenticated ? (

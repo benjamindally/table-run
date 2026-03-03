@@ -3,7 +3,7 @@
  */
 
 import { api } from "./client";
-import { League, PaginatedResponse } from "../types";
+import { League, PaginatedResponse, ScoringConfig, ScoringPreset } from "../types";
 
 export const leaguesApi = {
   /**
@@ -41,4 +41,22 @@ export const leaguesApi = {
    */
   delete: (id: number, token?: string) =>
     api.delete(`/leagues/${id}/`, token),
+
+  /**
+   * Get scoring config for a league
+   */
+  getScoringConfig: (id: number, token?: string) =>
+    api.get<ScoringConfig>(`/leagues/${id}/scoring-config/`, token),
+
+  /**
+   * Apply a scoring preset to a league
+   */
+  applyScoringPreset: (id: number, preset: ScoringPreset, token?: string) =>
+    api.post<ScoringConfig>(`/leagues/${id}/scoring-config/apply-preset/`, { preset }, token),
+
+  /**
+   * Partially update a league's scoring config (for custom tweaks)
+   */
+  updateScoringConfig: (id: number, data: Partial<ScoringConfig>, token?: string) =>
+    api.patch<ScoringConfig>(`/leagues/${id}/scoring-config/`, data, token),
 };

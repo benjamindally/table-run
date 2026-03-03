@@ -2,7 +2,7 @@
  * Games Section - Organizes games into sets with collapsible headers
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -91,6 +91,31 @@ export default function GamesSection({
     return new Set([firstIncomplete >= 0 ? firstIncomplete + 1 : 1]);
   });
 
+  // Auto-expand: when a set completes, open the next incomplete set (leave completed set open)
+  const firstIncompleteSetNumber = useMemo(() => {
+    const idx = sets.findIndex((s) => s.games.some((g) => g.game.winner === null));
+    return idx >= 0 ? sets[idx].setNumber : null;
+  }, [sets]);
+
+  const prevFirstIncompleteRef = useRef(firstIncompleteSetNumber);
+
+  useEffect(() => {
+    if (prevFirstIncompleteRef.current !== firstIncompleteSetNumber) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      if (firstIncompleteSetNumber === null) {
+        // All sets complete — collapse everything
+        setExpandedSets(new Set());
+      } else {
+        setExpandedSets((prev) => {
+          const next = new Set(prev);
+          next.add(firstIncompleteSetNumber);
+          return next;
+        });
+      }
+      prevFirstIncompleteRef.current = firstIncompleteSetNumber;
+    }
+  }, [firstIncompleteSetNumber]);
+
   const toggleSet = (setNumber: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedSets((prev) => {
@@ -134,7 +159,7 @@ export default function GamesSection({
         return (
           <View
             key={set.setNumber}
-            className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden"
+            className="bg-gray-50 border border-gray-200 overflow-hidden"
           >
             {/* Set header */}
             <TouchableOpacity

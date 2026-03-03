@@ -45,6 +45,29 @@ export interface PlayerList {
   email: string;
 }
 
+export type ScoringPreset = 'simple_win_loss' | 'bca_8ball' | 'vnea' | 'nine_ball' | 'race_to_wins' | 'custom';
+export type GameFormat = 'win_loss' | 'ball_points_8ball' | 'ball_points_9ball' | 'race_to_wins';
+export type StandingsFormat = 'win_loss_pct' | 'match_points' | 'cumulative_points';
+
+export interface ScoringConfig {
+  id: number;
+  preset: ScoringPreset;
+  game_format: GameFormat;
+  ball_value: number;
+  object_ball_value: number;
+  race_to: number | null;
+  players_per_team: number;
+  games_per_round: number;
+  standings_format: StandingsFormat;
+  allow_ties: boolean;
+  match_win_points: number;
+  match_tie_points: number;
+  match_loss_points: number;
+  max_points_per_game: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface League {
   id: number;
   name: string;
@@ -59,6 +82,7 @@ export interface League {
   created_at: string;
   season_count?: number;
   total_games?: number;
+  scoring_config?: ScoringConfig;
 }
 
 export interface LeagueList {
@@ -252,10 +276,16 @@ export interface MatchScoreSubmission {
 }
 
 export interface MatchLineupGame {
+  id?: number;
   game_number: number;
   set_number: number;
   away_player: { id: number; full_name: string } | null;
   home_player: { id: number; full_name: string } | null;
+  winner?: 'home' | 'away' | null;
+  home_table_run?: boolean;
+  away_table_run?: boolean;
+  home_8ball_break?: boolean;
+  away_8ball_break?: boolean;
 }
 
 export interface MatchLineupResponse {
@@ -451,12 +481,23 @@ export interface MeMatch {
   status: 'scheduled' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled';
 }
 
+export interface MeBye {
+  id: number;
+  date: string;
+  week_number: number;
+  team_id: number;
+  team_name: string;
+  season_id: number;
+  season_name: string;
+}
+
 export interface MeResponse {
   player: MePlayer | null;
   teams: MeTeam[];
   seasons: MeSeason[];
   leagues: MeLeague[];
   upcoming_matches: MeMatch[];
+  upcoming_byes: MeBye[];
 }
 
 /**

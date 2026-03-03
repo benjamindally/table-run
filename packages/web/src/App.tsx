@@ -48,6 +48,7 @@ import AdminProfilePage from "./pages/admin/ProfilePage";
 import AdminSeasonSchedulerPage from "./pages/admin/SeasonSchedulerPage";
 import AdminTeamRegistrationPage from "./pages/admin/AdminTeamRegistrationPage";
 import AdminVenueRegistrationPage from "./pages/admin/AdminVenueRegistrationPage";
+import AdminCreateLeaguePage from "./pages/admin/AdminCreateLeaguePage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
@@ -105,6 +106,7 @@ function App() {
             <Route path="matches/:matchId/score" element={<AdminMatchScorePage />} />
             <Route path="matches/:matchId/operator" element={<AdminOperatorMatchPage />} />
             <Route path="leagues" element={<AdminLeaguesPage />} />
+            <Route path="leagues/create" element={<AdminCreateLeaguePage />} />
             <Route path="leagues/:id" element={<AdminLeagueDetailsPage />} />
             <Route path="seasons" element={<AdminSeasonsPage />} />
             <Route path="seasons/:id" element={<AdminSeasonDetailsPage />} />

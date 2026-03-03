@@ -27,6 +27,7 @@ export interface GameState {
 
 export interface MatchState {
   matchId: number;
+  gamesPerSet: number;
   homeRoster: PlayerAttendance[];
   awayRoster: PlayerAttendance[];
   games: GameState[];
@@ -42,6 +43,7 @@ interface MatchScoringStore {
   initializeMatch: (
     matchId: number,
     gamesCount?: number,
+    gamesPerSet?: number,
     initialLineupState?: LineupState
   ) => Promise<void>;
   clearMatch: () => Promise<void>;
@@ -83,10 +85,12 @@ const STORAGE_PREFIX = "match_state_";
 function createInitialState(
   matchId: number,
   gamesCount: number,
+  gamesPerSet: number,
   lineupState: LineupState = "awaiting_away_lineup"
 ): MatchState {
   return {
     matchId,
+    gamesPerSet,
     homeRoster: [],
     awayRoster: [],
     games: Array.from({ length: gamesCount }, (_, i) => ({
@@ -122,6 +126,7 @@ export const useMatchScoringStore = create<MatchScoringStore>((set, get) => ({
   initializeMatch: async (
     matchId: number,
     gamesCount = 16,
+    gamesPerSet = 4,
     initialLineupState?: LineupState
   ) => {
     try {
@@ -136,11 +141,12 @@ export const useMatchScoringStore = create<MatchScoringStore>((set, get) => ({
           parsed.matchId === matchId
         ) {
           // If backend provides a different lineup state, use that (it's the source of truth)
-          const finalState =
+          // Always refresh gamesPerSet from the server in case the config changed
+          const baseState =
             initialLineupState && parsed.lineupState !== initialLineupState
               ? { ...parsed, lineupState: initialLineupState }
               : parsed;
-          set({ state: finalState });
+          set({ state: { ...baseState, gamesPerSet } });
           return;
         }
       }
@@ -148,16 +154,17 @@ export const useMatchScoringStore = create<MatchScoringStore>((set, get) => ({
       const newState = createInitialState(
         matchId,
         gamesCount,
+        gamesPerSet,
         initialLineupState || "awaiting_away_lineup"
       );
       set({ state: newState });
       await persistState(newState);
     } catch (error) {
       console.error("[MatchScoringStore] Failed to initialize:", error);
-      // Create fresh state on error
       const newState = createInitialState(
         matchId,
         gamesCount,
+        gamesPerSet,
         initialLineupState || "awaiting_away_lineup"
       );
       set({ state: newState });
@@ -310,7 +317,7 @@ export const useMatchScoringStore = create<MatchScoringStore>((set, get) => ({
     const { state } = get();
     if (!state) return false;
     const presentAway = state.awayRoster.filter((p) => p.present);
-    if (presentAway.length < 4) return false;
+    if (presentAway.length < state.gamesPerSet) return false;
     return state.games.every((g) => g.awayPlayerId !== null);
   },
 
@@ -318,7 +325,7 @@ export const useMatchScoringStore = create<MatchScoringStore>((set, get) => ({
     const { state } = get();
     if (!state) return false;
     const presentHome = state.homeRoster.filter((p) => p.present);
-    if (presentHome.length < 4) return false;
+    if (presentHome.length < state.gamesPerSet) return false;
     return state.games.every((g) => g.homePlayerId !== null);
   },
 }));

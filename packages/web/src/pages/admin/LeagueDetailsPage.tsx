@@ -6,9 +6,14 @@ import {
   useUpdateLeague,
   useDeleteLeague,
   useMyLeagues,
+  useScoringConfig,
+  useApplyScoringPreset,
+  useUpdateScoringConfig,
 } from "../../hooks/useLeagues";
 import { toast } from "react-toastify";
 import Modal from "../../components/Modal";
+import ScoringConfigSection from "../../components/ScoringConfigSection";
+import type { ScoringConfig, ScoringPreset } from "../../api";
 
 const LeagueDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +47,20 @@ const LeagueDetailsPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Scoring config
+  const { data: scoringConfigData, isLoading: isLoadingScoring } = useScoringConfig(leagueId);
+  const applyPresetMutation = useApplyScoringPreset();
+  const updateScoringConfigMutation = useUpdateScoringConfig();
+  const [localScoringConfig, setLocalScoringConfig] = useState<Partial<ScoringConfig>>({});
+  const [hasScoringChanges, setHasScoringChanges] = useState(false);
+
+  React.useEffect(() => {
+    if (scoringConfigData) {
+      setLocalScoringConfig(scoringConfigData);
+      setHasScoringChanges(false);
+    }
+  }, [scoringConfigData]);
 
   // Update form when league data loads
   React.useEffect(() => {
@@ -143,6 +162,34 @@ const LeagueDetailsPage: React.FC = () => {
         "Something went wrong while deleting your league. Please try again in 15 minutes or email contact@leaguegenius.app for assistance.",
         { autoClose: 8000 }
       );
+    }
+  };
+
+  const handleScoringPresetApply = async (preset: ScoringPreset) => {
+    try {
+      await applyPresetMutation.mutateAsync({ leagueId, preset });
+      toast.success("Scoring preset applied!");
+      setHasScoringChanges(false);
+    } catch {
+      toast.error("Failed to apply preset. Please try again.");
+    }
+  };
+
+  const handleScoringChange = (updates: Partial<ScoringConfig>) => {
+    setLocalScoringConfig((prev) => ({ ...prev, ...updates }));
+    setHasScoringChanges(true);
+  };
+
+  const handleSaveScoringConfig = async () => {
+    try {
+      await updateScoringConfigMutation.mutateAsync({
+        leagueId,
+        data: localScoringConfig,
+      });
+      toast.success("Scoring format saved!");
+      setHasScoringChanges(false);
+    } catch {
+      toast.error("Failed to save scoring format. Please try again.");
     }
   };
 
@@ -448,6 +495,50 @@ const LeagueDetailsPage: React.FC = () => {
             </div>
           )}
         </form>
+      </div>
+
+      {/* Scoring Format Card */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-base font-semibold text-dark">Scoring Format</h2>
+            <p className="text-sm text-dark-300 mt-0.5">
+              {isLoadingScoring
+                ? "Loading…"
+                : scoringConfigData
+                ? `Preset: ${scoringConfigData.preset.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`
+                : "No scoring config yet"}
+            </p>
+          </div>
+          {isOperator && hasScoringChanges && (
+            <button
+              type="button"
+              onClick={handleSaveScoringConfig}
+              className="btn btn-primary btn-sm"
+              disabled={updateScoringConfigMutation.isPending}
+            >
+              {updateScoringConfigMutation.isPending ? "Saving…" : "Save Scoring"}
+            </button>
+          )}
+        </div>
+
+        {isLoadingScoring ? (
+          <div className="text-gray-400 text-sm">Loading scoring config…</div>
+        ) : (
+          <ScoringConfigSection
+            config={localScoringConfig}
+            onChange={handleScoringChange}
+            onPresetApply={isOperator ? handleScoringPresetApply : undefined}
+            isLoading={applyPresetMutation.isPending}
+            readOnly={!isOperator}
+          />
+        )}
+
+        {!isOperator && (
+          <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-600">
+            Only league operators can edit the scoring format.
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}

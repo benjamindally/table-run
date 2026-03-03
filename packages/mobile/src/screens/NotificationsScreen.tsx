@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -95,6 +95,10 @@ export default function NotificationsScreen() {
   } = useNotificationsStore();
 
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchNotifications(true);
+  }, [fetchNotifications]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);

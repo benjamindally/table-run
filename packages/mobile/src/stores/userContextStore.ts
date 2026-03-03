@@ -7,6 +7,7 @@ import {
   type MeSeason,
   type MePlayer,
   type MeMatch,
+  type MeBye,
 } from "@league-genius/shared";
 import { useAuthStore } from "./authStore";
 
@@ -16,6 +17,7 @@ interface UserContextState {
   myTeams: MeTeam[];
   mySeasons: MeSeason[];
   upcomingMatches: MeMatch[];
+  upcomingByes: MeBye[];
   isLoaded: boolean;
   isLoading: boolean;
   error: string | null;
@@ -38,6 +40,7 @@ export const useUserContextStore = create<UserContextState>((set, get) => ({
   myTeams: [],
   mySeasons: [],
   upcomingMatches: [],
+  upcomingByes: [],
   isLoaded: false,
   isLoading: false,
   error: null,
@@ -60,7 +63,12 @@ export const useUserContextStore = create<UserContextState>((set, get) => ({
         myLeagues: response.leagues,
         myTeams: response.teams,
         mySeasons: response.seasons,
-        upcomingMatches: response.upcoming_matches || [],
+        upcomingMatches: (response.upcoming_matches || []).sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        ),
+        upcomingByes: (response.upcoming_byes || []).sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        ),
         isLoaded: true,
         isLoading: false,
       });
@@ -84,6 +92,7 @@ export const useUserContextStore = create<UserContextState>((set, get) => ({
       myTeams: [],
       mySeasons: [],
       upcomingMatches: [],
+      upcomingByes: [],
       isLoaded: false,
       isLoading: false,
       error: null,

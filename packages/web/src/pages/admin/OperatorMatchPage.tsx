@@ -5,16 +5,19 @@
 
 import React, { useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Shield } from "lucide-react";
 import { useMatch } from "../../hooks/useMatches";
-import { useSeason } from "../../hooks/useSeasons";
+import { useSeason, seasonKeys } from "../../hooks/useSeasons";
 import { useAuth } from "../../contexts/AuthContext";
 import { useMatchScoring } from "../../contexts/MatchScoringContext";
+import { meKeys } from "../../hooks/useMe";
 import OperatorMatchForm from "../../components/matches/OperatorMatchForm";
 
 const OperatorMatchPage: React.FC = () => {
   const { matchId: matchIdParam } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const matchId = parseInt(matchIdParam || "0");
 
   const { data: match, isLoading: matchLoading, error: matchError } = useMatch(matchId);
@@ -46,6 +49,10 @@ const OperatorMatchPage: React.FC = () => {
   }, [matchLoading, isLeagueOperator, match, matchId, navigate]);
 
   const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: meKeys.all });
+    if (seasonId) {
+      queryClient.invalidateQueries({ queryKey: seasonKeys.matches(seasonId) });
+    }
     navigate("/admin/matches");
   };
 

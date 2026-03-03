@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Building2, MapPin, Calendar, Plus, ArrowRight } from "lucide-react";
 import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import CreateSeasonModal from "../../components/CreateSeasonModal";
-import CreateLeagueModal from "../../components/CreateLeagueModal";
 
 const LeaguesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,7 +22,6 @@ const LeaguesPage: React.FC = () => {
   const [selectedLeagueForSeason, setSelectedLeagueForSeason] = useState<
     number | null
   >(null);
-  const [showCreateLeagueModal, setShowCreateLeagueModal] = useState(false);
 
   // Show only the 3 most recent leagues by default
   const displayedLeagues = showAllLeagues ? leagues : leagues.slice(0, 3);
@@ -75,7 +73,7 @@ const LeaguesPage: React.FC = () => {
           <p className="text-sm text-dark-300 mt-1">League Management</p>
         </div>
         <button
-          onClick={() => setShowCreateLeagueModal(true)}
+          onClick={() => navigate('/admin/leagues/create')}
           className="btn btn-primary flex items-center justify-center sm:w-auto"
         >
           <Plus className="h-5 w-5 mr-1" /> Create League
@@ -176,7 +174,7 @@ const LeaguesPage: React.FC = () => {
             No leagues found. Create your first league to get started.
           </div>
           <button
-            onClick={() => setShowCreateLeagueModal(true)}
+            onClick={() => navigate('/admin/leagues/create')}
             className="btn btn-primary flex items-center mx-auto"
           >
             <Plus className="h-5 w-5 mr-1" /> Create League
@@ -289,12 +287,6 @@ const LeaguesPage: React.FC = () => {
           )}
         </>
       )} */}
-
-      {/* Create League Modal */}
-      <CreateLeagueModal
-        isOpen={showCreateLeagueModal}
-        onClose={() => setShowCreateLeagueModal(false)}
-      />
 
       {/* Create Season Modal */}
       {selectedLeagueForSeason && (

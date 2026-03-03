@@ -1,17 +1,20 @@
 import React, { useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Eye } from "lucide-react";
 import { useMatch } from "../../hooks/useMatches";
-import { useSeason } from "../../hooks/useSeasons";
+import { useSeason, seasonKeys } from "../../hooks/useSeasons";
 import { useCurrentTeams } from "../../hooks/usePlayers";
 import { useAuth } from "../../contexts/AuthContext";
 import { useMatchScoring } from "../../contexts/MatchScoringContext";
 import type { TeamSide } from "../../types/websocket";
 import MatchForm from "../../components/matches/MatchForm";
+import { meKeys } from "../../hooks/useMe";
 
 const MatchScorePage: React.FC = () => {
   const { matchId: matchIdParam } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const matchId = parseInt(matchIdParam || "0");
 
   const { data: match, isLoading: matchLoading, error: matchError } = useMatch(matchId);
@@ -53,6 +56,10 @@ const MatchScorePage: React.FC = () => {
   }, [match, gamesCount, initializeMatch]);
 
   const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: meKeys.all });
+    if (seasonId) {
+      queryClient.invalidateQueries({ queryKey: seasonKeys.matches(seasonId) });
+    }
     navigate("/admin/matches");
   };
 

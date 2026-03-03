@@ -52,6 +52,10 @@ export interface ScorecardConfirmedMessage {
   away_score: number;
 }
 
+export interface ScorecardRejectedMessage {
+  type: 'scorecard_rejected';
+}
+
 export type OutgoingMessage =
   | PlayerAssignmentMessage
   | ScoreUpdateMessage
@@ -59,7 +63,8 @@ export type OutgoingMessage =
   | LineupSubmittedMessage
   | MatchStartMessage
   | ScorecardSubmittedMessage
-  | ScorecardConfirmedMessage;
+  | ScorecardConfirmedMessage
+  | ScorecardRejectedMessage;
 
 // Incoming message types (server → client)
 export interface PlayerAssignmentBroadcast {
@@ -99,6 +104,10 @@ export interface MatchFinalizedBroadcast {
   success: boolean;
   home_score: number;
   away_score: number;
+}
+
+export interface ScorecardRejectedBroadcast {
+  type: 'scorecard_rejected';
 }
 
 // Lineup workflow broadcasts
@@ -157,6 +166,7 @@ export type IncomingMessage =
   | ScoreUpdateBroadcast
   | GameUpdateBroadcast
   | ScorecardSubmittedBroadcast
+  | ScorecardRejectedBroadcast
   | MatchFinalizedBroadcast
   | CaptainPresenceBroadcast
   | LineupSubmittedBroadcast

@@ -40,6 +40,12 @@ export function useMatchWebSocket({
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
 
+  // Always holds the latest onMessage so ws.onmessage never goes stale
+  const onMessageRef = useRef(onMessage);
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+
   // Build WebSocket URL
   const getSocketUrl = useCallback(() => {
     // Convert HTTP(S) to WS(S)
@@ -79,7 +85,7 @@ export function useMatchWebSocket({
       ws.onmessage = (event) => {
         try {
           const message: IncomingMessage = JSON.parse(event.data);
-          onMessage?.(message);
+          onMessageRef.current?.(message);
         } catch (error) {
           console.error("[WebSocket] Failed to parse message:", error);
         }
@@ -90,7 +96,7 @@ export function useMatchWebSocket({
         setStatus("error");
       };
 
-      ws.onclose = (event) => {
+      ws.onclose = () => {
         setStatus("disconnected");
         wsRef.current = null;
 
@@ -106,7 +112,7 @@ export function useMatchWebSocket({
       console.error("[WebSocket] Failed to connect:", error);
       setStatus("error");
     }
-  }, [enabled, getSocketUrl, onMessage]);
+  }, [enabled, getSocketUrl]);
 
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {

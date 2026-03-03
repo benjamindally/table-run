@@ -14,7 +14,6 @@ import {
 import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import { useSeasonMatches } from "../../hooks/useSeasons";
 import type { MeSeason } from "../../api";
-import CreateLeagueModal from "../../components/CreateLeagueModal";
 import CreateAnnouncementModal from "../../components/CreateAnnouncementModal";
 import NextMatchCard from "../../components/NextMatchCard";
 
@@ -73,7 +72,6 @@ const DashboardPage: React.FC = () => {
   const { leagues, seasons, teams, upcomingMatches, isLoading, setLeagueAndSeason } =
     useLeagueSeason();
   const hasLeagues = leagues.length > 0;
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [expandedLeagueId, setExpandedLeagueId] = useState<number | null>(null);
   const [selectedLeague, setSelectedLeague] = useState<{
@@ -161,7 +159,7 @@ const DashboardPage: React.FC = () => {
                 standings.
               </p>
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => navigate('/admin/leagues/create')}
                 className="btn btn-primary flex items-center"
               >
                 <Plus className="h-5 w-5 mr-2" />
@@ -199,11 +197,6 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Create League Modal */}
-        <CreateLeagueModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-        />
       </>
     );
   }
@@ -384,13 +377,7 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Create League Modal */}
-      <CreateLeagueModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-      />
-
-      {/* Create Announcement Modal */}
+{/* Create Announcement Modal */}
       {selectedLeague && (
         <CreateAnnouncementModal
           isOpen={showAnnouncementModal}

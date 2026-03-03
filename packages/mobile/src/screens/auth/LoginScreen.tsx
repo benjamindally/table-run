@@ -11,11 +11,18 @@ import {
   StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { Eye, EyeOff } from "lucide-react-native";
 import { useAuthStore } from "../../stores/authStore";
+import type { AuthScreenProps } from "../../navigation/types";
 
 export default function LoginScreen() {
+  const navigation =
+    useNavigation<AuthScreenProps<"Login">["navigation"]>();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const login = useAuthStore((state) => state.login);
@@ -70,15 +77,34 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                editable={!isSubmitting}
-              />
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Password</Text>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("ForgotPassword")}
+                >
+                  <Text style={styles.forgotLink}>Forgot password?</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  editable={!isSubmitting}
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} color="#90A4AE" />
+                  ) : (
+                    <Eye size={20} color="#90A4AE" />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             <TouchableOpacity
@@ -101,7 +127,12 @@ export default function LoginScreen() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Don't have an account?{" "}
-              <Text style={styles.footerLink}>Sign up</Text>
+              <Text
+                style={styles.footerLink}
+                onPress={() => navigation.navigate("Register")}
+              >
+                Sign up
+              </Text>
             </Text>
           </View>
         </View>
@@ -142,11 +173,25 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 16,
   },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   label: {
     fontSize: 14,
     fontWeight: "500",
     color: "#37474F", // dark
     marginBottom: 4,
+  },
+  forgotLink: {
+    fontSize: 13,
+    color: "#26A69A",
+    fontWeight: "500",
+  },
+  inputWrapper: {
+    position: "relative",
   },
   input: {
     borderWidth: 1,
@@ -154,8 +199,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    paddingRight: 48,
     fontSize: 16,
     backgroundColor: "#FFFFFF",
+  },
+  eyeButton: {
+    position: "absolute",
+    right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
   },
   button: {
     borderRadius: 8,

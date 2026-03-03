@@ -28,7 +28,7 @@ export default function StatusBanner({
   // Anonymous viewer
   if (!isAuthenticated) {
     return (
-      <View className="bg-gray-100 border border-gray-200 rounded-lg p-4">
+      <View className="bg-gray-100 border border-gray-200 p-4">
         <View className="flex-row items-center gap-2">
           <Eye size={18} color="#6B7280" />
           <Text className="text-sm text-gray-600 flex-1">
@@ -43,7 +43,7 @@ export default function StatusBanner({
   // Viewer (not captain or operator)
   if (!canEdit) {
     return (
-      <View className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <View className="bg-blue-50 border border-blue-200 p-4">
         <View className="flex-row items-center gap-2">
           <Eye size={18} color="#2563EB" />
           <Text className="text-sm text-blue-700 flex-1">
@@ -58,7 +58,7 @@ export default function StatusBanner({
   // League operator
   if (isLeagueOperator) {
     return (
-      <View className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+      <View className="bg-purple-50 border border-purple-200 p-4">
         <View className="flex-row items-center gap-2">
           <AlertCircle size={18} color="#7C3AED" />
           <Text className="text-sm text-purple-700 flex-1">
@@ -76,7 +76,7 @@ export default function StatusBanner({
     case "awaiting_away_lineup":
       if (captainRole === "away") {
         return (
-          <View className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <View className="bg-primary-50 border border-primary-200 p-4">
             <View className="flex-row items-center gap-2">
               <Clock size={18} color="#26A69A" />
               <Text className="text-sm text-primary-700 flex-1">
@@ -88,7 +88,7 @@ export default function StatusBanner({
         );
       }
       return (
-        <View className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <View className="bg-yellow-50 border border-yellow-200 p-4">
           <View className="flex-row items-center gap-2">
             <Clock size={18} color="#CA8A04" />
             <Text className="text-sm text-yellow-700 flex-1">
@@ -102,7 +102,7 @@ export default function StatusBanner({
     case "awaiting_home_lineup":
       if (captainRole === "home") {
         return (
-          <View className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <View className="bg-primary-50 border border-primary-200 p-4">
             <View className="flex-row items-center gap-2">
               <Clock size={18} color="#26A69A" />
               <Text className="text-sm text-primary-700 flex-1">
@@ -114,7 +114,7 @@ export default function StatusBanner({
         );
       }
       return (
-        <View className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <View className="bg-green-50 border border-green-200 p-4">
           <View className="flex-row items-center gap-2">
             <Check size={18} color="#16A34A" />
             <Text className="text-sm text-green-700 flex-1">
@@ -128,7 +128,7 @@ export default function StatusBanner({
     case "ready_to_start":
       if (captainRole === "home" && onStartMatch) {
         return (
-          <View className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <View className="bg-green-50 border border-green-200 p-4">
             <View className="items-center gap-3">
               <View className="flex-row items-center gap-2">
                 <Check size={18} color="#16A34A" />
@@ -140,7 +140,7 @@ export default function StatusBanner({
               <TouchableOpacity
                 onPress={onStartMatch}
                 disabled={isStartingMatch}
-                className={`flex-row items-center gap-2 px-4 py-2 rounded-lg ${
+                className={`flex-row items-center gap-2 px-4 py-2 ${
                   isStartingMatch ? "bg-gray-300" : "bg-primary-600"
                 }`}
               >
@@ -158,7 +158,7 @@ export default function StatusBanner({
         );
       }
       return (
-        <View className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <View className="bg-green-50 border border-green-200 p-4">
           <View className="flex-row items-center gap-2">
             <Check size={18} color="#16A34A" />
             <Text className="text-sm text-green-700 flex-1">
@@ -171,7 +171,7 @@ export default function StatusBanner({
 
     case "match_live":
       return (
-        <View className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <View className="bg-blue-50 border border-blue-200 p-4">
           <View className="flex-row items-center gap-2">
             <Play size={18} color="#2563EB" fill="#2563EB" />
             <Text className="text-sm text-blue-700 flex-1">
@@ -185,7 +185,7 @@ export default function StatusBanner({
     case "awaiting_confirmation":
       if (captainRole === "home") {
         return (
-          <View className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <View className="bg-yellow-50 border border-yellow-200 p-4">
             <View className="flex-row items-center gap-2">
               <AlertCircle size={18} color="#CA8A04" />
               <Text className="text-sm text-yellow-700 flex-1">
@@ -197,7 +197,7 @@ export default function StatusBanner({
         );
       }
       return (
-        <View className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <View className="bg-green-50 border border-green-200 p-4">
           <View className="flex-row items-center gap-2">
             <Check size={18} color="#16A34A" />
             <Text className="text-sm text-green-700 flex-1">
@@ -210,7 +210,7 @@ export default function StatusBanner({
 
     case "completed":
       return (
-        <View className="bg-gray-100 border border-gray-200 rounded-lg p-4">
+        <View className="bg-gray-100 border border-gray-200 p-4">
           <View className="flex-row items-center gap-2">
             <Check size={18} color="#16A34A" />
             <Text className="text-sm text-gray-600 flex-1">

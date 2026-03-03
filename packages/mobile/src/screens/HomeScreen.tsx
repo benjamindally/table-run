@@ -5,8 +5,8 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from "react-native";
-import { useState, useEffect } from "react";
-import { useNavigation } from "@react-navigation/native";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import {
   LogIn,
   UserPlus,
@@ -16,6 +16,7 @@ import {
   Shield,
   ChevronRight,
   Calendar,
+  Plus,
 } from "lucide-react-native";
 import { useAuthStore } from "../stores/authStore";
 import { useUserContextStore } from "../stores/userContextStore";
@@ -46,8 +47,17 @@ export default function HomeScreen() {
   const mySeasons = useUserContextStore((state) => state.mySeasons);
   const myLeagues = useUserContextStore((state) => state.myLeagues);
   const upcomingMatches = useUserContextStore((state) => state.upcomingMatches);
+  const upcomingByes = useUserContextStore((state) => state.upcomingByes);
   const isLoaded = useUserContextStore((state) => state.isLoaded);
   const loadUserContext = useUserContextStore((state) => state.loadUserContext);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) {
+        loadUserContext();
+      }
+    }, [isAuthenticated])
+  );
 
   const loadTopLeagues = async () => {
     try {
@@ -73,8 +83,26 @@ export default function HomeScreen() {
     navigation.navigate("Auth" as never);
   };
 
+  // Merge matches and byes into a single chronological list
+  const upcomingEvents = [
+    ...upcomingMatches.map((m) => ({
+      type: "match" as const,
+      date: m.date,
+      data: m,
+    })),
+    ...upcomingByes.map((b) => ({
+      type: "bye" as const,
+      date: b.date,
+      data: b,
+    })),
+  ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
   // Get display name
-  const displayName = player?.full_name || user?.first_name || user?.email?.split("@")[0] || "there";
+  const displayName =
+    player?.full_name ||
+    user?.first_name ||
+    user?.email?.split("@")[0] ||
+    "there";
 
   return (
     <ScrollView
@@ -135,7 +163,9 @@ export default function HomeScreen() {
                   MY TEAMS
                 </Text>
               </View>
-              <Text className="text-xs text-gray-400">{myTeams.length} team{myTeams.length !== 1 ? 's' : ''}</Text>
+              <Text className="text-xs text-gray-400">
+                {myTeams.length} team{myTeams.length !== 1 ? "s" : ""}
+              </Text>
             </View>
             {myTeams.map((team) => (
               <TouchableOpacity
@@ -155,7 +185,9 @@ export default function HomeScreen() {
                     </Text>
                     {team.is_captain && (
                       <View className="bg-amber-100 rounded px-1.5 py-0.5">
-                        <Text className="text-amber-700 text-xs font-medium">Captain</Text>
+                        <Text className="text-amber-700 text-xs font-medium">
+                          Captain
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -171,6 +203,116 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Empty state for authenticated users with no data */}
+        {isAuthenticated &&
+          isLoaded &&
+          myTeams.length === 0 &&
+          myLeagues.length === 0 && (
+            <View className="bg-white rounded-lg p-6 border border-gray-200 mb-4 items-center">
+              <Text className="text-gray-400 text-center mb-2">
+                You're not part of any teams or leagues yet.
+              </Text>
+              <Text className="text-gray-500 text-center text-sm mb-4">
+                Browse the Leagues tab to find leagues near you, or start your own.
+              </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Leagues", { screen: "CreateLeague", params: undefined })}
+                className="flex-row items-center gap-2 bg-primary px-4 py-2.5 rounded-full"
+              >
+                <Plus size={16} color="#fff" />
+                <Text className="text-white font-semibold text-sm">Create a League</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+        {/* Upcoming Matches - Only for authenticated users */}
+        {isAuthenticated && myTeams.length > 0 && (
+          <View className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+            <View className="flex-row items-center gap-2 mb-3">
+              <Calendar color="#26A69A" size={18} />
+              <Text className="text-sm font-medium text-gray-500">
+                UPCOMING MATCHES
+              </Text>
+            </View>
+            <HorizontalTileScroller
+              data={upcomingEvents}
+              keyExtractor={(event) => `${event.type}-${event.data.id}`}
+              onItemPress={(event) => {
+                if (event.type === "match") {
+                  navigation.navigate("Matches", {
+                    screen: "MatchDetails",
+                    params: { matchId: event.data.id },
+                  });
+                }
+              }}
+              seeAllText="All Matches"
+              onSeeAllPress={() => navigation.navigate("Matches")}
+              emptyMessage="No upcoming matches"
+              getItemClassName={(event) =>
+                event.type === "bye"
+                  ? "bg-yellow-50 border-yellow-200"
+                  : "bg-gray-50 border-gray-200"
+              }
+              renderItem={(event) => {
+                if (event.type === "bye") {
+                  return (
+                    <>
+                      <View className="bg-gray-200 rounded px-1.5 py-0.5 self-start mb-1">
+                        <Text className="text-gray-600 text-xs font-medium">
+                          Bye Week
+                        </Text>
+                      </View>
+                      <Text className="text-xs text-gray-500 mb-1">
+                        {new Date(event.data.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </Text>
+                      <Text
+                        className="text-sm font-semibold text-gray-900 mb-1"
+                        numberOfLines={2}
+                      >
+                        {event.data.team_name}
+                      </Text>
+                      <Text className="text-xs text-gray-500" numberOfLines={1}>
+                        {event.data.season_name}
+                      </Text>
+                    </>
+                  );
+                }
+                const match = event.data;
+                return (
+                  <>
+                    <Text className="text-xs text-gray-500 mb-1">
+                      {new Date(match.date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </Text>
+                    <Text
+                      className="text-sm font-semibold text-gray-900 mb-1"
+                      numberOfLines={2}
+                    >
+                      {match.home_team_name} vs {match.away_team_name}
+                    </Text>
+                    {match.venue_name && (
+                      <View className="flex-row items-center gap-1">
+                        <MapPin color="#9ca3af" size={12} />
+                        <Text
+                          className="text-xs text-gray-500"
+                          numberOfLines={1}
+                        >
+                          {match.venue_name}
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                );
+              }}
+            />
+          </View>
+        )}
+
         {/* Active Seasons Section */}
         {isAuthenticated && isLoaded && mySeasons.length > 0 && (
           <View className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
@@ -181,37 +323,41 @@ export default function HomeScreen() {
                   ACTIVE SEASONS
                 </Text>
               </View>
-              <Text className="text-xs text-gray-400">{mySeasons.filter(s => s.is_active).length} active</Text>
+              <Text className="text-xs text-gray-400">
+                {mySeasons.filter((s) => s.is_active).length} active
+              </Text>
             </View>
-            {mySeasons.filter(s => s.is_active).map((season) => (
-              <TouchableOpacity
-                key={season.id}
-                className="flex-row items-center justify-between py-3 border-b border-gray-100 last:border-b-0"
-                onPress={() =>
-                  navigation.navigate("Seasons", {
-                    screen: "SeasonDetails",
-                    params: {
-                      seasonId: season.id,
-                      seasonName: season.name,
-                    },
-                  })
-                }
-              >
-                <View className="flex-1">
-                  <Text className="text-base font-medium text-gray-900">
-                    {season.name}
-                  </Text>
-                  <Text className="text-sm text-gray-500 mt-0.5">
-                    {season.league_name}
-                  </Text>
-                </View>
-                <ChevronRight color="#9ca3af" size={20} />
-              </TouchableOpacity>
-            ))}
+            {mySeasons
+              .filter((s) => s.is_active)
+              .map((season) => (
+                <TouchableOpacity
+                  key={season.id}
+                  className="flex-row items-center justify-between py-3 border-b border-gray-100 last:border-b-0"
+                  onPress={() =>
+                    navigation.navigate("Seasons", {
+                      screen: "SeasonDetails",
+                      params: {
+                        seasonId: season.id,
+                        seasonName: season.name,
+                      },
+                    })
+                  }
+                >
+                  <View className="flex-1">
+                    <Text className="text-base font-medium text-gray-900">
+                      {season.name}
+                    </Text>
+                    <Text className="text-sm text-gray-500 mt-0.5">
+                      {season.league_name}
+                    </Text>
+                  </View>
+                  <ChevronRight color="#9ca3af" size={20} />
+                </TouchableOpacity>
+              ))}
           </View>
         )}
 
-        {/* My Leagues Section (for operators) */}
+        {/* My Leagues Section */}
         {isAuthenticated && isLoaded && myLeagues.length > 0 && (
           <View className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
             <View className="flex-row items-center justify-between mb-3">
@@ -221,7 +367,13 @@ export default function HomeScreen() {
                   MY LEAGUES
                 </Text>
               </View>
-              <Text className="text-xs text-gray-400">{myLeagues.length} league{myLeagues.length !== 1 ? 's' : ''}</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Leagues", { screen: "CreateLeague", params: undefined })}
+                className="flex-row items-center gap-1 bg-primary px-3 py-1.5 rounded-full"
+              >
+                <Plus size={14} color="#fff" />
+                <Text className="text-xs font-semibold text-white">New</Text>
+              </TouchableOpacity>
             </View>
             {myLeagues.map((league) => (
               <TouchableOpacity
@@ -245,7 +397,7 @@ export default function HomeScreen() {
                     {league.is_operator && (
                       <View className="bg-primary-100 rounded px-1.5 py-0.5">
                         <Text className="text-primary-700 text-xs font-medium">
-                          {league.role === 'owner' ? 'Owner' : 'Operator'}
+                          {league.role === "owner" ? "Owner" : "Operator"}
                         </Text>
                       </View>
                     )}
@@ -262,67 +414,6 @@ export default function HomeScreen() {
                 <ChevronRight color="#9ca3af" size={20} />
               </TouchableOpacity>
             ))}
-          </View>
-        )}
-
-        {/* Empty state for authenticated users with no data */}
-        {isAuthenticated && isLoaded && myTeams.length === 0 && myLeagues.length === 0 && (
-          <View className="bg-white rounded-lg p-6 border border-gray-200 mb-4 items-center">
-            <Text className="text-gray-400 text-center mb-2">
-              You're not part of any teams or leagues yet.
-            </Text>
-            <Text className="text-gray-500 text-center text-sm">
-              Browse the Leagues tab to find leagues near you!
-            </Text>
-          </View>
-        )}
-
-        {/* Upcoming Matches - Only for authenticated users */}
-        {isAuthenticated && myTeams.length > 0 && (
-          <View className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
-            <View className="flex-row items-center gap-2 mb-3">
-              <Calendar color="#26A69A" size={18} />
-              <Text className="text-sm font-medium text-gray-500">
-                UPCOMING MATCHES
-              </Text>
-            </View>
-            <HorizontalTileScroller
-              data={upcomingMatches}
-              keyExtractor={(match) => match.id}
-              onItemPress={(match) =>
-                navigation.navigate("Matches", {
-                  screen: "MatchDetails",
-                  params: { matchId: match.id },
-                })
-              }
-              seeAllText="All Matches"
-              onSeeAllPress={() => navigation.navigate("Matches")}
-              emptyMessage="No upcoming matches"
-              renderItem={(match) => (
-                <>
-                  <Text className="text-xs text-gray-500 mb-1">
-                    {new Date(match.date).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </Text>
-                  <Text
-                    className="text-sm font-semibold text-gray-900 mb-1"
-                    numberOfLines={2}
-                  >
-                    {match.home_team_name} vs {match.away_team_name}
-                  </Text>
-                  {match.venue_name && (
-                    <View className="flex-row items-center gap-1">
-                      <MapPin color="#9ca3af" size={12} />
-                      <Text className="text-xs text-gray-500" numberOfLines={1}>
-                        {match.venue_name}
-                      </Text>
-                    </View>
-                  )}
-                </>
-              )}
-            />
           </View>
         )}
 
@@ -371,13 +462,8 @@ export default function HomeScreen() {
                   {(league.city || league.state) && (
                     <View className="flex-row items-center gap-1">
                       <MapPin color="#9ca3af" size={12} />
-                      <Text
-                        className="text-xs text-gray-500"
-                        numberOfLines={1}
-                      >
-                        {[league.city, league.state]
-                          .filter(Boolean)
-                          .join(", ")}
+                      <Text className="text-xs text-gray-500" numberOfLines={1}>
+                        {[league.city, league.state].filter(Boolean).join(", ")}
                       </Text>
                     </View>
                   )}

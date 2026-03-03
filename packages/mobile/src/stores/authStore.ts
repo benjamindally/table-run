@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
-import { authApi, type AuthResponse, type Player } from "@league-genius/shared";
+import { authApi, playersApi, type AuthResponse, type Player, type PlayerUpdateData, type RegisterData } from "@league-genius/shared";
 import { useUserContextStore } from "./userContextStore";
 import { useNotificationsStore } from "./notificationsStore";
+import { useMatchScoringStore } from "./matchScoringStore";
 
 interface AuthUser {
   id: number;
@@ -21,9 +22,11 @@ interface AuthState {
 
   // Actions
   login: (email: string, password: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   loadStoredAuth: () => Promise<void>;
   refreshAccessToken: () => Promise<boolean>;
+  updateProfile: (data: PlayerUpdateData) => Promise<void>;
 }
 
 const TOKEN_KEY = "auth_tokens";
@@ -71,6 +74,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  register: async (data: RegisterData) => {
+    set({ isLoading: true });
+    try {
+      const response = await authApi.register(data);
+      const authData = response as AuthResponse;
+
+      await SecureStore.setItemAsync(
+        TOKEN_KEY,
+        JSON.stringify({ access: authData.access, refresh: authData.refresh })
+      );
+      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(authData.user));
+
+      set({
+        user: authData.user,
+        player: authData.player,
+        accessToken: authData.access,
+        refreshToken: authData.refresh,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+
+      useUserContextStore.getState().loadUserContext();
+      useNotificationsStore.getState().fetchUnreadCount();
+      useNotificationsStore.getState().connectWebSocket();
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
   logout: async () => {
     const { refreshToken, accessToken } = get();
 
@@ -92,6 +125,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Clear notifications
     useNotificationsStore.getState().disconnectWebSocket();
     useNotificationsStore.getState().clearNotifications();
+
+    // Clear match scoring state
+    useMatchScoringStore.getState().clearMatch();
 
     set({
       user: null,
@@ -138,6 +174,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       set({ isLoading: false });
     }
+  },
+
+  updateProfile: async (data: PlayerUpdateData) => {
+    const { player, accessToken, user } = get();
+    if (!player || !accessToken) throw new Error("Not authenticated");
+    const updated = await playersApi.update(player.id, data, accessToken);
+    const updatedUser = user
+      ? {
+          ...user,
+          first_name: updated.first_name ?? user.first_name,
+          last_name: updated.last_name ?? user.last_name,
+          email: updated.email ?? user.email,
+        }
+      : user;
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(updatedUser));
+    set({ player: updated, user: updatedUser });
   },
 
   refreshAccessToken: async () => {

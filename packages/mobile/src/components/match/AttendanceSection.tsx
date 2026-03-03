@@ -2,7 +2,7 @@
  * Attendance Section - Team roster with attendance checkboxes
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ interface AttendanceSectionProps {
   canEdit: boolean;
   onToggleAttendance: (playerId: number) => void;
   defaultExpanded?: boolean;
+  minPlayers?: number;
 }
 
 export default function AttendanceSection({
@@ -37,8 +38,17 @@ export default function AttendanceSection({
   canEdit,
   onToggleAttendance,
   defaultExpanded = true,
+  minPlayers = 4,
 }: AttendanceSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+
+  // When this section becomes the active phase (defaultExpanded flips true), auto-open it
+  useEffect(() => {
+    if (defaultExpanded) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setExpanded(true);
+    }
+  }, [defaultExpanded]);
 
   const presentCount = roster.filter((p) => p.present).length;
   const totalCount = roster.length;
@@ -56,7 +66,7 @@ export default function AttendanceSection({
   const checkColor = team === "home" ? "#2563EB" : "#EA580C";
 
   return (
-    <View className={`${bgColor} rounded-lg border ${borderColor} overflow-hidden`}>
+    <View className={`${bgColor} border ${borderColor} overflow-hidden`}>
       {/* Header */}
       <TouchableOpacity
         onPress={toggleExpanded}
@@ -119,10 +129,10 @@ export default function AttendanceSection({
             </View>
           )}
 
-          {presentCount < 4 && (
+          {presentCount < minPlayers && (
             <View className="mt-3 p-2 bg-yellow-100 rounded-lg">
               <Text className="text-xs text-yellow-700 text-center">
-                Minimum 4 players required ({4 - presentCount} more needed)
+                Minimum {minPlayers} players required ({minPlayers - presentCount} more needed)
               </Text>
             </View>
           )}
