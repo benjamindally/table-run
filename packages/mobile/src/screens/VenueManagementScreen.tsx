@@ -52,12 +52,17 @@ export default function VenueManagementScreen({
 
   const loadVenues = useCallback(async () => {
     try {
-      const response = await api.get<Venue[]>(
+      const response = await api.get<{ results: Venue[] } | Venue[]>(
         `/venues/?league=${leagueId}`,
         accessToken ?? undefined
       );
-      setVenues(Array.isArray(response) ? response : []);
-    } catch {
+      console.log("[VenueManagement] raw response:", JSON.stringify(response).slice(0, 300));
+      const list = Array.isArray(response)
+        ? response
+        : (response as { results: Venue[] }).results ?? [];
+      setVenues(list);
+    } catch (err) {
+      console.error("[VenueManagement] loadVenues error:", err);
       setVenues([]);
     } finally {
       setLoading(false);

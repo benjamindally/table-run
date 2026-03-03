@@ -4,6 +4,7 @@ import LeagueDetailsScreen from "../screens/LeagueDetailsScreen";
 import CreateLeagueScreen from "../screens/CreateLeagueScreen";
 import CreateSeasonScreen from "../screens/CreateSeasonScreen";
 import VenueManagementScreen from "../screens/VenueManagementScreen";
+import TeamManagementScreen from "../screens/TeamManagementScreen";
 import AppHeader from "../components/AppHeader";
 import type { LeaguesStackParamList } from "./types";
 
@@ -41,6 +42,13 @@ export default function LeaguesNavigator() {
         component={VenueManagementScreen}
         options={({ route }) => ({
           title: `${route.params.leagueName} — Venues`,
+        })}
+      />
+      <Stack.Screen
+        name="TeamManagement"
+        component={TeamManagementScreen}
+        options={({ route }) => ({
+          title: `${route.params.leagueName} — Teams`,
         })}
       />
     </Stack.Navigator>

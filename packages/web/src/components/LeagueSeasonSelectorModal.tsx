@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { X, ArrowLeft, Calendar, MapPin, Users } from "lucide-react";
 import type { Season } from "../api";
+import { formatDateDisplay } from "@league-genius/shared";
 
 // Minimal league type for the selector - works with both League and MeLeague
 interface LeagueOption {
@@ -195,7 +196,7 @@ const LeagueSeasonSelectorModal: React.FC<LeagueSeasonSelectorModalProps> = ({
                           <span>Start</span>
                         </div>
                         <span className="font-semibold text-dark">
-                          {new Date(season.start_date).toLocaleDateString()}
+                          {formatDateDisplay(season.start_date)}
                         </span>
                       </div>
 
@@ -206,7 +207,7 @@ const LeagueSeasonSelectorModal: React.FC<LeagueSeasonSelectorModalProps> = ({
                             <span>End</span>
                           </div>
                           <span className="font-semibold text-dark">
-                            {new Date(season.end_date).toLocaleDateString()}
+                            {formatDateDisplay(season.end_date)}
                           </span>
                         </div>
                       )}

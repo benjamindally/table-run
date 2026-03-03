@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { Calendar, Users } from "lucide-react-native";
 import { useState, useEffect } from "react";
-import { api } from "@league-genius/shared";
+import { api, formatDateDisplay } from "@league-genius/shared";
 import type { LeaguesStackScreenProps } from "../navigation/types";
 
 interface Season {
@@ -60,12 +60,7 @@ export default function SeasonsScreen({
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return formatDateDisplay(dateString);
   };
 
   const getSeasonStatus = (season: Season) => {

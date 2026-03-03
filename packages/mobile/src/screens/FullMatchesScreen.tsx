@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useState, useEffect, useMemo } from "react";
-import { api, type SeasonMatchesResponse } from "@league-genius/shared";
+import { api, formatDateDisplay, type SeasonMatchesResponse } from "@league-genius/shared";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 type FullMatchesParamList = {
@@ -81,13 +81,7 @@ export default function FullMatchesScreen({
   const formatDate = (dateString: string) => {
     if (!dateString) return "TBD";
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "TBD";
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+      return formatDateDisplay(dateString);
     } catch {
       return "TBD";
     }

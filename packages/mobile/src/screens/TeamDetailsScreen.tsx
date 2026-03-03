@@ -29,6 +29,7 @@ import {
 import {
   teamsApi,
   playerClaimsApi,
+  formatDateDisplay,
   type Team,
   type TeamMembership,
   type SeasonParticipation,
@@ -37,6 +38,7 @@ import {
 import type { RootStackScreenProps } from "../navigation/types";
 import { useUserContextStore } from "../stores/userContextStore";
 import { useAuthStore } from "../stores/authStore";
+import AddPlayerModal from "../components/AddPlayerModal";
 
 // ─── Edit Team Modal ────────────────────────────────────────────────────────
 
@@ -277,6 +279,7 @@ interface AddMemberModalProps {
   existingPlayerIds: number[];
   onClose: () => void;
   onAdded: () => void;
+  onCreateNew: () => void;
   accessToken: string;
 }
 
@@ -286,6 +289,7 @@ function AddMemberModal({
   existingPlayerIds,
   onClose,
   onAdded,
+  onCreateNew,
   accessToken,
 }: AddMemberModalProps) {
   const [query, setQuery] = useState("");
@@ -372,7 +376,19 @@ function AddMemberModal({
         >
           {isSearching && <ActivityIndicator color="#26A69A" style={{ marginTop: 16 }} />}
           {!isSearching && query.length >= 2 && results.length === 0 && (
-            <Text className="text-gray-400 text-center mt-4">No players found</Text>
+            <View className="items-center mt-4">
+              <Text className="text-gray-400">No players found</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  handleClose();
+                  onCreateNew();
+                }}
+                className="mt-3 flex-row items-center gap-1"
+              >
+                <Plus size={14} color="#26A69A" />
+                <Text className="text-primary font-semibold text-sm">Create New Player</Text>
+              </TouchableOpacity>
+            </View>
           )}
           {!isSearching && query.length < 2 && (
             <Text className="text-gray-400 text-center mt-8">Type to search for players</Text>
@@ -412,6 +428,18 @@ function AddMemberModal({
               </View>
             );
           })}
+          {results.length > 0 && (
+            <TouchableOpacity
+              onPress={() => {
+                handleClose();
+                onCreateNew();
+              }}
+              className="mt-3 flex-row items-center justify-center gap-1 py-2"
+            >
+              <Plus size={14} color="#26A69A" />
+              <Text className="text-primary font-semibold text-sm">Create New Player Instead</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
@@ -437,6 +465,7 @@ export default function TeamDetailsScreen({
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [captainModalVisible, setCaptainModalVisible] = useState(false);
   const [addMemberModalVisible, setAddMemberModalVisible] = useState(false);
+  const [createPlayerVisible, setCreatePlayerVisible] = useState(false);
 
   const { isCaptain, myLeagues } = useUserContextStore();
   const { accessToken } = useAuthStore();
@@ -475,13 +504,7 @@ export default function TeamDetailsScreen({
   const formatDate = (dateString: string) => {
     if (!dateString) return "TBD";
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "TBD";
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+      return formatDateDisplay(dateString);
     } catch {
       return "TBD";
     }
@@ -887,7 +910,16 @@ export default function TeamDetailsScreen({
               setAddMemberModalVisible(false);
               loadTeamData();
             }}
+            onCreateNew={() => setCreatePlayerVisible(true)}
             accessToken={accessToken}
+          />
+          <AddPlayerModal
+            visible={createPlayerVisible}
+            onClose={() => setCreatePlayerVisible(false)}
+            onSuccess={loadTeamData}
+            leagueId={0}
+            teams={[{ id: teamId, name: team.name }]}
+            defaultTeamId={teamId}
           />
         </>
       )}

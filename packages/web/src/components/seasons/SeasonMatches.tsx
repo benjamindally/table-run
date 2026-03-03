@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { ChevronDown, ChevronUp, Upload } from "lucide-react";
 import type { Match, ScheduleBye } from "../../api";
+import { formatDateDisplay } from "@league-genius/shared";
 
 interface SeasonMatchesProps {
   matches?: Match[];
@@ -207,9 +208,7 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
                           </div>
                           <div className="flex items-center justify-between text-xs text-dark-300">
                             <span>
-                              {new Date(
-                                match.date + "T00:00:00"
-                              ).toLocaleDateString()}
+                              {formatDateDisplay(match.date)}
                             </span>
                             {match.status === "completed" && (
                               <span className="px-1.5 py-0.5 bg-green-100 text-green-800 rounded">

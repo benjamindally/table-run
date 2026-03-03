@@ -4,7 +4,7 @@
 
 import { View, Text } from "react-native";
 import { Wifi, WifiOff, RefreshCw } from "lucide-react-native";
-import type { Match, ConnectionStatus } from "@league-genius/shared";
+import { formatDateDisplay, type Match, type ConnectionStatus } from "@league-genius/shared";
 
 interface MatchScoreHeaderProps {
   match: Match;
@@ -28,13 +28,7 @@ export default function MatchScoreHeader({
 
   const formatDate = (dateString: string) => {
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "";
-      return date.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      });
+      return formatDateDisplay(dateString);
     } catch {
       return "";
     }

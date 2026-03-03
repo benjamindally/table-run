@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Calendar, Users, ArrowRight } from "lucide-react";
 import Modal from "./Modal";
 import { api, type Season } from "../api";
+import { formatDateDisplay } from "@league-genius/shared";
 import { toast } from "react-toastify";
 
 interface SeasonsModalProps {
@@ -106,7 +107,7 @@ const SeasonsModal: React.FC<SeasonsModalProps> = ({
                     <span>Start Date</span>
                   </div>
                   <span className="font-medium text-gray-900">
-                    {new Date(season.start_date).toLocaleDateString()}
+                    {formatDateDisplay(season.start_date)}
                   </span>
                 </div>
 

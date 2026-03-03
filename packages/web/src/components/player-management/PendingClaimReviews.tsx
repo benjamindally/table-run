@@ -1,6 +1,7 @@
 import React from "react";
 import { PlayerClaimRequest } from "../../api";
 import { Users, CheckCircle, XCircle } from "lucide-react";
+import { formatDateDisplay } from "@league-genius/shared";
 
 interface PendingClaimReviewsProps {
   pendingReviews: PlayerClaimRequest[];
@@ -47,7 +48,7 @@ const PendingClaimReviews: React.FC<PendingClaimReviewsProps> = ({
                 )}
                 <p className="text-xs text-gray-500 mt-2">
                   Requested{" "}
-                  {new Date(request.created_at).toLocaleDateString()}
+                  {formatDateDisplay(request.created_at)}
                 </p>
               </div>
             </div>

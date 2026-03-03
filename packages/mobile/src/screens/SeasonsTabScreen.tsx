@@ -5,12 +5,14 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from "react-native";
-import { Calendar, Users, ChevronRight } from "lucide-react-native";
+import { Calendar, Users, ChevronRight, Plus, X } from "lucide-react-native";
 import { useState, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { api, type Season } from "@league-genius/shared";
+import { api, formatDateDisplay, type Season } from "@league-genius/shared";
 import { useAuthStore } from "../stores/authStore";
 import { useUserContextStore } from "../stores/userContextStore";
 import type { SeasonsStackParamList } from "../navigation/types";
@@ -25,6 +27,10 @@ export default function SeasonsTabScreen() {
   const [publicSeasons, setPublicSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showLeaguePicker, setShowLeaguePicker] = useState(false);
+
+  const operatorLeagues = myLeagues.filter((l) => l.is_operator);
+  const isAnyOperator = operatorLeagues.length > 0;
 
   const loadPublicSeasons = async () => {
     try {
@@ -64,13 +70,16 @@ export default function SeasonsTabScreen() {
     }
   };
 
+  const handleCreateSeasonFAB = () => {
+    if (operatorLeagues.length === 1) {
+      navigation.navigate("CreateSeason", { leagueId: operatorLeagues[0].id });
+    } else {
+      setShowLeaguePicker(true);
+    }
+  };
+
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return formatDateDisplay(dateString);
   };
 
   const getStatusColor = (isActive: boolean) => {
@@ -90,108 +99,167 @@ export default function SeasonsTabScreen() {
   const showingMySeasons = isAuthenticated && mySeasons.length > 0;
 
   return (
-    <ScrollView
-      className="flex-1 bg-gray-50"
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      <View className="p-4">
-        {/* Header */}
-        <View className="mb-6">
-          <Text className="text-2xl font-bold text-gray-900 mb-1">
-            {showingMySeasons ? "My Seasons" : "Active Seasons"}
-          </Text>
-          <Text className="text-gray-600">
-            {showingMySeasons
-              ? "Seasons from leagues you're part of"
-              : "Browse active seasons across all leagues"}
-          </Text>
-        </View>
-
-        {/* Browse All Link for authenticated users */}
-        {showingMySeasons && (
-          <TouchableOpacity
-            className="bg-white rounded-lg p-4 border border-gray-200 mb-4 flex-row items-center justify-between"
-            onPress={() => {
-              // TODO: Navigate to all public seasons view
-            }}
-          >
-            <Text className="text-primary font-medium">Browse All Public Seasons</Text>
-            <ChevronRight color="#26A69A" size={20} />
-          </TouchableOpacity>
-        )}
-
-        {/* Seasons List */}
-        {seasonsToShow.length === 0 ? (
-          <View className="bg-white rounded-lg p-8 border border-gray-200 items-center">
-            <Calendar color="#9ca3af" size={48} />
-            <Text className="text-gray-500 text-center mt-4 text-lg font-medium">
-              No seasons found
+    <View className="flex-1 bg-gray-50">
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View className="p-4">
+          {/* Header */}
+          <View className="mb-6">
+            <Text className="text-2xl font-bold text-gray-900 mb-1">
+              {showingMySeasons ? "My Seasons" : "Active Seasons"}
             </Text>
-            <Text className="text-gray-400 text-center mt-2">
-              {isAuthenticated
-                ? "Join a league to see your seasons here"
-                : "Check back later for active seasons"}
+            <Text className="text-gray-600">
+              {showingMySeasons
+                ? "Seasons from leagues you're part of"
+                : "Browse active seasons across all leagues"}
             </Text>
           </View>
-        ) : (
-          <View className="pb-20">
-            {seasonsToShow.map((season) => (
-              <TouchableOpacity
-                key={season.id}
-                className="bg-white rounded-lg p-4 border border-gray-200 active:border-primary mb-4"
-                onPress={() =>
-                  navigation.navigate("SeasonDetails", { seasonId: season.id })
-                }
-              >
-                <View className="mb-3">
-                  <View className="flex-row items-center justify-between mb-1">
-                    <Text className="text-xl font-bold text-gray-900 flex-1">
-                      {season.name}
-                    </Text>
-                    <Text
-                      className={`text-sm font-medium ${getStatusColor(season.is_active)}`}
-                    >
-                      {season.is_active ? "Active" : "Inactive"}
-                    </Text>
-                  </View>
-                  {"league_name" in season && (
-                    <Text className="text-sm text-gray-500">
-                      {(season as { league_name: string }).league_name}
-                    </Text>
-                  )}
-                </View>
 
-                <View className="space-y-2">
-                  <View className="flex-row items-center gap-2">
-                    <Calendar color="#6b7280" size={16} />
-                    <Text className="text-sm text-gray-600">
-                      {formatDate(season.start_date)}
-                      {season.end_date && ` - ${formatDate(season.end_date)}`}
-                    </Text>
-                  </View>
-                  {"team_count" in season && (season as { team_count?: number }).team_count !== undefined && (
-                    <View className="flex-row items-center gap-2">
-                      <Users color="#6b7280" size={16} />
-                      <Text className="text-sm text-gray-600">
-                        {(season as { team_count: number }).team_count}{" "}
-                        {(season as { team_count: number }).team_count === 1 ? "Team" : "Teams"}
+          {/* Browse All Link for authenticated users */}
+          {showingMySeasons && (
+            <TouchableOpacity
+              className="bg-white rounded-lg p-4 border border-gray-200 mb-4 flex-row items-center justify-between"
+              onPress={() => {
+                // TODO: Navigate to all public seasons view
+              }}
+            >
+              <Text className="text-primary font-medium">Browse All Public Seasons</Text>
+              <ChevronRight color="#26A69A" size={20} />
+            </TouchableOpacity>
+          )}
+
+          {/* Seasons List */}
+          {seasonsToShow.length === 0 ? (
+            <View className="bg-white rounded-lg p-8 border border-gray-200 items-center">
+              <Calendar color="#9ca3af" size={48} />
+              <Text className="text-gray-500 text-center mt-4 text-lg font-medium">
+                No seasons found
+              </Text>
+              <Text className="text-gray-400 text-center mt-2">
+                {isAuthenticated
+                  ? "Join a league to see your seasons here"
+                  : "Check back later for active seasons"}
+              </Text>
+            </View>
+          ) : (
+            <View className="pb-20">
+              {seasonsToShow.map((season) => (
+                <TouchableOpacity
+                  key={season.id}
+                  className="bg-white rounded-lg p-4 border border-gray-200 active:border-primary mb-4"
+                  onPress={() =>
+                    navigation.navigate("SeasonDetails", { seasonId: season.id })
+                  }
+                >
+                  <View className="mb-3">
+                    <View className="flex-row items-center justify-between mb-1">
+                      <Text className="text-xl font-bold text-gray-900 flex-1">
+                        {season.name}
+                      </Text>
+                      <Text
+                        className={`text-sm font-medium ${getStatusColor(season.is_active)}`}
+                      >
+                        {season.is_active ? "Active" : "Inactive"}
                       </Text>
                     </View>
-                  )}
-                </View>
+                    {"league_name" in season && (
+                      <Text className="text-sm text-gray-500">
+                        {(season as { league_name: string }).league_name}
+                      </Text>
+                    )}
+                  </View>
 
-                <View className="mt-4 pt-4 border-t border-gray-200">
-                  <Text className="text-sm font-medium text-primary text-center">
-                    View Season Details
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
-    </ScrollView>
+                  <View className="space-y-2">
+                    <View className="flex-row items-center gap-2">
+                      <Calendar color="#6b7280" size={16} />
+                      <Text className="text-sm text-gray-600">
+                        {formatDate(season.start_date)}
+                        {season.end_date && ` - ${formatDate(season.end_date)}`}
+                      </Text>
+                    </View>
+                    {"team_count" in season && (season as { team_count?: number }).team_count !== undefined && (
+                      <View className="flex-row items-center gap-2">
+                        <Users color="#6b7280" size={16} />
+                        <Text className="text-sm text-gray-600">
+                          {(season as { team_count: number }).team_count}{" "}
+                          {(season as { team_count: number }).team_count === 1 ? "Team" : "Teams"}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View className="mt-4 pt-4 border-t border-gray-200">
+                    <Text className="text-sm font-medium text-primary text-center">
+                      View Season Details
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Create Season FAB — operators only */}
+      {isAnyOperator && (
+        <TouchableOpacity
+          onPress={handleCreateSeasonFAB}
+          className="absolute bottom-6 right-6 bg-primary rounded-full w-14 h-14 items-center justify-center"
+          style={{ elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 }}
+        >
+          <Plus size={26} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      {/* League picker modal — shown when operator manages multiple leagues */}
+      <Modal
+        visible={showLeaguePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLeaguePicker(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/50 justify-end"
+          onPress={() => setShowLeaguePicker(false)}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View className="bg-white rounded-t-2xl pt-4 pb-8">
+              <View className="items-center mb-1">
+                <View className="w-10 h-1 rounded-full bg-gray-300" />
+              </View>
+              <View className="flex-row items-center justify-between px-4 pt-2 pb-3 border-b border-gray-100">
+                <Text className="text-base font-bold text-gray-900">Add Season to…</Text>
+                <Pressable onPress={() => setShowLeaguePicker(false)} className="p-1">
+                  <X size={20} color="#6b7280" />
+                </Pressable>
+              </View>
+              {operatorLeagues.map((league) => (
+                <TouchableOpacity
+                  key={league.id}
+                  className="px-4 py-4 border-b border-gray-100 flex-row items-center justify-between"
+                  onPress={() => {
+                    setShowLeaguePicker(false);
+                    navigation.navigate("CreateSeason", { leagueId: league.id });
+                  }}
+                >
+                  <View>
+                    <Text className="text-base font-semibold text-gray-900">{league.name}</Text>
+                    {(league.city || league.state) && (
+                      <Text className="text-sm text-gray-500 mt-0.5">
+                        {[league.city, league.state].filter(Boolean).join(", ")}
+                      </Text>
+                    )}
+                  </View>
+                  <Text className="text-primary font-medium text-sm">Select →</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
   );
 }

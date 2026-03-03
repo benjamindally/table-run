@@ -16,6 +16,7 @@ import { useSeasonMatches } from "../../hooks/useSeasons";
 import type { MeSeason } from "../../api";
 import CreateAnnouncementModal from "../../components/CreateAnnouncementModal";
 import NextMatchCard from "../../components/NextMatchCard";
+import { formatDateDisplay } from "@league-genius/shared";
 
 // Component for the Next Match and View Matches cards (uses React Query hook)
 interface CurrentSeasonCardsProps {
@@ -335,16 +336,12 @@ const DashboardPage: React.FC = () => {
                                 <div className="flex items-center text-sm text-dark-300">
                                   <Calendar className="h-4 w-4 mr-1" />
                                   <span>
-                                    {new Date(
-                                      season.start_date
-                                    ).toLocaleDateString()}
+                                    {formatDateDisplay(season.start_date)}
                                     {season.end_date && (
                                       <>
                                         {" "}
                                         -{" "}
-                                        {new Date(
-                                          season.end_date
-                                        ).toLocaleDateString()}
+                                        {formatDateDisplay(season.end_date)}
                                       </>
                                     )}
                                   </span>

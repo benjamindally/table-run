@@ -10,6 +10,7 @@ import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import SeasonMatches from "../../components/seasons/SeasonMatches";
 import LeagueSeasonSelectorModal from "../../components/LeagueSeasonSelectorModal";
 import type { Match } from "../../api";
+import { formatDateDisplay } from "@league-genius/shared";
 
 const MatchesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -213,7 +214,7 @@ const MatchesPage: React.FC = () => {
                 <Calendar className="h-4 w-4 mr-2 text-dark-300" />
                 <span className="text-dark-300 mr-2">Start Date:</span>
                 <span className="font-medium text-dark">
-                  {new Date(selectedSeason.start_date).toLocaleDateString()}
+                  {formatDateDisplay(selectedSeason.start_date)}
                 </span>
               </div>
               <div className="flex items-center text-sm">
