@@ -6,9 +6,9 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
-import { Calendar, Trophy, Users, ChevronRight, ChevronDown, Clock, MapPin } from "lucide-react-native";
+import { Calendar, CalendarDays, Users, ChevronRight, ChevronDown, Clock, MapPin } from "lucide-react-native";
 import { useState, useEffect, useMemo } from "react";
-import { api } from "@league-genius/shared";
+import { api, type SeasonMatchesResponse } from "@league-genius/shared";
 import type { SeasonsStackScreenProps } from "../navigation/types";
 import { useUserContextStore } from "../stores/userContextStore";
 
@@ -44,7 +44,7 @@ interface Match {
   away_score: number | null;
   date: string;
   status: string;
-  week_number?: number;
+  week_number?: number | null;
 }
 
 interface PlayerStats {
@@ -67,6 +67,7 @@ export default function SeasonDetailsScreen({
   // Get upcoming matches from context and filter for this season
   const upcomingMatches = useUserContextStore((state) => state.upcomingMatches);
   const myTeams = useUserContextStore((state) => state.myTeams);
+  const isOperatorFn = useUserContextStore((state) => state.isOperator);
   const myNextMatch = useMemo(() => {
     return upcomingMatches.find((m) => m.season_id === seasonId) || null;
   }, [upcomingMatches, seasonId]);
@@ -95,10 +96,10 @@ export default function SeasonDetailsScreen({
       setStandings(standingsResponse.standings || []);
 
       // Load matches
-      const matchesResponse = await api.get<Match[]>(
+      const matchesResponse = await api.get<SeasonMatchesResponse>(
         `/seasons/${seasonId}/matches/`
       );
-      setMatches(matchesResponse);
+      setMatches(matchesResponse.matches);
 
       // Load players
       const playersResponse = await api.get<{ players: PlayerStats[] }>(
@@ -233,6 +234,26 @@ export default function SeasonDetailsScreen({
             </View> */}
           </View>
         </View>
+
+        {/* Season Schedule card — operators only */}
+        {isOperatorFn(season.league) && (
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("SeasonSchedule", {
+                seasonId,
+                seasonName: season.name,
+                leagueId: season.league,
+              })
+            }
+            className="bg-white rounded-lg p-4 border border-gray-200 flex-row items-center justify-between"
+          >
+            <View className="flex-row items-center gap-3">
+              <CalendarDays color="#26A69A" size={20} />
+              <Text className="text-base font-semibold text-gray-900">Season Schedule</Text>
+            </View>
+            <ChevronRight color="#9ca3af" size={20} />
+          </TouchableOpacity>
+        )}
 
         {/* Your Next Match Card - TODO: Navigate to MatchScoreScreen */}
         {myNextMatch && (

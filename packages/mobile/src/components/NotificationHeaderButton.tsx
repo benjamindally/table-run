@@ -31,7 +31,7 @@ export default function NotificationHeaderButton() {
   return (
     <TouchableOpacity
       onPress={handlePress}
-      className="mr-2 mb-3"
+      className="mr-2"
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
       <Bell color="#fff" size={22} />

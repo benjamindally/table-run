@@ -21,7 +21,7 @@ export type ParamModalType =
   | "break_weeks"
   | "default_match_day";
 
-interface ParameterBoxProps {
+export interface ParameterBoxProps {
   icon: React.ReactNode;
   label: string;
   value: string;
@@ -29,7 +29,7 @@ interface ParameterBoxProps {
   disabled?: boolean;
 }
 
-const ParameterBox: React.FC<ParameterBoxProps> = ({
+export const ParameterBox: React.FC<ParameterBoxProps> = ({
   icon,
   label,
   value,

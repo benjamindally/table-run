@@ -1,16 +1,13 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Dimensions } from "react-native";
 import { Home, Library, Calendar, GanttChartSquare, Users } from "lucide-react-native";
-import HomeScreen from "../screens/HomeScreen";
+import HomeNavigator from "./HomeNavigator";
 import LeaguesNavigator from "./LeaguesNavigator";
 import SeasonsNavigator from "./SeasonsNavigator";
 import MatchesNavigator from "./MatchesNavigator";
 import PlayersNavigator from "./PlayersNavigator";
-import HeaderRightButtons from "../components/HeaderRightButtons";
 import type { MainTabParamList } from "./types";
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
-const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 export default function MainNavigator() {
   return (
@@ -18,25 +15,12 @@ export default function MainNavigator() {
       screenOptions={{
         tabBarActiveTintColor: "#26A69A", // primary (turquoise)
         tabBarInactiveTintColor: "#78909C", // dark-400
-        headerStyle: {
-          backgroundColor: "#37474F", // dark charcoal grey
-          height: SCREEN_HEIGHT * 0.1,
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontWeight: "bold",
-          fontFamily: "Antonio_600SemiBold",
-          fontSize: 18,
-        },
-        headerTitleContainerStyle: {
-          bottom: 10,
-        },
-        headerRight: () => <HeaderRightButtons />,
+        headerShown: false,
       }}
     >
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
+        component={HomeNavigator}
         options={{
           title: "Home",
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
@@ -50,7 +34,6 @@ export default function MainNavigator() {
           tabBarIcon: ({ color, size }) => (
             <Library color={color} size={size} />
           ),
-          headerShown: false,
         }}
       />
       <Tab.Screen
@@ -61,7 +44,6 @@ export default function MainNavigator() {
           tabBarIcon: ({ color, size }) => (
             <Calendar color={color} size={size} />
           ),
-          headerShown: false,
         }}
       />
       <Tab.Screen
@@ -72,7 +54,6 @@ export default function MainNavigator() {
           tabBarIcon: ({ color, size }) => (
             <GanttChartSquare color={color} size={size} />
           ),
-          headerShown: false,
         }}
       />
       <Tab.Screen
@@ -81,7 +62,6 @@ export default function MainNavigator() {
         options={{
           title: "Players",
           tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
-          headerShown: false,
         }}
       />
     </Tab.Navigator>

@@ -6,6 +6,8 @@ import type { CompositeScreenProps } from "@react-navigation/native";
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: { uid: string; token: string };
 };
 
 // Main tabs
@@ -28,23 +30,27 @@ export type HomeStackParamList = {
 export type LeaguesStackParamList = {
   LeaguesScreen: undefined;
   LeagueDetails: { leagueId: number; leagueName: string };
+  CreateLeague: { leagueId?: number } | undefined;
+  CreateSeason: { leagueId: number; seasonId?: number };
+  VenueManagement: { leagueId: number; leagueName: string };
 };
 
 // Seasons stack (nested in Seasons tab)
 export type SeasonsStackParamList = {
   SeasonsScreen: { leagueId?: number } | undefined;
   SeasonDetails: { seasonId: number };
+  SeasonSchedule: { seasonId: number; seasonName: string; leagueId: number };
   FullStandings: { seasonId: number; seasonName: string };
   FullMatches: { seasonId: number; seasonName: string };
   FullPlayers: { seasonId: number; seasonName: string };
-  MatchScore: { matchId: number };
+  MatchDetails: { matchId: number };
 };
 
 // Matches stack (nested in Matches tab)
 export type MatchesStackParamList = {
   MatchesScreen: { seasonId?: number; teamId?: number } | undefined;
+  FullMatches: { seasonId: number; seasonName: string };
   MatchDetails: { matchId: number };
-  MatchScore: { matchId: number };
 };
 
 // Players stack (nested in Players tab)
@@ -60,6 +66,9 @@ export type RootStackParamList = {
   Profile: undefined;
   Notifications: undefined;
   TeamDetails: { teamId: number; teamName: string };
+  ClaimPlayer: { token: string };
+  ActivatePlayer: { token: string };
+  PlayerManagement: { leagueId: number; leagueName: string };
 };
 
 // Screen props types

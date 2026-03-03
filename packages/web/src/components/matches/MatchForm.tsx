@@ -24,6 +24,7 @@ import {
   AlertCircle,
   Clock,
   Users,
+  RotateCcw,
 } from "lucide-react";
 import type { Match, LineupState } from "../../api";
 import { formatLocalDate } from "../../utils";
@@ -327,6 +328,16 @@ const MatchForm: React.FC<MatchFormProps> = ({
           );
           break;
 
+        case "scorecard_rejected":
+          setSubmittedBy(null);
+          setLineupState("match_live");
+          if (userTeamSide === "away") {
+            toast.warning(
+              "Home captain returned the scorecard for correction. Review the results and resubmit when ready."
+            );
+          }
+          break;
+
         case "match_finalized":
           // Match finalized by home captain
           if (message.success) {
@@ -508,6 +519,10 @@ const MatchForm: React.FC<MatchFormProps> = ({
   // League operators have full access and are never read-only (except for completed matches)
   const isReadOnly =
     isMatchCompleted || (userTeamSide === null && !isLeagueOperator);
+
+  // Scoring (winner/TR/8B) is additionally locked during awaiting_confirmation.
+  // Once away submits, neither captain can alter results — home can only confirm or send back.
+  const isScoringLocked = isReadOnly || lineupState === "awaiting_confirmation";
 
   // Determine submit button text and state
   const getSubmitButtonConfig = () => {
@@ -900,6 +915,14 @@ const MatchForm: React.FC<MatchFormProps> = ({
       return newSet;
     });
   };
+
+  // Home captain: send scorecard back to both teams for correction
+  const handleScorecardReject = useCallback(() => {
+    setSubmittedBy(null);
+    setLineupState("match_live");
+    sendWebSocket({ type: "scorecard_rejected" });
+    toast.info("Scorecard sent back for correction.");
+  }, [setSubmittedBy, setLineupState, sendWebSocket]);
 
   // Handle match submission
   const handleSubmit = async () => {
@@ -1585,18 +1608,18 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                     <div className="grid grid-cols-2 gap-2 mb-3">
                                       <button
                                         onClick={() =>
-                                          !isReadOnly &&
+                                          !isScoringLocked &&
                                           handleGameDataChange(gameIndex, {
                                             winner: "home",
                                           })
                                         }
-                                        disabled={isReadOnly}
+                                        disabled={isScoringLocked}
                                         className={`py-2 px-3 rounded-md font-medium text-sm transition-all ${
                                           game.winner === "home"
                                             ? "bg-primary text-white shadow-md"
                                             : "bg-cream-200 text-dark-700 hover:bg-cream-300"
                                         } ${
-                                          isReadOnly
+                                          isScoringLocked
                                             ? "cursor-not-allowed opacity-60"
                                             : ""
                                         }`}
@@ -1605,18 +1628,18 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                       </button>
                                       <button
                                         onClick={() =>
-                                          !isReadOnly &&
+                                          !isScoringLocked &&
                                           handleGameDataChange(gameIndex, {
                                             winner: "away",
                                           })
                                         }
-                                        disabled={isReadOnly}
+                                        disabled={isScoringLocked}
                                         className={`py-2 px-3 rounded-md font-medium text-sm transition-all ${
                                           game.winner === "away"
                                             ? "bg-primary text-white shadow-md"
                                             : "bg-cream-200 text-dark-700 hover:bg-cream-300"
                                         } ${
-                                          isReadOnly
+                                          isScoringLocked
                                             ? "cursor-not-allowed opacity-60"
                                             : ""
                                         }`}
@@ -1633,13 +1656,13 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                             type="checkbox"
                                             checked={game.homeTableRun}
                                             onChange={() =>
-                                              !isReadOnly &&
+                                              !isScoringLocked &&
                                               handleGameDataChange(gameIndex, {
                                                 homeTableRun:
                                                   !game.homeTableRun,
                                               })
                                             }
-                                            disabled={isReadOnly}
+                                            disabled={isScoringLocked}
                                             className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                                           />
                                           <span>Table Run</span>
@@ -1649,12 +1672,12 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                             type="checkbox"
                                             checked={game.home8Ball}
                                             onChange={() =>
-                                              !isReadOnly &&
+                                              !isScoringLocked &&
                                               handleGameDataChange(gameIndex, {
                                                 home8Ball: !game.home8Ball,
                                               })
                                             }
-                                            disabled={isReadOnly}
+                                            disabled={isScoringLocked}
                                             className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                                           />
                                           <span>8-Ball break</span>
@@ -1666,13 +1689,13 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                             type="checkbox"
                                             checked={game.awayTableRun}
                                             onChange={() =>
-                                              !isReadOnly &&
+                                              !isScoringLocked &&
                                               handleGameDataChange(gameIndex, {
                                                 awayTableRun:
                                                   !game.awayTableRun,
                                               })
                                             }
-                                            disabled={isReadOnly}
+                                            disabled={isScoringLocked}
                                             className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                                           />
                                           <span>Table Run</span>
@@ -1682,12 +1705,12 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                             type="checkbox"
                                             checked={game.away8Ball}
                                             onChange={() =>
-                                              !isReadOnly &&
+                                              !isScoringLocked &&
                                               handleGameDataChange(gameIndex, {
                                                 away8Ball: !game.away8Ball,
                                               })
                                             }
-                                            disabled={isReadOnly}
+                                            disabled={isScoringLocked}
                                             className="w-4 h-4 rounded border-dark-300 text-primary focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                                           />
                                           <span>8-Ball break</span>
@@ -1803,26 +1826,37 @@ const MatchForm: React.FC<MatchFormProps> = ({
 
             {/* Score Submit button - only during match_live, hidden for viewers */}
             {isMatchLive && !submitConfig.hidden && (
-              <div className="flex gap-3 mt-6">
-                {showCancelButton && onCancel && (
+              <div className="flex flex-col gap-3 mt-6">
+                <div className="flex gap-3">
+                  {showCancelButton && onCancel && (
+                    <button
+                      onClick={onCancel}
+                      className="flex-1 bg-gray-200 text-dark py-4 rounded-md font-bold text-lg hover:bg-gray-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
                   <button
-                    onClick={onCancel}
-                    className="flex-1 bg-gray-200 text-dark py-4 rounded-md font-bold text-lg hover:bg-gray-300 transition-colors"
+                    onClick={handleSubmit}
+                    disabled={submitConfig.disabled}
+                    className={`${
+                      showCancelButton ? "flex-1" : "w-full"
+                    } py-4 rounded-md font-bold text-lg transition-colors ${
+                      submitConfig.className
+                    }`}
                   >
-                    Cancel
+                    {submitConfig.text}
+                  </button>
+                </div>
+                {submittedBy === "away" && (userTeamSide === "home" || isLeagueOperator) && (
+                  <button
+                    onClick={handleScorecardReject}
+                    className="w-full py-3 rounded-md font-semibold text-red-600 border border-red-300 hover:bg-red-50 flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {React.createElement(RotateCcw as unknown as React.ElementType, { className: "h-4 w-4" })}
+                    Send Back for Correction
                   </button>
                 )}
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitConfig.disabled}
-                  className={`${
-                    showCancelButton ? "flex-1" : "w-full"
-                  } py-4 rounded-md font-bold text-lg transition-colors ${
-                    submitConfig.className
-                  }`}
-                >
-                  {submitConfig.text}
-                </button>
               </div>
             )}
           </div>

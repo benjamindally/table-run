@@ -4,3 +4,5 @@ export { default as ScheduleWarnings } from './ScheduleWarnings';
 export { default as SchedulePreview } from './SchedulePreview';
 export { default as ScheduleMatchEditModal } from './ScheduleMatchEditModal';
 export type { ParamModalType } from './ScheduleParameterGrid';
+export { ParameterBox } from './ScheduleParameterGrid';
+export type { ParameterBoxProps } from './ScheduleParameterGrid';

@@ -40,6 +40,12 @@ export const authApi = {
     api.post<{ access: string }>('/auth/refresh/', { refresh: refreshToken }, undefined, true),
 
   /**
+   * Request a password reset email
+   */
+  requestPasswordReset: (email: string) =>
+    api.post('/auth/password-reset/', { email }),
+
+  /**
    * Validate password reset token before showing form
    */
   validatePasswordReset: (data: PasswordResetValidateRequest) =>

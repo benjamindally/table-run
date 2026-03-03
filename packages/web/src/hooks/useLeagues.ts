@@ -4,7 +4,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leaguesApi } from '../api';
-import { League } from '../api';
+import { League, ScoringConfig, ScoringPreset } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { meKeys } from './useMe';
 
@@ -104,6 +104,58 @@ export const useDeleteLeague = () => {
       leaguesApi.delete(id, getAuthToken() || undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leagueKeys.lists() });
+    },
+  });
+};
+
+// Scoring config query key factory
+export const scoringConfigKeys = {
+  all: (leagueId: number) => [...leagueKeys.detail(leagueId), 'scoring-config'] as const,
+};
+
+/**
+ * Get scoring config for a league
+ */
+export const useScoringConfig = (leagueId: number) => {
+  const { getAuthToken } = useAuth();
+
+  return useQuery({
+    queryKey: scoringConfigKeys.all(leagueId),
+    queryFn: () => leaguesApi.getScoringConfig(leagueId, getAuthToken() || undefined),
+    enabled: !!leagueId,
+  });
+};
+
+/**
+ * Apply a scoring preset to a league
+ */
+export const useApplyScoringPreset = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ leagueId, preset }: { leagueId: number; preset: ScoringPreset }) =>
+      leaguesApi.applyScoringPreset(leagueId, preset, getAuthToken() || undefined),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: scoringConfigKeys.all(variables.leagueId) });
+      queryClient.invalidateQueries({ queryKey: leagueKeys.detail(variables.leagueId) });
+    },
+  });
+};
+
+/**
+ * Partially update a league's scoring config (for custom tweaks)
+ */
+export const useUpdateScoringConfig = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ leagueId, data }: { leagueId: number; data: Partial<ScoringConfig> }) =>
+      leaguesApi.updateScoringConfig(leagueId, data, getAuthToken() || undefined),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: scoringConfigKeys.all(variables.leagueId) });
+      queryClient.invalidateQueries({ queryKey: leagueKeys.detail(variables.leagueId) });
     },
   });
 };

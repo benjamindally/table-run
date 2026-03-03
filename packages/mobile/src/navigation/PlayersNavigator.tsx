@@ -1,27 +1,14 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import PlayersTabScreen from "../screens/PlayersTabScreen";
 import PlayerDetailsScreen from "../screens/PlayerDetailsScreen";
-import ProfileHeaderButton from "../components/ProfileHeaderButton";
+import AppHeader from "../components/AppHeader";
 import type { PlayersStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<PlayersStackParamList>();
 
 export default function PlayersNavigator() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#37474F",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontWeight: "bold",
-          fontFamily: "Antonio_600SemiBold",
-          fontSize: 18,
-        },
-        headerRight: () => <ProfileHeaderButton />,
-      }}
-    >
+    <Stack.Navigator screenOptions={{ header: (props) => <AppHeader {...props} /> }}>
       <Stack.Screen
         name="PlayersScreen"
         component={PlayersTabScreen}

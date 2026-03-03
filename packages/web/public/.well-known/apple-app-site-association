@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["YOURTEAMID.com.leaguegenius.app"],
+        "components": [
+          { "/": "/reset-password*", "comment": "Password reset deep link" },
+          { "/": "/claim-player*",   "comment": "Player claim deep link" },
+          { "/": "/activate*",       "comment": "Account activation deep link" }
+        ]
+      }
+    ]
+  }
+}

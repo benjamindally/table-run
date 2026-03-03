@@ -75,7 +75,12 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || errorData.error || `API Error: ${response.status}`);
+    const message =
+      errorData.detail ||
+      errorData.error ||
+      (Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : null) ||
+      `API Error: ${response.status}`;
+    throw new Error(message);
   }
 
   if (response.status === 204 || response.headers.get('content-length') === '0') {

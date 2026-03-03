@@ -11,6 +11,7 @@ interface HorizontalTileScrollerProps<T> {
   onSeeAllPress?: () => void;
   tileWidth?: number;
   emptyMessage?: string;
+  getItemClassName?: (item: T) => string;
 }
 
 export function HorizontalTileScroller<T>({
@@ -23,6 +24,7 @@ export function HorizontalTileScroller<T>({
   onSeeAllPress,
   tileWidth = 160,
   emptyMessage,
+  getItemClassName,
 }: HorizontalTileScrollerProps<T>) {
   if (data.length === 0 && !emptyMessage) {
     return null;
@@ -46,7 +48,7 @@ export function HorizontalTileScroller<T>({
           {data.map((item) => (
             <TouchableOpacity
               key={keyExtractor(item)}
-              className="bg-gray-50 rounded-lg p-3 mr-3 border border-gray-200"
+              className={`rounded-lg p-3 mr-3 border ${getItemClassName ? getItemClassName(item) : "bg-gray-50 border-gray-200"}`}
               style={{ width: tileWidth }}
               onPress={() => onItemPress?.(item)}
               activeOpacity={onItemPress ? 0.7 : 1}

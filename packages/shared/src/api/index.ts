@@ -10,6 +10,7 @@ export { meApi } from './me';
 export { announcementsApi, notificationsApi } from './notifications';
 export { playerClaimsApi } from './playerClaims';
 export { playersApi } from './players';
+export type { PlayerSeasonStatsResponse, PlayerSeasonStatDetail, PlayerWeekStatDetail } from './players';
 export { seasonsApi } from './seasons';
 export { statsApi } from './stats';
 export { teamsApi } from './teams';
