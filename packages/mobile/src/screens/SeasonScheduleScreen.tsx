@@ -30,6 +30,7 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import {
   seasonsApi,
+  formatDateDisplay,
   type ScheduleConfiguration,
   type ScheduleWeek,
   type ScheduleWarning,
@@ -44,9 +45,7 @@ const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satu
 
 function formatMatchDate(dateString: string) {
   try {
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return dateString;
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    return formatDateDisplay(dateString);
   } catch {
     return dateString;
   }
@@ -54,9 +53,7 @@ function formatMatchDate(dateString: string) {
 
 function formatWeekDate(dateString: string) {
   try {
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return "";
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return formatDateDisplay(dateString);
   } catch {
     return "";
   }
@@ -650,7 +647,7 @@ export default function SeasonScheduleScreen({
           setOpenModal(null);
         }}
       >
-        <Text className="text-sm text-gray-600 mb-2">Enter the first match day (YYYY-MM-DD)</Text>
+        <Text className="text-sm text-gray-600 mb-2">Enter the first match day (MM-DD-YYYY)</Text>
         <TextInput
           className="border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900"
           value={draftStartDate}

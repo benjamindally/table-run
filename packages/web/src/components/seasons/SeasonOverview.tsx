@@ -1,5 +1,6 @@
 import React from "react";
 import { Calendar, Users, Trophy, Target, Edit, Archive, Upload } from "lucide-react";
+import { formatDateDisplay } from "@league-genius/shared";
 
 interface SeasonOverviewProps {
   season: {
@@ -71,14 +72,7 @@ const SeasonOverview: React.FC<SeasonOverviewProps> = ({
             <span className="text-sm font-medium">Start Date</span>
           </div>
           <p className="text-lg font-semibold text-dark">
-            {new Date(season.start_date + "T00:00:00").toLocaleDateString(
-              "en-US",
-              {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              }
-            )}
+            {formatDateDisplay(season.start_date)}
           </p>
         </div>
 
@@ -89,14 +83,7 @@ const SeasonOverview: React.FC<SeasonOverviewProps> = ({
               <span className="text-sm font-medium">End Date</span>
             </div>
             <p className="text-lg font-semibold text-dark">
-              {new Date(season.end_date + "T00:00:00").toLocaleDateString(
-                "en-US",
-                {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                }
-              )}
+              {formatDateDisplay(season.end_date)}
             </p>
           </div>
         )}

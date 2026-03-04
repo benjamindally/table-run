@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Player } from "../../api";
 import { Users, Mail, Copy, Search, CheckCircle, X } from "lucide-react";
+import { formatDateDisplay } from "@league-genius/shared";
 import BulkInviteModal from "../BulkInviteModal";
 import SendEmailConfirmModal from "../SendEmailConfirmModal";
 
@@ -221,7 +222,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
                   {isLeagueOp && !player.is_claimed && player.invite_sent_at && (
                     <p className="text-xs text-gray-500 mt-1">
                       Invite sent:{" "}
-                      {new Date(player.invite_sent_at).toLocaleDateString()}
+                      {formatDateDisplay(player.invite_sent_at)}
                     </p>
                   )}
                 </div>

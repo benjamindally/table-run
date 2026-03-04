@@ -6,9 +6,9 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
-import { Calendar, CalendarDays, Users, ChevronRight, ChevronDown, Clock, MapPin } from "lucide-react-native";
+import { Calendar, CalendarDays, Users, ChevronRight, ChevronDown, Clock, MapPin, Shield } from "lucide-react-native";
 import { useState, useEffect, useMemo } from "react";
-import { api, type SeasonMatchesResponse } from "@league-genius/shared";
+import { api, formatDateDisplay, type SeasonMatchesResponse } from "@league-genius/shared";
 import type { SeasonsStackScreenProps } from "../navigation/types";
 import { useUserContextStore } from "../stores/userContextStore";
 
@@ -126,14 +126,7 @@ export default function SeasonDetailsScreen({
   const formatDate = (dateString: string) => {
     if (!dateString) return "TBD";
     try {
-      const date = new Date(dateString);
-      // Check if date is valid
-      if (isNaN(date.getTime())) return "TBD";
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+      return formatDateDisplay(dateString);
     } catch {
       return "TBD";
     }
@@ -255,6 +248,25 @@ export default function SeasonDetailsScreen({
           </TouchableOpacity>
         )}
 
+        {/* Manage Teams — operators only */}
+        {isOperatorFn(season.league) && (
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("TeamManagement", {
+                seasonId,
+                seasonName: season.name,
+              })
+            }
+            className="bg-white rounded-lg p-4 border border-gray-200 flex-row items-center justify-between"
+          >
+            <View className="flex-row items-center gap-3">
+              <Shield color="#26A69A" size={20} />
+              <Text className="text-base font-semibold text-gray-900">Manage Teams</Text>
+            </View>
+            <ChevronRight color="#9ca3af" size={20} />
+          </TouchableOpacity>
+        )}
+
         {/* Your Next Match Card - TODO: Navigate to MatchScoreScreen */}
         {myNextMatch && (
           <View className="bg-white rounded-lg p-4 border border-gray-200">
@@ -265,11 +277,7 @@ export default function SeasonDetailsScreen({
               </Text>
             </View>
             <Text className="text-sm text-gray-500 mb-2">
-              {new Date(myNextMatch.date).toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
+              {formatDateDisplay(myNextMatch.date)}
             </Text>
             <Text className="text-base font-semibold text-gray-900 mb-2">
               {userTeamIds.includes(myNextMatch.home_team_id)

@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Clock } from "lucide-react";
 import type { Match, MeMatch } from "../api";
+import { formatDateDisplay } from "@league-genius/shared";
 
 interface NextMatchCardProps {
   matches?: Match[] | undefined;
@@ -72,11 +73,7 @@ const NextMatchCard: React.FC<NextMatchCardProps> = ({
       ) : nextMatch ? (
         <div className="space-y-1">
           <p className="text-sm text-dark-300">
-            {new Date(nextMatch.date).toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })}
+            {formatDateDisplay(nextMatch.date)}
           </p>
           <p className="text-sm font-medium text-dark">
             {isHome ? `vs ${awayTeamName}` : `@ ${homeTeamName}`}

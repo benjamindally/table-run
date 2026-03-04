@@ -12,38 +12,60 @@ import {
 } from "react-native";
 import { seasonsApi } from "@league-genius/shared";
 import { useAuthStore } from "../stores/authStore";
-import type { LeaguesStackScreenProps } from "../navigation/types";
 
-function formatDateForInput(dateStr: string | null | undefined): string {
+// Generic props so this screen works in both LeaguesNavigator and MatchesNavigator
+type Props = {
+  route: { params: { leagueId: number; seasonId?: number } };
+  navigation: { goBack: () => void };
+};
+
+// ── Date helpers (display format: MM-DD-YYYY, API format: YYYY-MM-DD) ─────────
+
+/** YYYY-MM-DD → MM-DD-YYYY for display */
+function apiToDisplay(dateStr: string | null | undefined): string {
   if (!dateStr) return "";
-  // Already YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-  try {
-    const d = new Date(dateStr);
-    return d.toISOString().slice(0, 10);
-  } catch {
-    return "";
-  }
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return "";
+  return `${m[2]}-${m[3]}-${m[1]}`;
 }
 
-function isValidDate(str: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
-  const d = new Date(str);
+/** MM-DD-YYYY → YYYY-MM-DD for the API */
+function displayToApi(display: string): string {
+  const m = display.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (!m) return "";
+  return `${m[3]}-${m[1]}-${m[2]}`;
+}
+
+/** Validate MM-DD-YYYY display string */
+function isValidDisplayDate(str: string): boolean {
+  if (!/^\d{2}-\d{2}-\d{4}$/.test(str)) return false;
+  const api = displayToApi(str);
+  const d = new Date(api);
   return !isNaN(d.getTime());
 }
+
+/** Auto-insert dashes as the user types digits (MM-DD-YYYY) */
+function formatDateInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4)}`;
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function CreateSeasonScreen({
   route,
   navigation,
-}: LeaguesStackScreenProps<"CreateSeason">) {
+}: Props) {
   const { leagueId, seasonId } = route.params;
   const isEditMode = !!seasonId;
 
   const { accessToken } = useAuthStore();
 
   const [name, setName] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(""); // stored in MM-DD-YYYY
+  const [endDate, setEndDate] = useState("");     // stored in MM-DD-YYYY
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
 
@@ -53,8 +75,8 @@ export default function CreateSeasonScreen({
       try {
         const season = await seasonsApi.getById(seasonId!, accessToken ?? undefined);
         setName(season.name ?? "");
-        setStartDate(formatDateForInput(season.start_date));
-        setEndDate(formatDateForInput(season.end_date));
+        setStartDate(apiToDisplay(season.start_date));
+        setEndDate(apiToDisplay(season.end_date));
       } catch {
         Alert.alert("Error", "Failed to load season data");
         navigation.goBack();
@@ -70,12 +92,12 @@ export default function CreateSeasonScreen({
       Alert.alert("Validation", "Season name is required");
       return;
     }
-    if (!startDate || !isValidDate(startDate)) {
-      Alert.alert("Validation", "Please enter a valid start date (YYYY-MM-DD)");
+    if (!startDate || !isValidDisplayDate(startDate)) {
+      Alert.alert("Validation", "Please enter a valid start date (MM-DD-YYYY)");
       return;
     }
-    if (endDate && !isValidDate(endDate)) {
-      Alert.alert("Validation", "Please enter a valid end date (YYYY-MM-DD) or leave blank");
+    if (endDate && !isValidDisplayDate(endDate)) {
+      Alert.alert("Validation", "Please enter a valid end date (MM-DD-YYYY) or leave blank");
       return;
     }
 
@@ -84,8 +106,8 @@ export default function CreateSeasonScreen({
       const data = {
         name: name.trim(),
         league: leagueId,
-        start_date: startDate,
-        end_date: endDate || null,
+        start_date: displayToApi(startDate),
+        end_date: endDate ? displayToApi(endDate) : null,
       };
 
       if (isEditMode) {
@@ -141,24 +163,23 @@ export default function CreateSeasonScreen({
             </Text>
             <TextInput
               className="border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900"
-              placeholder="YYYY-MM-DD"
+              placeholder="MM-DD-YYYY"
               value={startDate}
-              onChangeText={setStartDate}
-              keyboardType="numeric"
+              onChangeText={(v) => setStartDate(formatDateInput(v))}
+              keyboardType="number-pad"
               maxLength={10}
               editable={!saving}
             />
-            <Text className="text-xs text-gray-400 mt-1">Format: YYYY-MM-DD</Text>
           </View>
 
           <View>
             <Text className="text-sm font-medium text-gray-700 mb-1">End Date</Text>
             <TextInput
               className="border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900"
-              placeholder="YYYY-MM-DD (optional)"
+              placeholder="MM-DD-YYYY (optional)"
               value={endDate}
-              onChangeText={setEndDate}
-              keyboardType="numeric"
+              onChangeText={(v) => setEndDate(formatDateInput(v))}
+              keyboardType="number-pad"
               maxLength={10}
               editable={!saving}
             />

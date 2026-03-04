@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Plus, TreePine } from "lucide-react";
 import type { ScheduleWeek, ScheduleMatch } from "../../api";
+import { formatDateDisplay } from "@league-genius/shared";
 
 interface SchedulePreviewProps {
   schedule: ScheduleWeek[];
@@ -101,11 +102,7 @@ const SchedulePreview: React.FC<SchedulePreviewProps> = ({
                     )}
                   </h3>
                   <span className="text-sm text-dark-400">
-                    {new Date(week.date + "T00:00:00").toLocaleDateString("en-US", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                    })}
+                    {formatDateDisplay(week.date)}
                   </span>
                 </div>
 
@@ -205,10 +202,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onClick }) => {
             {match.venue_name || "Venue TBD"}
           </span>
           <span>
-            {new Date(match.date + "T00:00:00").toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-            })}
+            {formatDateDisplay(match.date)}
           </span>
         </div>
       </div>

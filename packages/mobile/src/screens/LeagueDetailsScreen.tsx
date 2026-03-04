@@ -11,8 +11,8 @@ import {
   Switch,
 } from "react-native";
 import { Calendar, MapPin, ChevronRight, Award, X, Pencil, Plus, MapPinned, Users } from "lucide-react-native";
-import { useState, useEffect } from "react";
-import { useNavigation } from "@react-navigation/native";
+import { useState, useCallback } from "react";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { CompositeNavigationProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
@@ -178,9 +178,11 @@ export default function LeagueDetailsScreen({ route }: Props) {
     setDraftConfig((prev) => ({ ...prev, ...updates }));
   };
 
-  useEffect(() => {
-    loadData();
-  }, [leagueId]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [leagueId])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -308,9 +310,23 @@ export default function LeagueDetailsScreen({ route }: Props) {
           {seasons.length === 0 ? (
             <View className="bg-white rounded-lg p-6 border border-gray-200 items-center">
               <Calendar color="#9ca3af" size={32} />
-              <Text className="text-gray-500 text-center mt-2">
+              <Text className="text-gray-500 text-center mt-2 font-medium">
                 No seasons yet
               </Text>
+              {canEditScoring && (
+                <>
+                  <Text className="text-gray-400 text-center text-sm mt-1">
+                    Create your first season to get started
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("CreateSeason", { leagueId })}
+                    className="mt-4 bg-primary rounded-lg px-6 py-2.5 flex-row items-center gap-2"
+                  >
+                    <Plus size={16} color="#fff" />
+                    <Text className="text-white font-semibold ml-1">Create First Season</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           ) : (
             <View className="space-y-2">

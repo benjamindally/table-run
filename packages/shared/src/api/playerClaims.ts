@@ -31,19 +31,21 @@ export const playerClaimsApi = {
   /**
    * Search for players by name (server-side search)
    */
-  searchPlayers: (query: string, limit: number = 50, token?: string) => {
-    const endpoint = `/players/search/?q=${encodeURIComponent(query)}&limit=${limit}`;
+  searchPlayers: (query: string, limit: number = 50, token?: string, leagueId?: number) => {
+    let endpoint = `/players/search/?q=${encodeURIComponent(query)}&limit=${limit}`;
+    if (leagueId) endpoint += `&league_id=${leagueId}`;
     return api.get<PlayerSearchResponse>(endpoint, token);
   },
 
   /**
    * Get list of players needing activation (placeholder email)
    */
-  getPlayersNeedingActivation: (teamId?: number) => {
-    const endpoint = teamId
-      ? `/players/needs-activation/?team_id=${teamId}`
-      : '/players/needs-activation/';
-    return api.get<PlayerNeedingActivation[]>(endpoint);
+  getPlayersNeedingActivation: (teamId?: number, leagueId?: number) => {
+    const params = new URLSearchParams();
+    if (teamId) params.append('team_id', teamId.toString());
+    if (leagueId) params.append('league_id', leagueId.toString());
+    const qs = params.toString();
+    return api.get<PlayerNeedingActivation[]>(`/players/needs-activation/${qs ? `?${qs}` : ''}`);
   },
 
   /**
@@ -53,10 +55,13 @@ export const playerClaimsApi = {
     api.post<SendInviteResponse>(`/players/${playerId}/send-invite/`, {}, token),
 
   /**
-   * Send invites to all unclaimed players (Operator only)
+   * Send invites to all unclaimed players in a league (Operator only)
    */
-  sendBulkInvites: (token: string, sendEmail: boolean = true) =>
-    api.post<BulkInviteResponse>('/players/send-bulk-invites/', { send_email: sendEmail }, token),
+  sendBulkInvites: (token: string, sendEmail: boolean = true, leagueId?: number) =>
+    api.post<BulkInviteResponse>('/players/send-bulk-invites/', {
+      send_email: sendEmail,
+      ...(leagueId ? { league_id: leagueId } : {}),
+    }, token),
 
   /**
    * Validate invite token and get player info (Public)
@@ -85,8 +90,12 @@ export const playerClaimsApi = {
   /**
    * Get pending claim requests for review (Captain/Operator only)
    */
-  getPendingReviews: (token: string) =>
-    api.get<PlayerClaimRequest[]>('/player-claim-requests/pending-reviews/', token),
+  getPendingReviews: (token: string, leagueId?: number) => {
+    const endpoint = leagueId
+      ? `/player-claim-requests/pending-reviews/?league_id=${leagueId}`
+      : '/player-claim-requests/pending-reviews/';
+    return api.get<PlayerClaimRequest[]>(endpoint, token);
+  },
 
   /**
    * Approve a claim request (Captain/Operator only)

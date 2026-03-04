@@ -20,7 +20,7 @@ import {
 } from "lucide-react-native";
 import { useAuthStore } from "../stores/authStore";
 import { useUserContextStore } from "../stores/userContextStore";
-import { api } from "@league-genius/shared";
+import { api, formatDateDisplay } from "@league-genius/shared";
 import { HorizontalTileScroller } from "../components/HorizontalTileScroller";
 
 interface League {
@@ -263,10 +263,7 @@ export default function HomeScreen() {
                         </Text>
                       </View>
                       <Text className="text-xs text-gray-500 mb-1">
-                        {new Date(event.data.date).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {formatDateDisplay(event.data.date)}
                       </Text>
                       <Text
                         className="text-sm font-semibold text-gray-900 mb-1"
@@ -284,10 +281,7 @@ export default function HomeScreen() {
                 return (
                   <>
                     <Text className="text-xs text-gray-500 mb-1">
-                      {new Date(match.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
+                      {formatDateDisplay(match.date)}
                     </Text>
                     <Text
                       className="text-sm font-semibold text-gray-900 mb-1"

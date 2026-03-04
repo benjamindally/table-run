@@ -13,6 +13,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useTeam, useTeamRoster, useTeamSeasons } from "../../hooks/useTeams";
+import { formatDateDisplay } from "@league-genius/shared";
 import { useInfinitePlayers } from "../../hooks/usePlayers";
 import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -291,11 +292,7 @@ const TeamDetailsPage: React.FC = () => {
               Created
             </label>
             <p className="text-lg font-semibold text-dark">
-              {new Date(team.created_at).toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
+              {formatDateDisplay(team.created_at)}
             </p>
           </div>
         </div>
@@ -332,7 +329,7 @@ const TeamDetailsPage: React.FC = () => {
                 </div>
                 <div className="text-sm text-dark-300">
                   Appointed{" "}
-                  {new Date(captain.appointed_at).toLocaleDateString()}
+                  {formatDateDisplay(captain.appointed_at)}
                 </div>
               </div>
             ))}
@@ -402,7 +399,7 @@ const TeamDetailsPage: React.FC = () => {
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <span className="text-xs text-dark-300">
-                      Joined {new Date(membership.joined_at).toLocaleDateString()}
+                      Joined {formatDateDisplay(membership.joined_at)}
                     </span>
                     <button
                       onClick={() =>
@@ -469,7 +466,7 @@ const TeamDetailsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center text-sm text-dark-300">
-                        {new Date(membership.joined_at).toLocaleDateString()}
+                        {formatDateDisplay(membership.joined_at)}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span

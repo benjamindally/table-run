@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { X, Info, Plus, Minus, Trash2, Calendar } from "lucide-react";
 import type { ScheduleConfiguration, Venue, SeasonParticipation } from "../../api";
+import { formatDateDisplay } from "@league-genius/shared";
 import type { ParamModalType } from "./ScheduleParameterGrid";
 
 // Break week entry with both date and calculated week number
@@ -68,12 +69,7 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
 
   // Helper: Format date for display
   const formatDisplayDate = (dateStr: string): string => {
-    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return formatDateDisplay(dateStr);
   };
 
   // Helper: Add a break week

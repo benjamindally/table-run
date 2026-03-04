@@ -1,6 +1,7 @@
 import React from "react";
 import { PlayerNeedingActivation } from "../../api";
 import { Mail, Copy } from "lucide-react";
+import { formatDateDisplay } from "@league-genius/shared";
 
 interface PlayersNeedingActivationProps {
   players: PlayerNeedingActivation[];
@@ -39,7 +40,7 @@ const PlayersNeedingActivation: React.FC<PlayersNeedingActivationProps> = ({
               {player.invite_sent_at && (
                 <p className="text-xs text-gray-500 mt-1">
                   Invite sent:{" "}
-                  {new Date(player.invite_sent_at).toLocaleDateString()}
+                  {formatDateDisplay(player.invite_sent_at)}
                 </p>
               )}
             </div>

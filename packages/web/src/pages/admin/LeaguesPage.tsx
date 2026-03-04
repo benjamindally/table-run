@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, MapPin, Calendar, Plus, ArrowRight } from "lucide-react";
+import { formatDateDisplay } from "@league-genius/shared";
 import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import CreateSeasonModal from "../../components/CreateSeasonModal";
 
@@ -233,7 +234,7 @@ const LeaguesPage: React.FC = () => {
                             <span>Start Date</span>
                           </div>
                           <span className="font-semibold text-dark">
-                            {new Date(season.start_date).toLocaleDateString()}
+                            {formatDateDisplay(season.start_date)}
                           </span>
                         </div>
 
@@ -244,7 +245,7 @@ const LeaguesPage: React.FC = () => {
                               <span>End Date</span>
                             </div>
                             <span className="font-semibold text-dark">
-                              {new Date(season.end_date).toLocaleDateString()}
+                              {formatDateDisplay(season.end_date)}
                             </span>
                           </div>
                         )}

@@ -12,13 +12,13 @@ import {
 } from "react-native";
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { User, LogOut, ChevronRight, LogIn, Shield, Pencil, X } from "lucide-react-native";
+import { User, LogOut, ChevronRight, LogIn, Info, Pencil, X } from "lucide-react-native";
 import { useAuthStore } from "../stores/authStore";
-import type { MainTabScreenProps } from "../navigation/types";
+import type { RootStackScreenProps } from "../navigation/types";
 
 export default function ProfileScreen() {
   const navigation =
-    useNavigation<MainTabScreenProps<"Account">["navigation"]>();
+    useNavigation<RootStackScreenProps<"Profile">["navigation"]>();
   const user = useAuthStore((state) => state.user);
   const player = useAuthStore((state) => state.player);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -150,19 +150,12 @@ export default function ProfileScreen() {
       {/* Menu Items */}
       <View className="mt-4">
         <View className="bg-white">
-          <TouchableOpacity className="flex-row items-center px-4 py-4 border-b border-gray-100">
-            <Text className="flex-1 text-gray-900">Match History</Text>
-            <ChevronRight color="#9ca3af" size={20} />
-          </TouchableOpacity>
-
-          <TouchableOpacity className="flex-row items-center px-4 py-4 border-b border-gray-100">
-            <Text className="flex-1 text-gray-900">Settings</Text>
-            <ChevronRight color="#9ca3af" size={20} />
-          </TouchableOpacity>
-
-          <TouchableOpacity className="flex-row items-center px-4 py-4">
-            <Shield color="#26A69A" size={20} />
-            <Text className="flex-1 text-gray-900 ml-3">Admin Dashboard</Text>
+          <TouchableOpacity
+            className="flex-row items-center px-4 py-4"
+            onPress={() => navigation.navigate("About")}
+          >
+            <Info color="#26A69A" size={20} />
+            <Text className="flex-1 text-gray-900 ml-3">About League Genius</Text>
             <ChevronRight color="#9ca3af" size={20} />
           </TouchableOpacity>
         </View>
@@ -177,11 +170,6 @@ export default function ProfileScreen() {
           <LogOut color="#ef4444" size={20} />
           <Text className="text-red-500 font-medium ml-2">Sign Out</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Version */}
-      <View className="mt-auto pb-6 items-center">
-        <Text className="text-gray-400 text-sm">League Genius v1.0.0</Text>
       </View>
 
       {/* Edit Profile Modal */}

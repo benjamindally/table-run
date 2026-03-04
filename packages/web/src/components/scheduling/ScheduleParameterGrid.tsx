@@ -10,6 +10,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import type { ScheduleConfiguration, Venue, SeasonParticipation } from "../../api";
+import { formatDateDisplay } from "@league-genius/shared";
 
 export type ParamModalType =
   | "start_date"
@@ -80,11 +81,7 @@ const ScheduleParameterGrid: React.FC<ScheduleParameterGridProps> = ({
   // Format display values
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "Select date...";
-    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return formatDateDisplay(dateStr);
   };
 
   const formatTotalTables = () => {

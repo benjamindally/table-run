@@ -21,19 +21,27 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Plus,
 } from "lucide-react-native";
 import {
+  api,
   playerClaimsApi,
+  formatDateDisplay,
   type PlayerNeedingActivation,
   type PlayerClaimRequest,
   type PlayerSearchResult,
+  type Season,
 } from "@league-genius/shared";
 import { useAuthStore } from "../stores/authStore";
 import type { RootStackScreenProps } from "../navigation/types";
+import AddPlayerModal from "../components/AddPlayerModal";
 
 type TabKey = "search" | "needsActivation" | "claims";
 
-export default function PlayerManagementScreen({}: RootStackScreenProps<"PlayerManagement">) {
+export default function PlayerManagementScreen({
+  route,
+}: RootStackScreenProps<"PlayerManagement">) {
+  const { leagueId, leagueName } = route.params;
   const { accessToken } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<TabKey>("search");
@@ -60,35 +68,58 @@ export default function PlayerManagementScreen({}: RootStackScreenProps<"PlayerM
   const [bulkModalVisible, setBulkModalVisible] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
 
+  // Add player modal
+  const [addPlayerVisible, setAddPlayerVisible] = useState(false);
+  const [activeSeasonId, setActiveSeasonId] = useState<number | null>(null);
+
   const loadActivationList = useCallback(async () => {
     setLoadingActivation(true);
     try {
-      const result = await playerClaimsApi.getPlayersNeedingActivation();
+      const result = await playerClaimsApi.getPlayersNeedingActivation(undefined, leagueId);
       setPlayersNeedingActivation(Array.isArray(result) ? result : []);
     } catch {
       setPlayersNeedingActivation([]);
     } finally {
       setLoadingActivation(false);
     }
-  }, []);
+  }, [leagueId]);
 
   const loadPendingClaims = useCallback(async () => {
     if (!accessToken) return;
     setLoadingClaims(true);
     try {
-      const result = await playerClaimsApi.getPendingReviews(accessToken);
+      const result = await playerClaimsApi.getPendingReviews(accessToken, leagueId);
       setPendingClaims(Array.isArray(result) ? result : []);
     } catch {
       setPendingClaims([]);
     } finally {
       setLoadingClaims(false);
     }
-  }, [accessToken]);
+  }, [accessToken, leagueId]);
 
   useEffect(() => {
     loadActivationList();
     loadPendingClaims();
   }, [loadActivationList, loadPendingClaims]);
+
+  // Load active season for the league (needed for AddPlayerModal team picker)
+  useEffect(() => {
+    api
+      .get<{ results: Season[] }>("/seasons/", accessToken ?? undefined)
+      .then((res) => {
+        const leagueSeasons = res.results
+          .filter((s) => s.league === leagueId)
+          .sort(
+            (a, b) =>
+              new Date(b.start_date).getTime() -
+              new Date(a.start_date).getTime()
+          );
+        if (leagueSeasons.length > 0) {
+          setActiveSeasonId(leagueSeasons[0].id);
+        }
+      })
+      .catch(() => {});
+  }, [leagueId, accessToken]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -110,7 +141,8 @@ export default function PlayerManagementScreen({}: RootStackScreenProps<"PlayerM
         const response = await playerClaimsApi.searchPlayers(
           searchQuery,
           50,
-          accessToken ?? undefined
+          accessToken ?? undefined,
+          leagueId
         );
         setSearchResults(response.results);
         setSearchCount(response.count);
@@ -208,7 +240,7 @@ export default function PlayerManagementScreen({}: RootStackScreenProps<"PlayerM
     if (!accessToken) return;
     setBulkSending(true);
     try {
-      const result = await playerClaimsApi.sendBulkInvites(accessToken, true);
+      const result = await playerClaimsApi.sendBulkInvites(accessToken, true, leagueId);
       setBulkModalVisible(false);
       Alert.alert("Bulk Invite Sent", `Sent ${result.sent_count} invite(s).`);
     } catch (err: any) {
@@ -353,7 +385,7 @@ export default function PlayerManagementScreen({}: RootStackScreenProps<"PlayerM
             >
               <Send color="#26A69A" size={18} />
               <Text className="text-primary font-semibold">
-                Bulk Invite All Unclaimed Players
+                Bulk Invite Unclaimed Players
               </Text>
             </TouchableOpacity>
           </View>
@@ -449,7 +481,7 @@ export default function PlayerManagementScreen({}: RootStackScreenProps<"PlayerM
                       {claim.created_at && (
                         <Text className="text-xs text-gray-400 mt-0.5">
                           Submitted:{" "}
-                          {new Date(claim.created_at).toLocaleDateString()}
+                          {formatDateDisplay(claim.created_at)}
                         </Text>
                       )}
                       {claim.message ? (
@@ -523,7 +555,7 @@ export default function PlayerManagementScreen({}: RootStackScreenProps<"PlayerM
                 Send invites to all unclaimed players
               </Text>
               <Text className="text-amber-700 text-sm">
-                This will email every player in the system who doesn't have an
+                This will email every player in {leagueName} who doesn't have an
                 account yet, inviting them to claim their profile.
               </Text>
             </View>
@@ -551,6 +583,27 @@ export default function PlayerManagementScreen({}: RootStackScreenProps<"PlayerM
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Add Player FAB */}
+      <TouchableOpacity
+        onPress={() => setAddPlayerVisible(true)}
+        className="absolute bottom-6 right-6 bg-primary rounded-full w-14 h-14 items-center justify-center shadow-lg"
+        style={{ elevation: 4 }}
+      >
+        <Plus size={26} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Add Player Modal */}
+      <AddPlayerModal
+        visible={addPlayerVisible}
+        onClose={() => setAddPlayerVisible(false)}
+        onSuccess={() => {
+          loadActivationList();
+          loadPendingClaims();
+        }}
+        leagueId={leagueId}
+        seasonId={activeSeasonId ?? undefined}
+      />
     </View>
   );
 }

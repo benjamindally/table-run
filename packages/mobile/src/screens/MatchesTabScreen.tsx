@@ -5,12 +5,13 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { Calendar, LogIn, MapPin } from "lucide-react-native";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { api, type Match, type SeasonMatchesResponse } from "@league-genius/shared";
+import { api, formatDateDisplay, type Match, type SeasonMatchesResponse, type Season } from "@league-genius/shared";
 import { useAuthStore } from "../stores/authStore";
 import { useUserContextStore } from "../stores/userContextStore";
 import type { MatchesStackParamList } from "../navigation/types";
@@ -18,29 +19,87 @@ import type { MainTabScreenProps } from "../navigation/types";
 
 type NavigationProp = NativeStackNavigationProp<MatchesStackParamList>;
 
+const STATUS_OPTIONS: { label: string; value: string | null }[] = [
+  { label: "All", value: null },
+  { label: "Scheduled", value: "scheduled" },
+  { label: "Live", value: "in_progress" },
+  { label: "Pending", value: "awaiting_confirmation" },
+  { label: "Final", value: "completed" },
+  { label: "Cancelled", value: "cancelled" },
+];
 
 export default function MatchesTabScreen() {
   const navigation = useNavigation<MainTabScreenProps<"Matches">["navigation"]>();
   const matchesNav = useNavigation<NavigationProp>();
   const { isAuthenticated } = useAuthStore();
-  const { mySeasons, myTeams, isLoaded: contextLoaded } = useUserContextStore();
+  const { mySeasons, myTeams, myLeagues, isLoaded: contextLoaded } = useUserContextStore();
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [operatorSeasonInfo, setOperatorSeasonInfo] = useState<
+    Record<number, { name: string; league_name: string }>
+  >({});
+
+  // Filter state
+  const [filterSeasonId, setFilterSeasonId] = useState<number | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+
   const flatListRef = useRef<FlatList<Match>>(null);
 
   const myTeamIds = useMemo(() => myTeams.map((t) => t.id), [myTeams]);
+
+  const operatorLeagues = useMemo(
+    () => myLeagues.filter((l) => l.is_operator),
+    [myLeagues]
+  );
+  const isAnyOperator = operatorLeagues.length > 0;
 
   const seasonMap = useMemo(
     () => Object.fromEntries(mySeasons.map((s) => [s.id, s])),
     [mySeasons]
   );
 
+  const getSeasonDisplay = (seasonId: number) => {
+    const player = seasonMap[seasonId];
+    if (player) return { name: player.name, league_name: player.league_name };
+    return operatorSeasonInfo[seasonId] ?? null;
+  };
+
+  // Unique seasons present in the loaded matches (for filter chips)
+  const uniqueSeasons = useMemo(() => {
+    const seen = new Set<number>();
+    const result: { id: number; name: string; league_name: string }[] = [];
+    for (const m of matches) {
+      if (!seen.has(m.season)) {
+        seen.add(m.season);
+        const display = getSeasonDisplay(m.season);
+        if (display) {
+          result.push({ id: m.season, name: display.name, league_name: display.league_name });
+        }
+      }
+    }
+    return result.sort((a, b) => b.name.localeCompare(a.name)); // newest name first
+  }, [matches, seasonMap, operatorSeasonInfo]);
+
+  // Client-side filtered matches
+  const filteredMatches = useMemo(() => {
+    return matches.filter((m) => {
+      if (filterSeasonId !== null && m.season !== filterSeasonId) return false;
+      if (filterStatus !== null && m.status !== filterStatus) return false;
+      return true;
+    });
+  }, [matches, filterSeasonId, filterStatus]);
+
+  const filtersActive = filterSeasonId !== null || filterStatus !== null;
+
   const loadMatches = async () => {
     try {
-      if (mySeasons.length > 0) {
-        const allMatches: Match[] = [];
+      const allMatchesMap = new Map<number, Match>();
+      const newOperatorSeasonInfo: Record<number, { name: string; league_name: string }> = {};
+
+      if (!isAnyOperator) {
+        // Regular player: load only matches for my teams
         for (const season of mySeasons) {
           try {
             const response = await api.get<SeasonMatchesResponse>(
@@ -51,17 +110,73 @@ export default function MatchesTabScreen() {
                 myTeamIds.includes(m.home_team) ||
                 myTeamIds.includes(m.away_team)
             );
-            allMatches.push(...myMatches);
+            myMatches.forEach((m) => allMatchesMap.set(m.id, m));
           } catch {
             // Continue if one season fails
           }
         }
-        // Sort ascending: oldest at top, newest at bottom
-        allMatches.sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      } else {
+        // Operator: load ALL matches for all seasons in operated leagues
+        const seasonsResp = await api.get<{ results: Season[] }>("/seasons/");
+        const operatorLeagueIds = new Set(operatorLeagues.map((l) => l.id));
+        const operatorLeagueNameMap = Object.fromEntries(
+          operatorLeagues.map((l) => [l.id, l.name])
         );
-        setMatches(allMatches);
+
+        const allOperatorSeasons = seasonsResp.results.filter((s) =>
+          operatorLeagueIds.has(s.league)
+        );
+        const operatorSeasonIds = new Set(allOperatorSeasons.map((s) => s.id));
+
+        // Build season info for display
+        for (const s of allOperatorSeasons) {
+          newOperatorSeasonInfo[s.id] = {
+            name: s.name,
+            league_name: operatorLeagueNameMap[s.league] ?? "",
+          };
+        }
+
+        // Fetch all matches for operator seasons (no team filter)
+        for (const season of allOperatorSeasons) {
+          try {
+            const response = await api.get<SeasonMatchesResponse>(
+              `/seasons/${season.id}/matches/`
+            );
+            response.matches.forEach((m) => allMatchesMap.set(m.id, m));
+          } catch {
+            // Continue if one season fails
+          }
+        }
+
+        // Also fetch player-only seasons (leagues where user is a player but NOT an operator)
+        const playerOnlySeasons = mySeasons.filter(
+          (s) => !operatorSeasonIds.has(s.id)
+        );
+        for (const season of playerOnlySeasons) {
+          try {
+            const response = await api.get<SeasonMatchesResponse>(
+              `/seasons/${season.id}/matches/`
+            );
+            const myMatches = response.matches.filter(
+              (m) =>
+                myTeamIds.includes(m.home_team) ||
+                myTeamIds.includes(m.away_team)
+            );
+            myMatches.forEach((m) => allMatchesMap.set(m.id, m));
+          } catch {
+            // Continue if one season fails
+          }
+        }
       }
+
+      setOperatorSeasonInfo(newOperatorSeasonInfo);
+      // Reset filters when data reloads
+      setFilterSeasonId(null);
+      setFilterStatus(null);
+      const sorted = Array.from(allMatchesMap.values()).sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      setMatches(sorted);
     } catch (error) {
       console.error("Failed to load matches:", error);
     } finally {
@@ -76,19 +191,18 @@ export default function MatchesTabScreen() {
     } else if (!isAuthenticated) {
       setLoading(false);
     }
-  }, [isAuthenticated, contextLoaded, mySeasons.length]);
+  }, [isAuthenticated, contextLoaded, mySeasons.length, operatorLeagues.length]);
 
-  // Anchor = first match that is (a) in the future and (b) not yet finalized.
-  // Past-dated unscored matches don't count — fall back to last match.
+  // Anchor = first upcoming unfinalized match
   const anchorIndex = useMemo(() => {
     const now = new Date();
-    const idx = matches.findIndex((m) => new Date(m.date) >= now);
-    return idx >= 0 ? idx : Math.max(0, matches.length - 1);
-  }, [matches]);
+    const idx = filteredMatches.findIndex((m) => new Date(m.date) >= now);
+    return idx >= 0 ? idx : Math.max(0, filteredMatches.length - 1);
+  }, [filteredMatches]);
 
-  // Scroll anchor to top of visible area after data loads
+  // Scroll anchor to top of visible area after data or filter changes
   useEffect(() => {
-    if (matches.length === 0) return;
+    if (filteredMatches.length === 0) return;
     const timer = setTimeout(() => {
       flatListRef.current?.scrollToIndex({
         index: anchorIndex,
@@ -97,7 +211,7 @@ export default function MatchesTabScreen() {
       });
     }, 150);
     return () => clearTimeout(timer);
-  }, [matches, anchorIndex]);
+  }, [filteredMatches, anchorIndex]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -110,13 +224,7 @@ export default function MatchesTabScreen() {
   const formatDate = (dateString: string) => {
     if (!dateString) return "TBD";
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "TBD";
-      return date.toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "short",
-        day: "numeric",
-      });
+      return formatDateDisplay(dateString);
     } catch {
       return "TBD";
     }
@@ -177,18 +285,22 @@ export default function MatchesTabScreen() {
           No matches scheduled
         </Text>
         <Text className="text-gray-400 text-center mt-2">
-          Your teams don't have any matches yet
+          {isAnyOperator
+            ? "No matches found in your leagues"
+            : "Your teams don't have any matches yet"}
         </Text>
       </View>
     );
   }
 
   const renderMatch = ({ item: match, index }: { item: Match; index: number }) => {
+    const isMyTeamMatch =
+      myTeamIds.includes(match.home_team) || myTeamIds.includes(match.away_team);
     const isHome = myTeamIds.includes(match.home_team);
     const statusStyle = getStatusStyle(match.status);
     const isAnchor = index === anchorIndex;
     const location = match.home_team_detail?.establishment;
-    const season = seasonMap[match.season];
+    const seasonDisplay = getSeasonDisplay(match.season);
 
     return (
       <TouchableOpacity
@@ -199,13 +311,13 @@ export default function MatchesTabScreen() {
         onPress={() => matchesNav.navigate("MatchDetails", { matchId: match.id })}
         activeOpacity={0.75}
       >
-        {/* Top bar: week + season context + status */}
+        {/* Top bar: week + season context */}
         <View className={`flex-row items-center justify-between px-4 py-2 ${isAnchor ? "bg-primary" : "bg-gray-50"} border-b ${isAnchor ? "border-primary-700" : "border-gray-100"}`}>
           <Text className={`text-xs font-semibold ${isAnchor ? "text-white" : "text-gray-500"}`}>
             {match.week_number != null ? `Week ${match.week_number}` : ""}
-            {match.week_number != null && season ? "  ·  " : ""}
-            {season ? season.name : ""}
-            {season?.league_name ? `  ·  ${season.league_name}` : ""}
+            {match.week_number != null && seasonDisplay ? "  ·  " : ""}
+            {seasonDisplay ? seasonDisplay.name : ""}
+            {seasonDisplay?.league_name ? `  ·  ${seasonDisplay.league_name}` : ""}
           </Text>
           {isAnchor && (
             <View className="bg-white/20 rounded px-2 py-0.5">
@@ -237,20 +349,22 @@ export default function MatchesTabScreen() {
             </View>
           </View>
 
-          {/* HOME / AWAY badge */}
-          <View
-            className={`self-start px-2 py-0.5 rounded mb-3 ${
-              isHome ? "bg-primary-100" : "bg-gray-100"
-            }`}
-          >
-            <Text
-              className={`text-xs font-bold tracking-wide ${
-                isHome ? "text-primary" : "text-gray-500"
+          {/* HOME / AWAY badge — only shown when user is a player in this match */}
+          {isMyTeamMatch && (
+            <View
+              className={`self-start px-2 py-0.5 rounded mb-3 ${
+                isHome ? "bg-primary-100" : "bg-gray-100"
               }`}
             >
-              {isHome ? "HOME" : "AWAY"}
-            </Text>
-          </View>
+              <Text
+                className={`text-xs font-bold tracking-wide ${
+                  isHome ? "text-primary" : "text-gray-500"
+                }`}
+              >
+                {isHome ? "HOME" : "AWAY"}
+              </Text>
+            </View>
+          )}
 
           {/* Teams + Score */}
           <View className="flex-row items-center">
@@ -285,33 +399,137 @@ export default function MatchesTabScreen() {
     );
   };
 
+  const showFilters = isAnyOperator && uniqueSeasons.length > 1;
+
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
       <View className="px-4 pt-6 pb-3">
-        <Text className="text-2xl font-bold text-gray-900">My Matches</Text>
+        <Text className="text-2xl font-bold text-gray-900">
+          {isAnyOperator ? "League Matches" : "My Matches"}
+        </Text>
         <Text className="text-gray-500 text-sm mt-0.5">
-          {matches.length} match{matches.length !== 1 ? "es" : ""} across{" "}
-          {mySeasons.length} season{mySeasons.length !== 1 ? "s" : ""}
+          {filtersActive
+            ? `${filteredMatches.length} of ${matches.length} matches`
+            : `${matches.length} match${matches.length !== 1 ? "es" : ""}${
+                isAnyOperator
+                  ? ` across ${operatorLeagues.length} league${operatorLeagues.length !== 1 ? "s" : ""}`
+                  : ` across ${mySeasons.length} season${mySeasons.length !== 1 ? "s" : ""}`
+              }`}
         </Text>
       </View>
 
-      <FlatList
-        ref={flatListRef}
-        data={matches}
-        keyExtractor={(item, index) => `match-${item.id}-${index}`}
-        renderItem={renderMatch}
-        contentContainerStyle={{ paddingTop: 8, paddingBottom: 80 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        onScrollToIndexFailed={(info) => {
-          // Fallback if layout not yet measured
-          const offset = info.averageItemLength * info.index;
-          flatListRef.current?.scrollToOffset({ offset, animated: false });
-        }}
-        showsVerticalScrollIndicator={false}
-      />
+      {/* Filter strip — shown for operators with multiple seasons */}
+      {showFilters && (
+        <View className="pb-3 border-b border-gray-200">
+          {/* Season chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+            className="mb-2"
+          >
+            <TouchableOpacity
+              onPress={() => setFilterSeasonId(null)}
+              className={`px-3 py-1.5 rounded-full border ${
+                filterSeasonId === null
+                  ? "bg-primary border-primary"
+                  : "bg-white border-gray-300"
+              }`}
+            >
+              <Text
+                className={`text-xs font-semibold ${
+                  filterSeasonId === null ? "text-white" : "text-gray-600"
+                }`}
+              >
+                All Seasons
+              </Text>
+            </TouchableOpacity>
+            {uniqueSeasons.map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                onPress={() =>
+                  setFilterSeasonId(filterSeasonId === s.id ? null : s.id)
+                }
+                className={`px-3 py-1.5 rounded-full border ${
+                  filterSeasonId === s.id
+                    ? "bg-primary border-primary"
+                    : "bg-white border-gray-300"
+                }`}
+              >
+                <Text
+                  className={`text-xs font-semibold ${
+                    filterSeasonId === s.id ? "text-white" : "text-gray-600"
+                  }`}
+                  numberOfLines={1}
+                >
+                  {s.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Status chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+          >
+            {STATUS_OPTIONS.map((opt) => {
+              const isSelected = filterStatus === opt.value;
+              return (
+                <TouchableOpacity
+                  key={String(opt.value)}
+                  onPress={() => setFilterStatus(isSelected ? null : opt.value)}
+                  className={`px-3 py-1.5 rounded-full border ${
+                    isSelected
+                      ? "bg-gray-700 border-gray-700"
+                      : "bg-white border-gray-300"
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-semibold ${
+                      isSelected ? "text-white" : "text-gray-600"
+                    }`}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Empty filtered state */}
+      {filteredMatches.length === 0 && filtersActive ? (
+        <View className="flex-1 items-center justify-center p-8">
+          <Calendar color="#9ca3af" size={40} />
+          <Text className="text-gray-500 font-medium mt-4">No matches match this filter</Text>
+          <TouchableOpacity
+            onPress={() => { setFilterSeasonId(null); setFilterStatus(null); }}
+            className="mt-3"
+          >
+            <Text className="text-primary font-medium">Clear filters</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={filteredMatches}
+          keyExtractor={(item, index) => `match-${item.id}-${index}`}
+          renderItem={renderMatch}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 80 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          onScrollToIndexFailed={(info) => {
+            const offset = info.averageItemLength * info.index;
+            flatListRef.current?.scrollToOffset({ offset, animated: false });
+          }}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 }

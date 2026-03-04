@@ -22,7 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { Match, LineupState } from "../../api";
-import { formatLocalDate } from "../../utils";
+import { formatDateDisplay } from "@league-genius/shared";
 import { useMatchScoring } from "../../contexts/MatchScoringContext";
 import { useMatchWebSocket } from "../../hooks/useMatchWebSocket";
 import { useAuth } from "../../contexts/AuthContext";
@@ -681,7 +681,7 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 text-sm text-dark-500">
             <Calendar className="h-4 w-4" />
-            <span>{formatLocalDate(match.date)}</span>
+            <span>{formatDateDisplay(match.date)}</span>
             {match.week_number && <span>• Week {match.week_number}</span>}
           </div>
           <div className="flex items-center gap-2 text-xs">
