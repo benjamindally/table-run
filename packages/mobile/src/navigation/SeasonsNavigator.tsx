@@ -7,6 +7,7 @@ import FullMatchesScreen from "../screens/FullMatchesScreen";
 import FullPlayersScreen from "../screens/FullPlayersScreen";
 import MatchDetailsScreen from "../screens/MatchDetailsScreen";
 import CreateSeasonScreen from "../screens/CreateSeasonScreen";
+import TeamManagementScreen from "../screens/TeamManagementScreen";
 import AppHeader from "../components/AppHeader";
 import type { SeasonsStackParamList } from "./types";
 
@@ -55,6 +56,13 @@ export default function SeasonsNavigator() {
         component={CreateSeasonScreen as any}
         options={({ route }) => ({
           title: (route.params as any)?.seasonId ? "Edit Season" : "Create Season",
+        })}
+      />
+      <Stack.Screen
+        name="TeamManagement"
+        component={TeamManagementScreen}
+        options={({ route }) => ({
+          title: `${route.params.seasonName} — Teams`,
         })}
       />
     </Stack.Navigator>

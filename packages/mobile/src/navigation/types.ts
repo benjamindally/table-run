@@ -33,7 +33,6 @@ export type LeaguesStackParamList = {
   CreateLeague: { leagueId?: number } | undefined;
   CreateSeason: { leagueId: number; seasonId?: number };
   VenueManagement: { leagueId: number; leagueName: string };
-  TeamManagement: { leagueId: number; leagueName: string };
 };
 
 // Seasons stack (nested in Seasons tab)
@@ -46,6 +45,7 @@ export type SeasonsStackParamList = {
   FullPlayers: { seasonId: number; seasonName: string };
   MatchDetails: { matchId: number };
   CreateSeason: { leagueId: number; seasonId?: number };
+  TeamManagement: { seasonId: number; seasonName: string };
 };
 
 // Matches stack (nested in Matches tab)
@@ -67,6 +67,7 @@ export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
   Profile: undefined;
+  About: undefined;
   Notifications: undefined;
   TeamDetails: { teamId: number; teamName: string };
   ClaimPlayer: { token: string };

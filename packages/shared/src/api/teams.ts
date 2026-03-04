@@ -17,8 +17,10 @@ export const teamsApi = {
   /**
    * Get all teams (paginated)
    */
-  getAll: (token?: string) =>
-    api.get<PaginatedResponse<Team>>('/teams/', token),
+  getAll: (token?: string, params?: { leagueId?: number }) => {
+    const qs = params?.leagueId ? `?league_id=${params.leagueId}` : '';
+    return api.get<PaginatedResponse<Team>>(`/teams/${qs}`, token);
+  },
 
   /**
    * Get a single team by ID

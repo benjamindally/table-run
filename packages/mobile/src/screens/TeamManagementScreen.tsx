@@ -12,58 +12,41 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { Plus, Pencil, X, Users, Check, ChevronRight } from "lucide-react-native";
+import { Plus, X, Users, ChevronRight } from "lucide-react-native";
 import {
-  api,
-  teamsApi,
   seasonsApi,
+  teamsApi,
   type Team,
-  type Season,
+  type SeasonParticipation,
 } from "@league-genius/shared";
 import { useAuthStore } from "../stores/authStore";
-import type { LeaguesStackScreenProps } from "../navigation/types";
+import type { SeasonsStackScreenProps } from "../navigation/types";
 
 export default function TeamManagementScreen({
   route,
   navigation,
-}: LeaguesStackScreenProps<"TeamManagement">) {
-  const { leagueId, leagueName } = route.params;
+}: SeasonsStackScreenProps<"TeamManagement">) {
+  const { seasonId, seasonName } = route.params;
   const { accessToken } = useAuthStore();
 
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [teams, setTeams] = useState<
+    (SeasonParticipation & { team_detail?: Team })[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [teamName, setTeamName] = useState("");
   const [establishment, setEstablishment] = useState("");
-  const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
-      const [teamsRes, seasonsRes] = await Promise.all([
-        teamsApi.getAll(accessToken ?? undefined, { leagueId }),
-        api.get<{ results: Season[] }>("/seasons/", accessToken ?? undefined),
-      ]);
-      const teamList = Array.isArray(teamsRes)
-        ? teamsRes
-        : (teamsRes as { results: Team[] }).results ?? [];
-      setTeams(teamList);
-
-      const leagueSeasons = seasonsRes.results
-        .filter((s) => s.league === leagueId)
-        .sort(
-          (a, b) =>
-            new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
-        );
-      setSeasons(leagueSeasons);
-
-      // Default to most recent active season
-      const activeSeason = leagueSeasons.find((s) => s.is_active);
-      if (activeSeason) setSelectedSeasonId(activeSeason.id);
-      else if (leagueSeasons.length > 0) setSelectedSeasonId(leagueSeasons[0].id);
+      const participations = await seasonsApi.getTeams(
+        seasonId,
+        accessToken ?? undefined
+      );
+      setTeams(participations);
     } catch (err) {
       console.error("[TeamManagement] loadData error:", err);
       setTeams([]);
@@ -71,7 +54,7 @@ export default function TeamManagementScreen({
       setLoading(false);
       setRefreshing(false);
     }
-  }, [leagueId, accessToken]);
+  }, [seasonId, accessToken]);
 
   useEffect(() => {
     loadData();
@@ -104,24 +87,22 @@ export default function TeamManagementScreen({
         accessToken ?? undefined
       );
 
-      if (selectedSeasonId) {
-        try {
-          await seasonsApi.addTeam(
-            selectedSeasonId,
-            { team_id: newTeam.id },
-            accessToken ?? undefined
-          );
-        } catch (seasonErr: any) {
-          Alert.alert(
-            "Partial Success",
-            `Team "${teamName}" was created but couldn't be added to the season: ${
-              seasonErr?.message || "Unknown error"
-            }`
-          );
-          setModalVisible(false);
-          loadData();
-          return;
-        }
+      try {
+        await seasonsApi.addTeam(
+          seasonId,
+          { team_id: newTeam.id },
+          accessToken ?? undefined
+        );
+      } catch (seasonErr: any) {
+        Alert.alert(
+          "Partial Success",
+          `Team "${teamName}" was created but couldn't be added to the season: ${
+            seasonErr?.message || "Unknown error"
+          }`
+        );
+        setModalVisible(false);
+        loadData();
+        return;
       }
 
       setModalVisible(false);
@@ -156,53 +137,59 @@ export default function TeamManagementScreen({
               No teams yet
             </Text>
             <Text className="text-gray-400 text-sm text-center mt-1">
-              Add teams to your league to get started
+              Add teams to this season to get started
             </Text>
           </View>
         ) : (
           <View className="space-y-3">
-            {teams.map((team) => (
-              <TouchableOpacity
-                key={team.id}
-                className="bg-white rounded-lg p-4 border border-gray-200"
-                onPress={() =>
-                  (navigation as any).navigate("TeamDetails", { teamId: team.id })
-                }
-              >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1">
-                    <Text className="text-base font-semibold text-gray-900">
-                      {team.name}
-                    </Text>
-                    {team.establishment && (
-                      <Text className="text-sm text-gray-500 mt-0.5">
-                        {team.establishment}
+            {teams.map((participation) => {
+              const team = participation.team_detail;
+              if (!team) return null;
+              return (
+                <TouchableOpacity
+                  key={team.id}
+                  className="bg-white rounded-lg p-4 border border-gray-200"
+                  onPress={() =>
+                    (navigation as any).navigate("TeamDetails", {
+                      teamId: team.id,
+                    })
+                  }
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1">
+                      <Text className="text-base font-semibold text-gray-900">
+                        {team.name}
                       </Text>
-                    )}
-                    <Text className="text-xs text-gray-400 mt-1">
-                      {team.player_count ?? 0} player
-                      {team.player_count !== 1 ? "s" : ""}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center gap-2">
-                    <View
-                      className={`px-2 py-1 rounded-full ${
-                        team.active ? "bg-green-100" : "bg-gray-100"
-                      }`}
-                    >
-                      <Text
-                        className={`text-xs font-medium ${
-                          team.active ? "text-green-700" : "text-gray-600"
-                        }`}
-                      >
-                        {team.active ? "Active" : "Inactive"}
+                      {team.establishment && (
+                        <Text className="text-sm text-gray-500 mt-0.5">
+                          {team.establishment}
+                        </Text>
+                      )}
+                      <Text className="text-xs text-gray-400 mt-1">
+                        {team.player_count ?? 0} player
+                        {team.player_count !== 1 ? "s" : ""}
                       </Text>
                     </View>
-                    <ChevronRight color="#9ca3af" size={20} />
+                    <View className="flex-row items-center gap-2">
+                      <View
+                        className={`px-2 py-1 rounded-full ${
+                          team.active ? "bg-green-100" : "bg-gray-100"
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs font-medium ${
+                            team.active ? "text-green-700" : "text-gray-600"
+                          }`}
+                        >
+                          {team.active ? "Active" : "Inactive"}
+                        </Text>
+                      </View>
+                      <ChevronRight color="#9ca3af" size={20} />
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -272,73 +259,14 @@ export default function TeamManagementScreen({
                 />
               </View>
 
-              {/* Season Picker */}
-              {seasons.length > 0 && (
-                <View>
-                  <Text className="text-sm font-medium text-gray-700 mb-2">
-                    Add to Season
+              <View className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <Text className="text-sm text-gray-600">
+                  This team will be added to{" "}
+                  <Text className="font-semibold text-gray-900">
+                    {seasonName}
                   </Text>
-                  <View className="space-y-2">
-                    <TouchableOpacity
-                      onPress={() => setSelectedSeasonId(null)}
-                      disabled={saving}
-                      className={`p-3 rounded-lg border-2 flex-row items-center justify-between ${
-                        selectedSeasonId === null
-                          ? "border-primary bg-primary-50"
-                          : "border-gray-200 bg-white"
-                      }`}
-                    >
-                      <Text
-                        className={`font-semibold text-sm ${
-                          selectedSeasonId === null
-                            ? "text-primary"
-                            : "text-gray-800"
-                        }`}
-                      >
-                        Don't add to a season
-                      </Text>
-                      {selectedSeasonId === null && (
-                        <Check size={18} color="#26A69A" />
-                      )}
-                    </TouchableOpacity>
-                    {seasons.map((season) => {
-                      const isSelected = selectedSeasonId === season.id;
-                      return (
-                        <TouchableOpacity
-                          key={season.id}
-                          onPress={() => setSelectedSeasonId(season.id)}
-                          disabled={saving}
-                          className={`p-3 rounded-lg border-2 flex-row items-center justify-between ${
-                            isSelected
-                              ? "border-primary bg-primary-50"
-                              : "border-gray-200 bg-white"
-                          }`}
-                        >
-                          <View>
-                            <Text
-                              className={`font-semibold text-sm ${
-                                isSelected ? "text-primary" : "text-gray-800"
-                              }`}
-                            >
-                              {season.name}
-                            </Text>
-                            <Text
-                              className={`text-xs mt-0.5 ${
-                                isSelected
-                                  ? "text-primary-700"
-                                  : "text-gray-500"
-                              }`}
-                            >
-                              {season.is_active ? "Active" : "Inactive"}
-                            </Text>
-                          </View>
-                          {isSelected && <Check size={18} color="#26A69A" />}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
+                </Text>
+              </View>
             </View>
           </ScrollView>
 

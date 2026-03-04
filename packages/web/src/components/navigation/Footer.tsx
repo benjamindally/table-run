@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-dark-900 text-cream">
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <img
@@ -88,6 +88,28 @@ const Footer: React.FC = () => {
               <li className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-primary" />
                 <span className="text-cream">contact@leaguegenius.app</span>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-bold mb-4">Legal</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link
+                  to="/privacy"
+                  className="text-cream hover:text-primary transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/terms"
+                  className="text-cream hover:text-primary transition-colors"
+                >
+                  Terms of Service
+                </Link>
               </li>
             </ul>
           </div>

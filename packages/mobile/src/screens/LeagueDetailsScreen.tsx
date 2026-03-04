@@ -10,7 +10,7 @@ import {
   TextInput,
   Switch,
 } from "react-native";
-import { Calendar, MapPin, ChevronRight, Award, X, Pencil, Plus, MapPinned, Users, Shield } from "lucide-react-native";
+import { Calendar, MapPin, ChevronRight, Award, X, Pencil, Plus, MapPinned, Users } from "lucide-react-native";
 import { useState, useCallback } from "react";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { CompositeNavigationProp } from "@react-navigation/native";
@@ -388,19 +388,6 @@ export default function LeagueDetailsScreen({ route }: Props) {
               >
                 <Users size={18} color="#26A69A" />
                 <Text className="flex-1 text-gray-900 ml-3">Manage Players</Text>
-                <ChevronRight color="#9ca3af" size={20} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                className="flex-row items-center px-4 py-4 border-b border-gray-100"
-                onPress={() =>
-                  navigation.navigate("TeamManagement", {
-                    leagueId,
-                    leagueName: league.name,
-                  })
-                }
-              >
-                <Shield size={18} color="#26A69A" />
-                <Text className="flex-1 text-gray-900 ml-3">Manage Teams</Text>
                 <ChevronRight color="#9ca3af" size={20} />
               </TouchableOpacity>
               <TouchableOpacity

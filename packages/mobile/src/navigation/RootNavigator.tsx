@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MainNavigator from "./MainNavigator";
 import AuthNavigator from "./AuthNavigator";
 import ProfileScreen from "../screens/ProfileScreen";
+import AboutScreen from "../screens/AboutScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import TeamDetailsScreen from "../screens/TeamDetailsScreen";
 import ClaimPlayerScreen from "../screens/auth/ClaimPlayerScreen";
@@ -34,6 +35,21 @@ export default function RootNavigator() {
             fontSize: 18,
           },
           title: "Profile",
+        }}
+      />
+      <Stack.Screen
+        name="About"
+        component={AboutScreen}
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: "#37474F" },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            fontFamily: "Antonio_600SemiBold",
+            fontSize: 18,
+          },
+          title: "About League Genius",
         }}
       />
       <Stack.Screen

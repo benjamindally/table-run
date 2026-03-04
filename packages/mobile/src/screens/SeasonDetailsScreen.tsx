@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
-import { Calendar, CalendarDays, Users, ChevronRight, ChevronDown, Clock, MapPin } from "lucide-react-native";
+import { Calendar, CalendarDays, Users, ChevronRight, ChevronDown, Clock, MapPin, Shield } from "lucide-react-native";
 import { useState, useEffect, useMemo } from "react";
 import { api, formatDateDisplay, type SeasonMatchesResponse } from "@league-genius/shared";
 import type { SeasonsStackScreenProps } from "../navigation/types";
@@ -243,6 +243,25 @@ export default function SeasonDetailsScreen({
             <View className="flex-row items-center gap-3">
               <CalendarDays color="#26A69A" size={20} />
               <Text className="text-base font-semibold text-gray-900">Season Schedule</Text>
+            </View>
+            <ChevronRight color="#9ca3af" size={20} />
+          </TouchableOpacity>
+        )}
+
+        {/* Manage Teams — operators only */}
+        {isOperatorFn(season.league) && (
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("TeamManagement", {
+                seasonId,
+                seasonName: season.name,
+              })
+            }
+            className="bg-white rounded-lg p-4 border border-gray-200 flex-row items-center justify-between"
+          >
+            <View className="flex-row items-center gap-3">
+              <Shield color="#26A69A" size={20} />
+              <Text className="text-base font-semibold text-gray-900">Manage Teams</Text>
             </View>
             <ChevronRight color="#9ca3af" size={20} />
           </TouchableOpacity>

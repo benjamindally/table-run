@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
@@ -471,13 +472,13 @@ export default function CreateLeagueScreen({
 
         {/* ── Actions ── */}
         <View className="flex-row gap-3">
-          <TouchableOpacity
+          <Pressable
             onPress={() => navigation.goBack()}
             disabled={saving}
             className="flex-1 py-3 rounded-lg border border-gray-300 items-center"
           >
             <Text className="font-semibold text-gray-700">Cancel</Text>
-          </TouchableOpacity>
+          </Pressable>
           <TouchableOpacity
             onPress={handleSave}
             disabled={saving}

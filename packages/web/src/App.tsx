@@ -30,6 +30,8 @@ import PlayerPage from "./pages/PlayerPage";
 import ClaimPlayerPage from "./pages/ClaimPlayerPage";
 import ActivatePlayerPage from "./pages/ActivatePlayerPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
 import WebSocketTest from "./pages/WebSocketTest";
 import MatchWebSocketTest from "./pages/MatchWebSocketTest";
 import AdminDashboardPage from "./pages/admin/DashboardPage";
@@ -82,6 +84,8 @@ function App() {
             <Route path="claim-player/:token" element={<ClaimPlayerPage />} />
             <Route path="activate-player/:token" element={<ActivatePlayerPage />} />
             <Route path="reset-password/:uid/:token" element={<ResetPasswordPage />} />
+            <Route path="privacy" element={<PrivacyPolicyPage />} />
+            <Route path="terms" element={<TermsOfServicePage />} />
             <Route path="websocket-test" element={<WebSocketTest />} />
             <Route path="match-websocket-test" element={<MatchWebSocketTest />} />
           </Route>
