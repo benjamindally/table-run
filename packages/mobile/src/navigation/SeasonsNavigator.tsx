@@ -8,6 +8,7 @@ import FullPlayersScreen from "../screens/FullPlayersScreen";
 import MatchDetailsScreen from "../screens/MatchDetailsScreen";
 import CreateSeasonScreen from "../screens/CreateSeasonScreen";
 import TeamManagementScreen from "../screens/TeamManagementScreen";
+import PlayoffBracketScreen from "../screens/PlayoffBracketScreen";
 import AppHeader from "../components/AppHeader";
 import type { SeasonsStackParamList } from "./types";
 
@@ -63,6 +64,13 @@ export default function SeasonsNavigator() {
         component={TeamManagementScreen}
         options={({ route }) => ({
           title: `${route.params.seasonName} — Teams`,
+        })}
+      />
+      <Stack.Screen
+        name="PlayoffBracket"
+        component={PlayoffBracketScreen}
+        options={({ route }) => ({
+          title: `${route.params.seasonName} — Playoffs`,
         })}
       />
     </Stack.Navigator>

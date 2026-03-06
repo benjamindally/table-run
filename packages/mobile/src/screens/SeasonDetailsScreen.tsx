@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
-import { Calendar, CalendarDays, Users, ChevronRight, ChevronDown, Clock, MapPin, Shield } from "lucide-react-native";
+import { Calendar, CalendarDays, Users, ChevronRight, ChevronDown, Clock, MapPin, Shield, Trophy } from "lucide-react-native";
 import { useState, useEffect, useMemo } from "react";
 import { api, formatDateDisplay, type SeasonMatchesResponse } from "@league-genius/shared";
 import type { SeasonsStackScreenProps } from "../navigation/types";
@@ -247,6 +247,24 @@ export default function SeasonDetailsScreen({
             <ChevronRight color="#9ca3af" size={20} />
           </TouchableOpacity>
         )}
+
+        {/* Playoffs — visible to all users */}
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate("PlayoffBracket", {
+              seasonId,
+              seasonName: season.name,
+              leagueId: season.league,
+            })
+          }
+          className="bg-white rounded-lg p-4 border border-gray-200 flex-row items-center justify-between"
+        >
+          <View className="flex-row items-center gap-3">
+            <Trophy color="#26A69A" size={20} />
+            <Text className="text-base font-semibold text-gray-900">Playoffs</Text>
+          </View>
+          <ChevronRight color="#9ca3af" size={20} />
+        </TouchableOpacity>
 
         {/* Manage Teams — operators only */}
         {isOperatorFn(season.league) && (

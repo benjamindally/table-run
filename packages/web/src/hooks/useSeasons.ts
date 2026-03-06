@@ -4,7 +4,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { seasonsApi } from '../api';
-import type { Season, SeasonParticipation, Match, Venue, ScheduleConfiguration, SaveScheduleRequest } from '../api';
+import type { Season, SeasonParticipation, Match, Venue, ScheduleConfiguration, SaveScheduleRequest, PlayoffConfiguration, SavePlayoffsRequest, AdvancePlayoffRequest } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { meKeys } from './useMe';
 
@@ -20,6 +20,7 @@ export const seasonKeys = {
   standings: (id: number) => [...seasonKeys.detail(id), 'standings'] as const,
   players: (id: number) => [...seasonKeys.detail(id), 'players'] as const,
   venues: (id: number) => [...seasonKeys.detail(id), 'venues'] as const,
+  playoffs: (id: number) => [...seasonKeys.detail(id), 'playoffs'] as const,
 };
 
 /**
@@ -354,6 +355,64 @@ export const useBulkCreateVenues = () => {
  * Toggle favorite status for a season
  * Optimistically updates the UI and invalidates /me endpoint on success
  */
+/**
+ * Get saved playoff brackets for a season
+ */
+export const usePlayoffs = (seasonId: number) => {
+  const { getAuthToken } = useAuth();
+
+  return useQuery({
+    queryKey: seasonKeys.playoffs(seasonId),
+    queryFn: () => seasonsApi.getPlayoffs(seasonId, getAuthToken() || undefined),
+    enabled: !!seasonId,
+  });
+};
+
+/**
+ * Generate playoff bracket preview (doesn't save)
+ */
+export const useGeneratePlayoffs = () => {
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ seasonId, config }: { seasonId: number; config: PlayoffConfiguration }) =>
+      seasonsApi.generatePlayoffs(seasonId, config, getAuthToken() || undefined),
+  });
+};
+
+/**
+ * Save playoff bracket after review/editing
+ */
+export const useSavePlayoffs = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ seasonId, data }: { seasonId: number; data: SavePlayoffsRequest }) =>
+      seasonsApi.savePlayoffs(seasonId, data, getAuthToken() || undefined),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: seasonKeys.playoffs(variables.seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.detail(variables.seasonId) });
+    },
+  });
+};
+
+/**
+ * Manually advance a winner in a playoff matchup
+ */
+export const useAdvancePlayoff = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ seasonId, data }: { seasonId: number; data: AdvancePlayoffRequest }) =>
+      seasonsApi.advancePlayoff(seasonId, data, getAuthToken() || undefined),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: seasonKeys.playoffs(variables.seasonId) });
+    },
+  });
+};
+
 export const useToggleFavorite = () => {
   const queryClient = useQueryClient();
   const { getAuthToken } = useAuth();

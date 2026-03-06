@@ -25,6 +25,7 @@ import {
   Plus,
   X,
   Search,
+  Megaphone,
 } from "lucide-react-native";
 import {
   teamsApi,
@@ -39,6 +40,7 @@ import type { RootStackScreenProps } from "../navigation/types";
 import { useUserContextStore } from "../stores/userContextStore";
 import { useAuthStore } from "../stores/authStore";
 import AddPlayerModal from "../components/AddPlayerModal";
+import CreateAnnouncementModal from "../components/CreateAnnouncementModal";
 
 // ─── Edit Team Modal ────────────────────────────────────────────────────────
 
@@ -467,12 +469,14 @@ export default function TeamDetailsScreen({
   const [addMemberModalVisible, setAddMemberModalVisible] = useState(false);
   const [createPlayerVisible, setCreatePlayerVisible] = useState(false);
 
-  const { isCaptain, myLeagues } = useUserContextStore();
+  const { isCaptain, myLeagues, mySeasons } = useUserContextStore();
   const { accessToken } = useAuthStore();
+  const [announceVisible, setAnnounceVisible] = useState(false);
 
   const isTeamCaptain = isCaptain(teamId);
   const isAnyOperator = myLeagues.some((l) => l.is_operator);
   const canManage = isTeamCaptain || isAnyOperator;
+  const canAnnounce = isTeamCaptain || isAnyOperator;
 
   const loadTeamData = useCallback(async () => {
     try {
@@ -513,6 +517,18 @@ export default function TeamDetailsScreen({
   const captainIds = team?.captains_detail?.map((c) => c.player) ?? [];
   const rosterPlayerIds = roster.map((m) => m.player);
 
+  // Derive league context for announcements from the team's season participations
+  const teamLeague = (() => {
+    for (const sp of seasons) {
+      const ms = mySeasons.find((s) => s.id === sp.season);
+      if (ms) {
+        const league = myLeagues.find((l) => l.id === ms.league_id);
+        if (league) return { id: league.id, name: league.name };
+      }
+    }
+    return null;
+  })();
+
   if (loading) {
     return (
       <View className="flex-1 bg-gray-50 items-center justify-center">
@@ -530,9 +546,9 @@ export default function TeamDetailsScreen({
   }
 
   return (
-    <>
+    <View className="flex-1 bg-gray-50">
       <ScrollView
-        className="flex-1 bg-gray-50"
+        className="flex-1"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -883,6 +899,28 @@ export default function TeamDetailsScreen({
         </View>
       </ScrollView>
 
+      {/* Announce FAB — captains and operators */}
+      {canAnnounce && teamLeague && (
+        <TouchableOpacity
+          onPress={() => setAnnounceVisible(true)}
+          className="absolute bottom-6 right-6 bg-primary rounded-full w-14 h-14 items-center justify-center"
+          style={{ elevation: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 4 }}
+          activeOpacity={0.8}
+        >
+          <Megaphone size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      {/* Announcement Modal */}
+      {teamLeague && (
+        <CreateAnnouncementModal
+          visible={announceVisible}
+          onClose={() => setAnnounceVisible(false)}
+          leagueId={teamLeague.id}
+          leagueName={teamLeague.name}
+        />
+      )}
+
       {/* Management Modals */}
       {canManage && accessToken && (
         <>
@@ -923,6 +961,6 @@ export default function TeamDetailsScreen({
           />
         </>
       )}
-    </>
+    </View>
   );
 }

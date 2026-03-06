@@ -10,7 +10,7 @@ import {
   TextInput,
   Switch,
 } from "react-native";
-import { Calendar, MapPin, ChevronRight, Award, X, Pencil, Plus, MapPinned, Users } from "lucide-react-native";
+import { Calendar, MapPin, ChevronRight, Award, X, Pencil, Plus, MapPinned, Users, Megaphone } from "lucide-react-native";
 import { useState, useCallback } from "react";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { CompositeNavigationProp } from "@react-navigation/native";
@@ -29,6 +29,7 @@ import {
 import type { LeaguesStackParamList, MainTabParamList } from "../navigation/types";
 import { useUserContextStore } from "../stores/userContextStore";
 import { useAuthStore } from "../stores/authStore";
+import CreateAnnouncementModal from "../components/CreateAnnouncementModal";
 
 type NavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<LeaguesStackParamList, "LeagueDetails">,
@@ -105,6 +106,7 @@ export default function LeagueDetailsScreen({ route }: Props) {
   const [scoringModalVisible, setScoringModalVisible] = useState(false);
   const [draftConfig, setDraftConfig] = useState<Partial<ScoringConfig>>(DEFAULT_DRAFT);
   const [saving, setSaving] = useState(false);
+  const [announceVisible, setAnnounceVisible] = useState(false);
 
   const canEditScoring = isOperator(leagueId);
 
@@ -206,8 +208,9 @@ export default function LeagueDetailsScreen({ route }: Props) {
   }
 
   return (
+    <View className="flex-1 bg-gray-50">
     <ScrollView
-      className="flex-1 bg-gray-50"
+      className="flex-1"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
@@ -616,6 +619,28 @@ export default function LeagueDetailsScreen({ route }: Props) {
           </View>
         </View>
       </Modal>
+
     </ScrollView>
+
+      {/* Announce FAB — operators only */}
+      {canEditScoring && (
+        <TouchableOpacity
+          onPress={() => setAnnounceVisible(true)}
+          className="absolute bottom-6 right-6 bg-primary rounded-full w-14 h-14 items-center justify-center"
+          style={{ elevation: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 4 }}
+          activeOpacity={0.8}
+        >
+          <Megaphone size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      {/* Announcement Modal */}
+      <CreateAnnouncementModal
+        visible={announceVisible}
+        onClose={() => setAnnounceVisible(false)}
+        leagueId={leagueId}
+        leagueName={league.name}
+      />
+    </View>
   );
 }

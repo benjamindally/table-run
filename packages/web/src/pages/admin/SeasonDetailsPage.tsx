@@ -17,7 +17,7 @@
 
 import React, { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, X, Calendar } from "lucide-react";
+import { ArrowLeft, Upload, X, Calendar, Trophy } from "lucide-react";
 import {
   useSeason,
   useSeasonTeams,
@@ -591,6 +591,28 @@ const SeasonDetailsPage: React.FC = () => {
           onEditMatch={handleEditMatch}
         />
       )}
+
+      {/* =====================================================================
+          PLAYOFFS SECTION
+          Link to playoff bracket generator / viewer
+          ===================================================================== */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-dark">Playoffs</h2>
+            <p className="text-sm text-dark-300 mt-1">
+              Generate and manage playoff brackets for this season.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate(`/admin/seasons/${seasonId}/playoffs`)}
+            className="btn btn-primary flex items-center"
+          >
+            <Trophy className="h-4 w-4 mr-2" />
+            View Playoffs
+          </button>
+        </div>
+      </div>
 
       {/* =====================================================================
           PLAYER ANALYTICS SECTION
