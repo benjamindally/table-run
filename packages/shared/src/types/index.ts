@@ -379,6 +379,145 @@ export interface SaveScheduleRequest {
 }
 
 /**
+ * Playoff Types
+ */
+export interface PlayoffSeed {
+  id?: number;
+  seed_number: number;
+  team_id: number;
+  team_name: string;
+  team_establishment?: string;
+  establishment?: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  points: number;
+  win_percentage: number;
+}
+
+export interface PlayoffMatchup {
+  id?: number;
+  round_number: number;
+  position: number;
+  home_seed_number: number | null;
+  away_seed_number: number | null;
+  home_team_name?: string;
+  away_team_name?: string;
+  next_matchup_round: number | null;
+  next_matchup_position: number | null;
+  next_matchup?: number | null;
+  next_matchup_id?: number | null;
+  is_bye: boolean;
+  scheduled_date: string;
+  venue_name: string;
+  // Post-save fields
+  home_seed?: number | null;
+  away_seed?: number | null;
+  home_seed_detail?: PlayoffSeed | null;
+  away_seed_detail?: PlayoffSeed | null;
+  match?: number | null;
+  match_detail?: Match | null;
+}
+
+export interface PlayoffRound {
+  round_number: number;
+  round_name: string;
+  matchups: PlayoffMatchup[];
+}
+
+export interface PlayoffBracketData {
+  id?: number;
+  season?: number;
+  bracket_type: 'main' | 'consolation';
+  name: string;
+  status?: string;
+  team_count: number;
+  bracket_size: number;
+  total_rounds: number;
+  byes_count: number;
+  start_date?: string;
+  days_between_rounds?: number;
+  default_match_day?: number;
+  created_at?: string;
+  created_by?: number;
+  seeds: PlayoffSeed[];
+  rounds?: PlayoffRound[];
+  matchups?: PlayoffMatchup[];
+}
+
+export interface PlayoffConfiguration {
+  team_ids?: number[];
+  team_count: number;
+  byes_for_top_seeds: number;
+  consolation: boolean;
+  consolation_count: number;
+  consolation_byes: number;
+  start_date: string;
+  days_between_rounds: number;
+  default_match_day: number;
+}
+
+export interface PlayoffWarning {
+  type: string;
+  message: string;
+}
+
+export interface GeneratePlayoffsResponse {
+  season_id: number;
+  season_name: string;
+  league_id: number;
+  league_name: string;
+  configuration: PlayoffConfiguration;
+  main_bracket: PlayoffBracketData;
+  consolation_bracket: PlayoffBracketData | null;
+  warnings: PlayoffWarning[];
+}
+
+export interface SavePlayoffsRequest {
+  main_bracket: {
+    name: string;
+    seeds: PlayoffSeed[];
+    matchups: PlayoffMatchup[];
+    start_date: string;
+    days_between_rounds: number;
+    default_match_day: number;
+  };
+  consolation_bracket: {
+    name: string;
+    seeds: PlayoffSeed[];
+    matchups: PlayoffMatchup[];
+    start_date: string;
+    days_between_rounds: number;
+    default_match_day: number;
+  } | null;
+  replace_existing: boolean;
+}
+
+export interface SavePlayoffsResponse {
+  message: string;
+  main_bracket_id: number;
+  main_matches_created: number;
+  main_matchups_created: number;
+  season_id: number;
+  consolation_bracket_id?: number;
+  consolation_matches_created?: number;
+  consolation_matchups_created?: number;
+}
+
+export interface AdvancePlayoffRequest {
+  matchup_id: number;
+  winner_team_id: number;
+}
+
+export interface AdvancePlayoffResponse {
+  message: string;
+  matchup_id: number;
+  winner_team_id: number;
+  next_matchup_id: number | null;
+  next_match_created: boolean;
+}
+
+/**
  * Authentication Types
  */
 export interface AuthResponse {
@@ -754,6 +893,8 @@ export interface Announcement {
 
 export interface CreateAnnouncementData {
   league: number;
+  season?: number | null;
+  team?: number | null;
   title: string;
   message: string;
   priority: 'low' | 'normal' | 'high' | 'urgent';

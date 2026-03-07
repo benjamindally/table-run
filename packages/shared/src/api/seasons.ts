@@ -14,6 +14,13 @@ import type {
   SeasonStandingsResponse,
   SeasonPlayersResponse,
   SeasonMatchesResponse,
+  PlayoffConfiguration,
+  GeneratePlayoffsResponse,
+  SavePlayoffsRequest,
+  SavePlayoffsResponse,
+  PlayoffBracketData,
+  AdvancePlayoffRequest,
+  AdvancePlayoffResponse,
 } from '../types';
 
 export const seasonsApi = {
@@ -176,4 +183,28 @@ export const seasonsApi = {
    */
   toggleFavorite: (seasonId: number, token?: string) =>
     api.post<{ is_favorite: boolean }>(`/seasons/${seasonId}/favorite/`, {}, token),
+
+  /**
+   * Generate playoff bracket preview (doesn't save)
+   */
+  generatePlayoffs: (seasonId: number, config: PlayoffConfiguration, token?: string) =>
+    api.post<GeneratePlayoffsResponse>(`/seasons/${seasonId}/generate-playoffs/`, config, token),
+
+  /**
+   * Save playoff bracket after review/editing
+   */
+  savePlayoffs: (seasonId: number, data: SavePlayoffsRequest, token?: string) =>
+    api.post<SavePlayoffsResponse>(`/seasons/${seasonId}/save-playoffs/`, data, token),
+
+  /**
+   * Get saved playoff brackets for a season
+   */
+  getPlayoffs: (seasonId: number, token?: string) =>
+    api.get<PlayoffBracketData[]>(`/seasons/${seasonId}/playoffs/`, token),
+
+  /**
+   * Manually advance a winner in a playoff matchup
+   */
+  advancePlayoff: (seasonId: number, data: AdvancePlayoffRequest, token?: string) =>
+    api.post<AdvancePlayoffResponse>(`/seasons/${seasonId}/advance-playoff/`, data, token),
 };

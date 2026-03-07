@@ -46,6 +46,7 @@ export type SeasonsStackParamList = {
   MatchDetails: { matchId: number };
   CreateSeason: { leagueId: number; seasonId?: number };
   TeamManagement: { seasonId: number; seasonName: string };
+  PlayoffBracket: { seasonId: number; seasonName: string; leagueId: number };
 };
 
 // Matches stack (nested in Matches tab)

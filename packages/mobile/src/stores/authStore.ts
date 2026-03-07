@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
-import { authApi, playersApi, type AuthResponse, type Player, type PlayerUpdateData, type RegisterData } from "@league-genius/shared";
+import { authApi, playersApi, setRefreshTokenCallback, type AuthResponse, type Player, type PlayerUpdateData, type RegisterData } from "@league-genius/shared";
 import { useUserContextStore } from "./userContextStore";
 import { useNotificationsStore } from "./notificationsStore";
 import { useMatchScoringStore } from "./matchScoringStore";
@@ -215,3 +215,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 }));
+
+// Wire up the shared API client's 401 auto-refresh
+setRefreshTokenCallback(async () => {
+  const store = useAuthStore.getState();
+  const refreshed = await store.refreshAccessToken();
+  return refreshed ? useAuthStore.getState().accessToken : null;
+});
