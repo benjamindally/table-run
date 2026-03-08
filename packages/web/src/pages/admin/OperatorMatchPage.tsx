@@ -41,12 +41,12 @@ const OperatorMatchPage: React.FC = () => {
     }
   }, [match, gamesCount, initializeMatch]);
 
-  // Redirect non-operators to regular score page
+  // Redirect non-operators to regular score page (wait for season to load first)
   useEffect(() => {
-    if (!matchLoading && !isLeagueOperator && match) {
+    if (!matchLoading && match && season && !isLeagueOperator) {
       navigate(`/admin/matches/${matchId}/score`, { replace: true });
     }
-  }, [matchLoading, isLeagueOperator, match, matchId, navigate]);
+  }, [matchLoading, isLeagueOperator, match, season, matchId, navigate]);
 
   const handleSuccess = () => {
     queryClient.invalidateQueries({ queryKey: meKeys.all });

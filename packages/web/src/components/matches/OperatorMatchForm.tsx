@@ -457,6 +457,45 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
     toast.info("Finalizing match...");
   }, [sendWebSocket, homeScore, awayScore]);
 
+  // Helper to determine what data has been recorded
+  const getExistingDataInfo = useCallback(() => {
+    const gamesWithScores = games.filter((g) => g.winner !== null).length;
+    const hasLineupSubmitted = lineupState !== "not_started" && lineupState !== "awaiting_away_lineup";
+    const hasHomeLineup = lineupState !== "not_started" && lineupState !== "awaiting_away_lineup" && lineupState !== "awaiting_home_lineup";
+    const hasScores = gamesWithScores > 0;
+    const isLive = lineupState === "match_live" || lineupState === "awaiting_confirmation";
+    const isCompleted = lineupState === "completed";
+
+    return {
+      hasLineupSubmitted,
+      hasHomeLineup,
+      hasScores,
+      isLive,
+      isCompleted,
+      gamesWithScores,
+    };
+  }, [games, lineupState]);
+
+  // Request confirmation before potentially destructive actions
+  const requestConfirmation = useCallback((
+    title: string,
+    message: string,
+    action: () => void
+  ) => {
+    setConfirmModal({ isOpen: true, title, message, action });
+  }, []);
+
+  const executeConfirmedAction = useCallback(() => {
+    if (confirmModal.action) {
+      confirmModal.action();
+    }
+    setConfirmModal({ isOpen: false, title: "", message: "", action: null });
+  }, [confirmModal.action]);
+
+  const cancelConfirmation = useCallback(() => {
+    setConfirmModal({ isOpen: false, title: "", message: "", action: null });
+  }, []);
+
   // Override status (internal)
   const executeStatusOverride = useCallback(() => {
     if (statusOverride && statusOverride !== lineupState) {
@@ -632,45 +671,6 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
   if (gamesWithoutWinner > 0 && lineupState === "match_live") warnings.push(`${gamesWithoutWinner} games without winner`);
   if (presentHomePlayers.length < 4) warnings.push(`Home team has only ${presentHomePlayers.length} present players`);
   if (presentAwayPlayers.length < 4) warnings.push(`Away team has only ${presentAwayPlayers.length} present players`);
-
-  // Helper to determine what data has been recorded
-  const getExistingDataInfo = useCallback(() => {
-    const gamesWithScores = games.filter((g) => g.winner !== null).length;
-    const hasLineupSubmitted = lineupState !== "not_started" && lineupState !== "awaiting_away_lineup";
-    const hasHomeLineup = lineupState !== "not_started" && lineupState !== "awaiting_away_lineup" && lineupState !== "awaiting_home_lineup";
-    const hasScores = gamesWithScores > 0;
-    const isLive = lineupState === "match_live" || lineupState === "awaiting_confirmation";
-    const isCompleted = lineupState === "completed";
-
-    return {
-      hasLineupSubmitted,
-      hasHomeLineup,
-      hasScores,
-      isLive,
-      isCompleted,
-      gamesWithScores,
-    };
-  }, [games, lineupState]);
-
-  // Request confirmation before potentially destructive actions
-  const requestConfirmation = useCallback((
-    title: string,
-    message: string,
-    action: () => void
-  ) => {
-    setConfirmModal({ isOpen: true, title, message, action });
-  }, []);
-
-  const executeConfirmedAction = useCallback(() => {
-    if (confirmModal.action) {
-      confirmModal.action();
-    }
-    setConfirmModal({ isOpen: false, title: "", message: "", action: null });
-  }, [confirmModal.action]);
-
-  const cancelConfirmation = useCallback(() => {
-    setConfirmModal({ isOpen: false, title: "", message: "", action: null });
-  }, []);
 
   const setsCount = Math.ceil(gamesCount / 4);
 

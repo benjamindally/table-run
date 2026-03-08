@@ -94,6 +94,7 @@ export default function CreateLeagueScreen({
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [country, setCountry] = useState("US");
+  const [isPublic, setIsPublic] = useState(true);
 
   // Scoring config
   const [draftConfig, setDraftConfig] = useState<Partial<ScoringConfig>>(DEFAULT_CONFIG);
@@ -124,6 +125,7 @@ export default function CreateLeagueScreen({
         setCity(league.city ?? "");
         setState(league.state ?? "");
         setCountry(league.country ?? "US");
+        setIsPublic(league.is_public ?? true);
 
         try {
           const config = await leaguesApi.getScoringConfig(leagueId!, accessToken ?? undefined);
@@ -155,6 +157,7 @@ export default function CreateLeagueScreen({
         city: city.trim(),
         state: state.trim(),
         country: country.trim() || "US",
+        is_public: isPublic,
       };
 
       let savedLeagueId: number;
@@ -282,6 +285,20 @@ export default function CreateLeagueScreen({
               autoCapitalize="characters"
               maxLength={2}
               editable={!saving}
+            />
+          </View>
+
+          <View className="flex-row items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3">
+            <View>
+              <Text className="text-sm font-medium text-gray-700">Public League</Text>
+              <Text className="text-xs text-gray-500">Discoverable by players in search</Text>
+            </View>
+            <Switch
+              value={isPublic}
+              onValueChange={setIsPublic}
+              trackColor={{ true: "#26A69A" }}
+              thumbColor="#FFFFFF"
+              disabled={saving}
             />
           </View>
 

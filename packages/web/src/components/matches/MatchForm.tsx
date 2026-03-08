@@ -180,14 +180,16 @@ const MatchForm: React.FC<MatchFormProps> = ({
       // Only fetch once per match
       if (lineupFetchedRef.current) return;
 
-      // Determine when each captain should fetch
+      // Determine when each role should fetch lineup data
       const homeShouldFetch =
         userTeamSide === "home" &&
         (isHomeLineupPhase || isReadyToStart || isMatchLive);
       const awayShouldFetch =
         userTeamSide === "away" && (isReadyToStart || isMatchLive);
+      // League operators always fetch lineup data (needed for completed/CSV-imported matches)
+      const operatorShouldFetch = isLeagueOperator;
 
-      if (!homeShouldFetch && !awayShouldFetch) return;
+      if (!homeShouldFetch && !awayShouldFetch && !operatorShouldFetch) return;
 
       const token = getAuthToken();
       if (!token) return;
@@ -261,6 +263,7 @@ const MatchForm: React.FC<MatchFormProps> = ({
   }, [
     match.id,
     userTeamSide,
+    isLeagueOperator,
     isHomeLineupPhase,
     isReadyToStart,
     isMatchLive,
@@ -516,13 +519,17 @@ const MatchForm: React.FC<MatchFormProps> = ({
   });
 
   // Determine if user is in read-only mode (viewer or match completed)
-  // League operators have full access and are never read-only (except for completed matches)
+  // League operators have full access and are never read-only
   const isReadOnly =
-    isMatchCompleted || (userTeamSide === null && !isLeagueOperator);
+    (isMatchCompleted && !isLeagueOperator) ||
+    (userTeamSide === null && !isLeagueOperator);
 
   // Scoring (winner/TR/8B) is additionally locked during awaiting_confirmation.
   // Once away submits, neither captain can alter results — home can only confirm or send back.
-  const isScoringLocked = isReadOnly || lineupState === "awaiting_confirmation";
+  // League operators can always edit scoring.
+  const isScoringLocked =
+    isReadOnly ||
+    (lineupState === "awaiting_confirmation" && !isLeagueOperator);
 
   // Determine submit button text and state
   const getSubmitButtonConfig = () => {
@@ -1171,7 +1178,7 @@ const MatchForm: React.FC<MatchFormProps> = ({
                       {awayRoster.map((player) => {
                         const canEdit =
                           !isReadOnly &&
-                          isAwayLineupPhase &&
+                          (isAwayLineupPhase || isLeagueOperator) &&
                           (userTeamSide === "away" || isLeagueOperator);
                         return (
                           <button
@@ -1236,7 +1243,7 @@ const MatchForm: React.FC<MatchFormProps> = ({
                         {homeRoster.map((player) => {
                           const canEdit =
                             !isReadOnly &&
-                            isHomeLineupPhase &&
+                            (isHomeLineupPhase || isLeagueOperator) &&
                             (userTeamSide === "home" || isLeagueOperator);
                           return (
                             <button
@@ -1445,16 +1452,16 @@ const MatchForm: React.FC<MatchFormProps> = ({
                           const game = games[gameIndex];
 
                           // Determine which dropdowns are editable
-                          // League operators can edit both teams during their respective phases or when match is live
+                          // League operators can edit both teams at any phase
                           const canEditHome =
                             !isReadOnly &&
                             (isHomeLineupPhase ||
-                              (isLeagueOperator && isMatchLive)) &&
+                              isLeagueOperator) &&
                             (userTeamSide === "home" || isLeagueOperator);
                           const canEditAway =
                             !isReadOnly &&
                             (isAwayLineupPhase ||
-                              (isLeagueOperator && isMatchLive)) &&
+                              isLeagueOperator) &&
                             (userTeamSide === "away" || isLeagueOperator);
 
                           return (
@@ -1468,10 +1475,11 @@ const MatchForm: React.FC<MatchFormProps> = ({
 
                               {/* Player selection */}
                               <div className="grid grid-cols-2 gap-2 mb-3">
-                                {/* Home player - show during home lineup phase, ready to start, or match live */}
+                                {/* Home player - show during home lineup phase, ready to start, match live, or completed */}
                                 {(isHomeLineupPhase ||
                                   isReadyToStart ||
                                   isMatchLive ||
+                                  isMatchCompleted ||
                                   isReadOnly) && (
                                   <div>
                                     <label className="text-xs text-dark-600 mb-1 block">
@@ -1600,10 +1608,11 @@ const MatchForm: React.FC<MatchFormProps> = ({
                                 </div>
                               </div>
 
-                              {/* Winner buttons - show during match_live or completed if both players selected */}
+                              {/* Winner buttons - show during match_live or completed if both players selected (or always for operators) */}
                               {(isMatchLive || isMatchCompleted) &&
-                                game.homePlayerId &&
-                                game.awayPlayerId && (
+                                (isLeagueOperator ||
+                                  (game.homePlayerId &&
+                                    game.awayPlayerId)) && (
                                   <>
                                     <div className="grid grid-cols-2 gap-2 mb-3">
                                       <button

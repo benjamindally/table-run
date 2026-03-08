@@ -1,30 +1,37 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "League Genius",
+    "slug": "league-genius",
     "scheme": "leaguegenius",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/league-genius-logo-black.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/league-genius-logo-black.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0a1628"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.leaguegenius.app",
+      "buildNumber": "2",
+      "infoPlist": {
+        "CFBundleDisplayName": "League Genius",
+        "ITSAppUsesNonExemptEncryption": false
+      },
       "associatedDomains": [
+        "applinks:leaguegenius.app",
         "applinks:leaguegenius.app"
       ]
     },
     "android": {
       "package": "com.leaguegenius.app",
+      "versionCode": 2,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/league-genius-logo-black.png",
+        "backgroundColor": "#0a1628"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -33,16 +40,37 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "leaguegenius.app", "pathPrefix": "/reset-password" },
-            { "scheme": "https", "host": "leaguegenius.app", "pathPrefix": "/claim-player" },
-            { "scheme": "https", "host": "leaguegenius.app", "pathPrefix": "/activate" }
+            {
+              "scheme": "https",
+              "host": "leaguegenius.app",
+              "pathPrefix": "/reset-password"
+            },
+            {
+              "scheme": "https",
+              "host": "leaguegenius.app",
+              "pathPrefix": "/claim-player"
+            },
+            {
+              "scheme": "https",
+              "host": "leaguegenius.app",
+              "pathPrefix": "/activate"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9c79a88b-65f5-460a-9058-64897328fcc7"
+      }
+    },
+    "owner": "bendally"
   }
 }

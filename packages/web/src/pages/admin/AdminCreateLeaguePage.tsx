@@ -9,6 +9,7 @@ import {
   Users,
   LayoutGrid,
   Layers,
+  Globe,
   X,
 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -152,6 +153,7 @@ interface BasicInfo {
   country: string;
   sets_per_match: number;
   games_per_set: number;
+  is_public: boolean;
 }
 
 const INITIAL_BASIC_INFO: BasicInfo = {
@@ -162,6 +164,7 @@ const INITIAL_BASIC_INFO: BasicInfo = {
   country: "USA",
   sets_per_match: 4,
   games_per_set: 4,
+  is_public: true,
 };
 
 const AdminCreateLeaguePage: React.FC = () => {
@@ -179,7 +182,7 @@ const AdminCreateLeaguePage: React.FC = () => {
 
   // Active modal
   const [activeModal, setActiveModal] = useState<
-    "identity" | "location" | "scoring" | "players" | "games" | "sets" | null
+    "identity" | "location" | "scoring" | "players" | "games" | "sets" | "visibility" | null
   >(null);
 
   // Draft state (populated fresh when a modal opens)
@@ -191,6 +194,7 @@ const AdminCreateLeaguePage: React.FC = () => {
   const [draftPlayersPerTeam, setDraftPlayersPerTeam] = useState(4);
   const [draftGamesPerSet, setDraftGamesPerSet] = useState(4);
   const [draftSetsPerMatch, setDraftSetsPerMatch] = useState(4);
+  const [draftIsPublic, setDraftIsPublic] = useState(true);
 
   // Submission error
   const [submitError, setSubmitError] = useState("");
@@ -224,6 +228,11 @@ const AdminCreateLeaguePage: React.FC = () => {
   const openSetsModal = () => {
     setDraftSetsPerMatch(basicInfo.sets_per_match);
     setActiveModal("sets");
+  };
+
+  const openVisibilityModal = () => {
+    setDraftIsPublic(basicInfo.is_public);
+    setActiveModal("visibility");
   };
 
   // ——— Modal savers ———
@@ -273,6 +282,11 @@ const AdminCreateLeaguePage: React.FC = () => {
     setActiveModal(null);
   };
 
+  const handleSaveVisibility = () => {
+    setBasicInfo((prev) => ({ ...prev, is_public: draftIsPublic }));
+    setActiveModal(null);
+  };
+
   // In the creation flow preset clicks only update draft state (no league ID to hit yet)
   const handleDraftPresetSelect = async (preset: ScoringPreset) => {
     setDraftScoringConfig({ ...PRESET_DEFAULTS[preset] });
@@ -292,6 +306,7 @@ const AdminCreateLeaguePage: React.FC = () => {
   const setsValue = `${basicInfo.sets_per_match} ${
     basicInfo.sets_per_match === 1 ? "set" : "sets"
   } / match`;
+  const visibilityValue = basicInfo.is_public ? "Public" : "Private";
 
   // ——— Submit ———
   const validate = (): string | null => {
@@ -426,6 +441,12 @@ const AdminCreateLeaguePage: React.FC = () => {
             label="Games per Set"
             value={gamesValue}
             onClick={openGamesModal}
+          />
+          <ParameterBox
+            icon={<Globe className="h-6 w-6" />}
+            label="Visibility"
+            value={visibilityValue}
+            onClick={openVisibilityModal}
           />
           <ParameterBox
             icon={<Layers className="h-6 w-6" />}
@@ -751,6 +772,61 @@ const AdminCreateLeaguePage: React.FC = () => {
               min="1"
               autoFocus
             />
+          </div>
+        </ModalWrapper>
+      )}
+
+      {/* Visibility Modal */}
+      {activeModal === "visibility" && (
+        <ModalWrapper
+          title="League Visibility"
+          onClose={() => setActiveModal(null)}
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => setActiveModal(null)}
+                className="btn btn-outline"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveVisibility}
+                className="btn btn-primary"
+              >
+                Save
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-3">
+            <p className="text-sm text-dark-300 mb-3">
+              Public leagues are discoverable by players. Private leagues are
+              invite-only and hidden from search.
+            </p>
+            {[
+              { value: true, label: "Public", description: "Anyone can find and request to join this league" },
+              { value: false, label: "Private", description: "Only invited players can see and join this league" },
+            ].map((option) => (
+              <button
+                key={String(option.value)}
+                type="button"
+                onClick={() => setDraftIsPublic(option.value)}
+                className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
+                  draftIsPublic === option.value
+                    ? "border-primary-400 bg-primary-50"
+                    : "border-cream-300 bg-white hover:border-primary-200"
+                }`}
+              >
+                <span className={`font-semibold text-sm ${draftIsPublic === option.value ? "text-primary-600" : "text-dark"}`}>
+                  {option.label}
+                </span>
+                <p className={`text-xs mt-0.5 ${draftIsPublic === option.value ? "text-primary-500" : "text-dark-300"}`}>
+                  {option.description}
+                </p>
+              </button>
+            ))}
           </div>
         </ModalWrapper>
       )}
