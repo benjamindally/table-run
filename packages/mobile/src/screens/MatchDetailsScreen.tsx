@@ -714,13 +714,11 @@ export default function MatchDetailsScreen() {
 
   const showAwaySubmit =
     isAwayLineupPhase &&
-    (captainRole === "away" || isLeagueOperator) &&
-    isAwayLineupComplete;
+    (captainRole === "away" || isLeagueOperator);
 
   const showHomeSubmit =
     isHomeLineupPhase &&
-    (captainRole === "home" || isLeagueOperator) &&
-    isHomeLineupComplete;
+    (captainRole === "home" || isLeagueOperator);
 
   return (
     <ScrollView
@@ -838,17 +836,17 @@ export default function MatchDetailsScreen() {
         {showAwaySubmit && (
           <TouchableOpacity
             onPress={() => handleSubmitLineup("away")}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isAwayLineupComplete}
             className={`flex-row items-center justify-center gap-2 p-4 ${
-              isSubmitting ? "bg-gray-300" : "bg-primary-600"
+              isSubmitting || !isAwayLineupComplete ? "bg-gray-300" : "bg-primary-600"
             }`}
           >
             {isSubmitting ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Send size={18} color="#FFFFFF" />
+              <Send size={18} color={isAwayLineupComplete ? "#FFFFFF" : "#9CA3AF"} />
             )}
-            <Text className="text-white font-bold">Submit Away Lineup</Text>
+            <Text className={`font-bold ${isAwayLineupComplete ? "text-white" : "text-gray-400"}`}>Submit Away Lineup</Text>
           </TouchableOpacity>
         )}
 
@@ -856,17 +854,17 @@ export default function MatchDetailsScreen() {
         {showHomeSubmit && (
           <TouchableOpacity
             onPress={() => handleSubmitLineup("home")}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isHomeLineupComplete}
             className={`flex-row items-center justify-center gap-2 p-4 ${
-              isSubmitting ? "bg-gray-300" : "bg-primary-600"
+              isSubmitting || !isHomeLineupComplete ? "bg-gray-300" : "bg-primary-600"
             }`}
           >
             {isSubmitting ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Send size={18} color="#FFFFFF" />
+              <Send size={18} color={isHomeLineupComplete ? "#FFFFFF" : "#9CA3AF"} />
             )}
-            <Text className="text-white font-bold">Submit Home Lineup</Text>
+            <Text className={`font-bold ${isHomeLineupComplete ? "text-white" : "text-gray-400"}`}>Submit Home Lineup</Text>
           </TouchableOpacity>
         )}
 
@@ -890,8 +888,8 @@ export default function MatchDetailsScreen() {
           />
         )}
 
-        {/* Away captain: submit scorecard */}
-        {isMatchLive && captainRole === "away" && scoringState?.submittedBy === null && (() => {
+        {/* Away captain (or operator): submit scorecard */}
+        {isMatchLive && (captainRole === "away" || isLeagueOperator) && scoringState?.submittedBy === null && (() => {
           const totalGames = scoringState?.games.length ?? 0;
           const gamesWithWinners = scoringState?.games.filter((g) => g.winner !== null).length ?? 0;
           const allComplete = gamesWithWinners === totalGames && totalGames > 0;
@@ -933,8 +931,8 @@ export default function MatchDetailsScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Away captain: waiting for home to confirm */}
-        {lineupState === "awaiting_confirmation" && captainRole === "away" && (
+        {/* Away captain: waiting for home to confirm (not shown for operators — they can confirm) */}
+        {lineupState === "awaiting_confirmation" && captainRole === "away" && !isLeagueOperator && (
           <View className="bg-gray-100 border border-gray-200 p-4 items-center">
             <Text className="text-gray-600 font-medium">
               Scorecard submitted — waiting for home captain to confirm
