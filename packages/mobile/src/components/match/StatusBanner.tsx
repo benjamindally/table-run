@@ -55,33 +55,18 @@ export default function StatusBanner({
     );
   }
 
-  // League operator
-  if (isLeagueOperator) {
-    return (
-      <View className="bg-purple-50 border border-purple-200 p-4">
-        <View className="flex-row items-center gap-2">
-          <AlertCircle size={18} color="#7C3AED" />
-          <Text className="text-sm text-purple-700 flex-1">
-            <Text className="font-medium">League Operator.</Text> You have full
-            access to edit this match.
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
-  // Phase-specific banners for captains
+  // Phase-specific banners for captains and operators
   switch (lineupState) {
     case "not_started":
     case "awaiting_away_lineup":
-      if (captainRole === "away") {
+      if (captainRole === "away" || isLeagueOperator) {
         return (
           <View className="bg-primary-50 border border-primary-200 p-4">
             <View className="flex-row items-center gap-2">
               <Clock size={18} color="#26A69A" />
               <Text className="text-sm text-primary-700 flex-1">
-                <Text className="font-medium">Your turn!</Text> Mark your
-                players' attendance and assign them to games.
+                <Text className="font-medium">{isLeagueOperator && !captainRole ? "Away lineup phase." : "Your turn!"}</Text>{" "}
+                Mark away players' attendance and assign them to games.
               </Text>
             </View>
           </View>
@@ -100,14 +85,14 @@ export default function StatusBanner({
       );
 
     case "awaiting_home_lineup":
-      if (captainRole === "home") {
+      if (captainRole === "home" || isLeagueOperator) {
         return (
           <View className="bg-primary-50 border border-primary-200 p-4">
             <View className="flex-row items-center gap-2">
               <Clock size={18} color="#26A69A" />
               <Text className="text-sm text-primary-700 flex-1">
-                <Text className="font-medium">Your turn!</Text> Mark your
-                players' attendance and assign them to games.
+                <Text className="font-medium">{isLeagueOperator && !captainRole ? "Home lineup phase." : "Your turn!"}</Text>{" "}
+                Mark home players' attendance and assign them to games.
               </Text>
             </View>
           </View>
@@ -126,7 +111,7 @@ export default function StatusBanner({
       );
 
     case "ready_to_start":
-      if (captainRole === "home" && onStartMatch) {
+      if ((captainRole === "home" || isLeagueOperator) && onStartMatch) {
         return (
           <View className="bg-green-50 border border-green-200 p-4">
             <View className="items-center gap-3">
@@ -183,7 +168,7 @@ export default function StatusBanner({
       );
 
     case "awaiting_confirmation":
-      if (captainRole === "home") {
+      if (captainRole === "home" || isLeagueOperator) {
         return (
           <View className="bg-yellow-50 border border-yellow-200 p-4">
             <View className="flex-row items-center gap-2">
