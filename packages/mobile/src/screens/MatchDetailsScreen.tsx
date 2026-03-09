@@ -115,19 +115,20 @@ export default function MatchDetailsScreen() {
   const isMatchCompleted = lineupState === "completed";
 
   // Permission checks
+  // League operators can edit at any phase, including completed matches
   const canEditAwayLineup =
-    !isMatchCompleted &&
-    isAwayLineupPhase &&
+    (isAwayLineupPhase || isLeagueOperator) &&
     (captainRole === "away" || isLeagueOperator);
   const canEditHomeLineup =
-    !isMatchCompleted &&
-    isHomeLineupPhase &&
+    (isHomeLineupPhase || isLeagueOperator) &&
     (captainRole === "home" || isLeagueOperator);
   // Scoring is locked once away captain submits (awaiting_confirmation) to prevent
   // the home captain from silently altering results before confirming.
-  // If there's a genuine mistake, home captain can send the scorecard back for correction.
-  const canScore = !isMatchCompleted && lineupState === "match_live" && canEdit;
-  const isReadOnly = isMatchCompleted || !canEdit;
+  // League operators can always score.
+  const canScore =
+    (isLeagueOperator || (!isMatchCompleted && lineupState === "match_live")) &&
+    canEdit;
+  const isReadOnly = (isMatchCompleted && !isLeagueOperator) || !canEdit;
 
   // Show connection indicator only for active matches where user can edit
   const showConnectionStatus = canEdit && !isMatchCompleted;
@@ -878,12 +879,8 @@ export default function MatchDetailsScreen() {
             awayTeamName={awayTeamName}
             presentHomePlayers={presentHome}
             presentAwayPlayers={presentAway}
-            canEditHome={
-              canEditHomeLineup || (isLeagueOperator && !isMatchCompleted)
-            }
-            canEditAway={
-              canEditAwayLineup || (isLeagueOperator && !isMatchCompleted)
-            }
+            canEditHome={canEditHomeLineup}
+            canEditAway={canEditAwayLineup}
             canScore={canScore}
             isReadOnly={isReadOnly}
             onPlayerChange={handlePlayerChange}

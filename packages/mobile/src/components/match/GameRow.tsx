@@ -142,8 +142,8 @@ export default function GameRow({
           </TouchableOpacity>
         </View>
 
-        {/* Scoring section - only show when both players assigned and can score */}
-        {bothPlayersAssigned && (canScore || game.winner) && (
+        {/* Scoring section - show when players assigned or operator can score */}
+        {(bothPlayersAssigned || canScore) && (canScore || game.winner) && (
           <View className="mt-3 pt-3 border-t border-gray-100">
             {/* Winner buttons */}
             <View className="flex-row items-center gap-2 mb-3">

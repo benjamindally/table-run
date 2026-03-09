@@ -79,6 +79,7 @@ export interface League {
   games_per_set: number;
   points_per_win: number;
   is_active: boolean;
+  is_public: boolean;
   created_at: string;
   season_count?: number;
   total_games?: number;
