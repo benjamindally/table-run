@@ -32,6 +32,7 @@ import ActivatePlayerPage from "./pages/ActivatePlayerPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import SupportPage from "./pages/SupportPage";
 import WebSocketTest from "./pages/WebSocketTest";
 import MatchWebSocketTest from "./pages/MatchWebSocketTest";
 import AdminDashboardPage from "./pages/admin/DashboardPage";
@@ -87,6 +88,7 @@ function App() {
             <Route path="reset-password/:uid/:token" element={<ResetPasswordPage />} />
             <Route path="privacy" element={<PrivacyPolicyPage />} />
             <Route path="terms" element={<TermsOfServicePage />} />
+            <Route path="support" element={<SupportPage />} />
             <Route path="websocket-test" element={<WebSocketTest />} />
             <Route path="match-websocket-test" element={<MatchWebSocketTest />} />
           </Route>

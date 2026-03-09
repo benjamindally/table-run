@@ -111,6 +111,14 @@ const Footer: React.FC = () => {
                   Terms of Service
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/support"
+                  className="text-cream hover:text-primary transition-colors"
+                >
+                  Support
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
