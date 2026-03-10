@@ -39,9 +39,6 @@ const LeagueDetailsPage: React.FC = () => {
     city: league?.city || "",
     state: league?.state || "",
     country: league?.country || "",
-    sets_per_match: league?.sets_per_match || 3,
-    games_per_set: league?.games_per_set || 5,
-    points_per_win: league?.points_per_win || 1,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -71,9 +68,6 @@ const LeagueDetailsPage: React.FC = () => {
         city: league.city,
         state: league.state,
         country: league.country,
-        sets_per_match: league.sets_per_match,
-        games_per_set: league.games_per_set,
-        points_per_win: league.points_per_win,
       });
     }
   }, [league]);
@@ -86,12 +80,7 @@ const LeagueDetailsPage: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        name === "sets_per_match" ||
-        name === "games_per_set" ||
-        name === "points_per_win"
-          ? parseInt(value) || 0
-          : value,
+      [name]: value,
     }));
     setHasChanges(true);
     // Clear error for this field
@@ -107,12 +96,6 @@ const LeagueDetailsPage: React.FC = () => {
     if (!formData.city.trim()) newErrors.city = "City is required";
     if (!formData.state.trim()) newErrors.state = "State is required";
     if (!formData.country.trim()) newErrors.country = "Country is required";
-    if (formData.sets_per_match < 1)
-      newErrors.sets_per_match = "Must be at least 1";
-    if (formData.games_per_set < 1)
-      newErrors.games_per_set = "Must be at least 1";
-    if (formData.points_per_win < 1)
-      newErrors.points_per_win = "Must be at least 1";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -363,82 +346,6 @@ const LeagueDetailsPage: React.FC = () => {
                 {errors.country}
               </p>
             )}
-          </div>
-
-          {/* Match Settings */}
-          <div className="border-t pt-4">
-            <h3 className="font-semibold text-dark mb-4">Match Settings</h3>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="form-group">
-                <label htmlFor="sets_per_match" className="form-label">
-                  Sets per Match *
-                </label>
-                <input
-                  type="number"
-                  id="sets_per_match"
-                  name="sets_per_match"
-                  className={`form-input ${
-                    errors.sets_per_match ? "border-red-500" : ""
-                  } ${!isOperator ? "bg-gray-100 cursor-not-allowed" : ""}`}
-                  value={formData.sets_per_match}
-                  onChange={handleChange}
-                  min="1"
-                  disabled={!isOperator}
-                />
-                {errors.sets_per_match && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.sets_per_match}
-                  </p>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="games_per_set" className="form-label">
-                  Games per Set *
-                </label>
-                <input
-                  type="number"
-                  id="games_per_set"
-                  name="games_per_set"
-                  className={`form-input ${
-                    errors.games_per_set ? "border-red-500" : ""
-                  } ${!isOperator ? "bg-gray-100 cursor-not-allowed" : ""}`}
-                  value={formData.games_per_set}
-                  onChange={handleChange}
-                  min="1"
-                  disabled={!isOperator}
-                />
-                {errors.games_per_set && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.games_per_set}
-                  </p>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="points_per_win" className="form-label">
-                  Points per Win *
-                </label>
-                <input
-                  type="number"
-                  id="points_per_win"
-                  name="points_per_win"
-                  className={`form-input ${
-                    errors.points_per_win ? "border-red-500" : ""
-                  } ${!isOperator ? "bg-gray-100 cursor-not-allowed" : ""}`}
-                  value={formData.points_per_win}
-                  onChange={handleChange}
-                  min="1"
-                  disabled={!isOperator}
-                />
-                {errors.points_per_win && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.points_per_win}
-                  </p>
-                )}
-              </div>
-            </div>
           </div>
 
           {/* Actions - Only visible to league operators */}

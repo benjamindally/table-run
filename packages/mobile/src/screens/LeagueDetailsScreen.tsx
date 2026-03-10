@@ -80,12 +80,17 @@ const STANDINGS_FORMATS: { value: StandingsFormat; label: string; description: s
   { value: "cumulative_points", label: "Cumulative Points", description: "Total ball points earned" },
 ];
 
+const SETS_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const GAMES_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 const DEFAULT_DRAFT: Partial<ScoringConfig> = {
   preset: "bca_8ball",
   game_format: "ball_points_8ball",
   ball_value: 1,
   object_ball_value: 2,
   race_to: null,
+  sets_per_match: 5,
+  games_per_set: 1,
   standings_format: "win_loss_pct",
   allow_ties: false,
   match_win_points: 3,
@@ -245,11 +250,13 @@ export default function LeagueDetailsScreen({ route }: Props) {
             <Text className="text-gray-600 mt-2">{league.description}</Text>
           )}
 
-          <View className="mt-4 pt-4 border-t border-gray-200">
-            <Text className="text-xs text-gray-500">
-              {league.games_per_set} games per set • {league.sets_per_match} sets per match
-            </Text>
-          </View>
+          {scoringConfig && (
+            <View className="mt-4 pt-4 border-t border-gray-200">
+              <Text className="text-xs text-gray-500">
+                {scoringConfig.games_per_set} games per set • {scoringConfig.sets_per_match} sets per match
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Scoring Format Card */}
@@ -276,15 +283,15 @@ export default function LeagueDetailsScreen({ route }: Props) {
               </Text>
               {scoringConfig.max_points_per_game != null ? (
                 <Text className="text-xs text-gray-500 mt-1">
-                  Up to {scoringConfig.max_points_per_game} pts/rack  ·  {scoringConfig.players_per_team} players/team
+                  Up to {scoringConfig.max_points_per_game} pts/rack  ·  {scoringConfig.sets_per_match} sets · {scoringConfig.games_per_set} games/set
                 </Text>
               ) : scoringConfig.game_format === "race_to_wins" ? (
                 <Text className="text-xs text-gray-500 mt-1">
-                  Race to {scoringConfig.race_to}  ·  {scoringConfig.players_per_team} players/team
+                  Race to {scoringConfig.race_to}  ·  {scoringConfig.sets_per_match} sets · {scoringConfig.games_per_set} games/set
                 </Text>
               ) : (
                 <Text className="text-xs text-gray-500 mt-1">
-                  {scoringConfig.players_per_team} players/team
+                  {scoringConfig.sets_per_match} sets · {scoringConfig.games_per_set} games/set
                 </Text>
               )}
             </View>
@@ -447,6 +454,49 @@ export default function LeagueDetailsScreen({ route }: Props) {
                     </Text>
                     <Text className={`text-xs mt-0.5 ${isSelected ? "text-teal-600" : "text-gray-500"}`}>
                       {PRESET_DESCRIPTIONS[preset]}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Match Structure — always visible */}
+            <Text className="text-sm font-semibold text-gray-700 mb-2">Sets per Match</Text>
+            <View className="flex-row flex-wrap gap-2 mb-6">
+              {SETS_OPTIONS.map((n) => {
+                const isSelected = draftConfig.sets_per_match === n;
+                return (
+                  <TouchableOpacity
+                    key={n}
+                    onPress={() => updateDraft({ sets_per_match: n })}
+                    className={`py-3 rounded-lg border-2 items-center ${
+                      isSelected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+                    }`}
+                    style={{ width: '18%' }}
+                  >
+                    <Text className={`font-semibold text-sm ${isSelected ? "text-teal-700" : "text-gray-800"}`}>
+                      {n}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text className="text-sm font-semibold text-gray-700 mb-2">Games per Set</Text>
+            <View className="flex-row flex-wrap gap-2 mb-6">
+              {GAMES_OPTIONS.map((n) => {
+                const isSelected = draftConfig.games_per_set === n;
+                return (
+                  <TouchableOpacity
+                    key={n}
+                    onPress={() => updateDraft({ games_per_set: n })}
+                    className={`py-3 rounded-lg border-2 items-center ${
+                      isSelected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+                    }`}
+                    style={{ width: '18%' }}
+                  >
+                    <Text className={`font-semibold text-sm ${isSelected ? "text-teal-700" : "text-gray-800"}`}>
+                      {n}
                     </Text>
                   </TouchableOpacity>
                 );

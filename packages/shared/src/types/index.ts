@@ -56,8 +56,8 @@ export interface ScoringConfig {
   ball_value: number;
   object_ball_value: number;
   race_to: number | null;
-  players_per_team: number;
-  games_per_round: number;
+  sets_per_match: number;
+  games_per_set: number;
   standings_format: StandingsFormat;
   allow_ties: boolean;
   match_win_points: number;
