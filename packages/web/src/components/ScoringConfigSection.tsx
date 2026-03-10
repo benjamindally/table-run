@@ -109,6 +109,51 @@ const ScoringConfigSection: React.FC<ScoringConfigSectionProps> = ({
         </div>
       </div>
 
+      {/* Match Structure — always visible */}
+      <div>
+        <label className="form-label mb-3 block">Sets per Match</label>
+        <div className="grid grid-cols-5 gap-2">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
+            const isActive = config.sets_per_match === n;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => handleFieldChange('sets_per_match', n)}
+                disabled={readOnly || isLoading}
+                className={tileClass(isActive, readOnly || isLoading)}
+              >
+                <div className={`font-semibold text-sm text-center ${isActive ? 'text-primary-700' : 'text-dark'}`}>
+                  {n}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <label className="form-label mb-3 block">Games per Set</label>
+        <div className="grid grid-cols-5 gap-2">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
+            const isActive = config.games_per_set === n;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => handleFieldChange('games_per_set', n)}
+                disabled={readOnly || isLoading}
+                className={tileClass(isActive, readOnly || isLoading)}
+              >
+                <div className={`font-semibold text-sm text-center ${isActive ? 'text-primary-700' : 'text-dark'}`}>
+                  {n}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Game Format — only shown when Custom is selected */}
       {isCustom && (
         <div>

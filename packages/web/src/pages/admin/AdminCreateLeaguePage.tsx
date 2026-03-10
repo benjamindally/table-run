@@ -15,7 +15,6 @@ import {
 import { toast } from "react-toastify";
 import {
   useCreateLeague,
-  useUpdateLeague,
   useApplyScoringPreset,
   useUpdateScoringConfig,
 } from "../../hooks/useLeagues";
@@ -30,8 +29,8 @@ const PRESET_DEFAULTS: Record<ScoringPreset, Partial<ScoringConfig>> = {
     ball_value: 1,
     object_ball_value: 1,
     race_to: null,
-    players_per_team: 4,
-    games_per_round: 2,
+    sets_per_match: 5,
+    games_per_set: 2,
     standings_format: "win_loss_pct",
     allow_ties: false,
     match_win_points: 2,
@@ -44,8 +43,8 @@ const PRESET_DEFAULTS: Record<ScoringPreset, Partial<ScoringConfig>> = {
     ball_value: 1,
     object_ball_value: 1,
     race_to: null,
-    players_per_team: 4,
-    games_per_round: 1,
+    sets_per_match: 5,
+    games_per_set: 1,
     standings_format: "win_loss_pct",
     allow_ties: false,
     match_win_points: 2,
@@ -58,8 +57,8 @@ const PRESET_DEFAULTS: Record<ScoringPreset, Partial<ScoringConfig>> = {
     ball_value: 1,
     object_ball_value: 2,
     race_to: null,
-    players_per_team: 4,
-    games_per_round: 2,
+    sets_per_match: 5,
+    games_per_set: 1,
     standings_format: "win_loss_pct",
     allow_ties: false,
     match_win_points: 2,
@@ -72,8 +71,8 @@ const PRESET_DEFAULTS: Record<ScoringPreset, Partial<ScoringConfig>> = {
     ball_value: 1,
     object_ball_value: 2,
     race_to: null,
-    players_per_team: 4,
-    games_per_round: 2,
+    sets_per_match: 5,
+    games_per_set: 1,
     standings_format: "win_loss_pct",
     allow_ties: false,
     match_win_points: 2,
@@ -86,8 +85,8 @@ const PRESET_DEFAULTS: Record<ScoringPreset, Partial<ScoringConfig>> = {
     ball_value: 1,
     object_ball_value: 1,
     race_to: null,
-    players_per_team: 4,
-    games_per_round: 2,
+    sets_per_match: 5,
+    games_per_set: 1,
     standings_format: "win_loss_pct",
     allow_ties: false,
     match_win_points: 2,
@@ -170,7 +169,6 @@ const INITIAL_BASIC_INFO: BasicInfo = {
 const AdminCreateLeaguePage: React.FC = () => {
   const navigate = useNavigate();
   const createLeagueMutation = useCreateLeague();
-  const updateLeagueMutation = useUpdateLeague();
   const applyPresetMutation = useApplyScoringPreset();
   const updateScoringConfigMutation = useUpdateScoringConfig();
 
@@ -216,7 +214,7 @@ const AdminCreateLeaguePage: React.FC = () => {
   };
 
   const openPlayersModal = () => {
-    setDraftPlayersPerTeam(scoringConfig.players_per_team ?? 4);
+    setDraftPlayersPerTeam(scoringConfig.sets_per_match ?? 5);
     setActiveModal("players");
   };
 
@@ -263,7 +261,7 @@ const AdminCreateLeaguePage: React.FC = () => {
   const handleSavePlayers = () => {
     setScoringConfig((prev) => ({
       ...prev,
-      players_per_team: draftPlayersPerTeam,
+      sets_per_match: draftPlayersPerTeam,
     }));
     setActiveModal(null);
   };
@@ -272,7 +270,7 @@ const AdminCreateLeaguePage: React.FC = () => {
     setBasicInfo((prev) => ({ ...prev, games_per_set: draftGamesPerSet }));
     setScoringConfig((prev) => ({
       ...prev,
-      games_per_round: draftGamesPerSet,
+      games_per_set: draftGamesPerSet,
     }));
     setActiveModal(null);
   };
@@ -301,7 +299,7 @@ const AdminCreateLeaguePage: React.FC = () => {
       : basicInfo.city || basicInfo.state || "Set location...";
 
   const scoringValue = PRESET_LABELS[scoringConfig.preset ?? "bca_8ball"];
-  const playersValue = `${scoringConfig.players_per_team ?? 4} players`;
+  const playersValue = `${scoringConfig.sets_per_match ?? 5} sets`;
   const gamesValue = `${basicInfo.games_per_set} games / set`;
   const setsValue = `${basicInfo.sets_per_match} ${
     basicInfo.sets_per_match === 1 ? "set" : "sets"
@@ -343,21 +341,14 @@ const AdminCreateLeaguePage: React.FC = () => {
           leagueId: newLeague.id,
           preset: scoringConfig.preset as ScoringPreset,
         });
-        // Patch player/game counts — the server preset sets defaults, but the operator may have changed them
-        await Promise.all([
-          updateScoringConfigMutation.mutateAsync({
-            leagueId: newLeague.id,
-            data: {
-              players_per_team: scoringConfig.players_per_team ?? 3,
-              games_per_round: basicInfo.games_per_set,
-            },
-          }),
-          // sets_per_match lives on the League model, not ScoringConfig
-          updateLeagueMutation.mutateAsync({
-            id: newLeague.id,
-            data: { sets_per_match: basicInfo.sets_per_match },
-          }),
-        ]);
+        // Patch sets/games counts — the server preset sets defaults, but the operator may have changed them
+        await updateScoringConfigMutation.mutateAsync({
+          leagueId: newLeague.id,
+          data: {
+            sets_per_match: basicInfo.sets_per_match,
+            games_per_set: basicInfo.games_per_set,
+          },
+        });
       }
 
       // Step 3: If custom, patch the full config
