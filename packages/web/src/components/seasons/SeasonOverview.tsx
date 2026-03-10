@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, Users, Trophy, Target, Edit, Archive, Upload } from "lucide-react";
+import { Calendar, Users, Trophy, Target, Edit, Archive, Upload, RefreshCw } from "lucide-react";
 import { formatDateDisplay } from "@league-genius/shared";
 
 interface SeasonOverviewProps {
@@ -19,6 +19,7 @@ interface SeasonOverviewProps {
   onEditSeason?: () => void;
   onArchive?: () => void;
   onImportCSV?: () => void;
+  onRollover?: () => void;
 }
 
 const SeasonOverview: React.FC<SeasonOverviewProps> = ({
@@ -27,6 +28,7 @@ const SeasonOverview: React.FC<SeasonOverviewProps> = ({
   onEditSeason,
   onArchive,
   onImportCSV,
+  onRollover,
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
@@ -50,6 +52,15 @@ const SeasonOverview: React.FC<SeasonOverviewProps> = ({
               >
                 <Edit className="h-4 w-4 sm:mr-1" />
                 <span className="hidden sm:inline">Edit Season</span>
+              </button>
+            )}
+            {onRollover && (
+              <button
+                onClick={onRollover}
+                className="btn btn-outline btn-sm flex items-center"
+              >
+                <RefreshCw className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Rollover</span>
               </button>
             )}
             {onArchive && (
