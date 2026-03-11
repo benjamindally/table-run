@@ -20,6 +20,7 @@ import {
   type StandingsFormat,
 } from "@league-genius/shared";
 import type { SeasonsStackScreenProps } from "../navigation/types";
+import { useAuthStore } from "../stores/authStore";
 
 // ── Date helpers (display: MM-DD-YYYY, API: YYYY-MM-DD) ──────────────────────
 
@@ -73,6 +74,7 @@ export default function SeasonRolloverScreen({
   navigation,
 }: SeasonsStackScreenProps<"SeasonRollover">) {
   const { seasonId, seasonName } = route.params;
+  const { accessToken } = useAuthStore();
 
   const [preview, setPreview] = useState<RolloverPreviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +110,8 @@ export default function SeasonRolloverScreen({
       setLoading(true);
       setError(null);
       const data = await api.get<RolloverPreviewResponse>(
-        `/seasons/${seasonId}/rollover-preview/`
+        `/seasons/${seasonId}/rollover-preview/`,
+        accessToken ?? undefined
       );
       setPreview(data);
       setSelectedTeamIds(new Set(data.teams.map((t: { team_id: number }) => t.team_id)));
@@ -185,7 +188,7 @@ export default function SeasonRolloverScreen({
         end_date: endDate ? displayToApi(endDate) : null,
         team_ids: Array.from(selectedTeamIds),
         scoring_config: scoringDiff,
-      });
+      }, accessToken ?? undefined);
       Alert.alert("Success", `Season "${result.name}" created!`, [
         {
           text: "View Season",

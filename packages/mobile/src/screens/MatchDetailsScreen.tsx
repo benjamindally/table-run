@@ -18,9 +18,10 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  TextInput,
   Alert,
 } from "react-native";
-import { Send, AlertTriangle, Check, Shuffle, Shield, WifiOff, RotateCcw } from "lucide-react-native";
+import { Send, AlertTriangle, Check, Shuffle, Shield, WifiOff, RotateCcw, Edit3 } from "lucide-react-native";
 import { useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import {
@@ -84,6 +85,9 @@ export default function MatchDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isStartingMatch, setIsStartingMatch] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [scoreOverrideHome, setScoreOverrideHome] = useState("");
+  const [scoreOverrideAway, setScoreOverrideAway] = useState("");
+  const [isSavingScoreOverride, setIsSavingScoreOverride] = useState(false);
 
   // Determine user role
   const captainRole: TeamSide | null = useMemo(() => {
@@ -313,10 +317,21 @@ export default function MatchDetailsScreen() {
         (matchData.lineup_state as LineupState) || "awaiting_away_lineup"
       );
 
-      const [homeRoster, awayRoster] = await Promise.all([
-        teamsApi.getRoster(matchData.home_team, accessToken || undefined),
-        teamsApi.getRoster(matchData.away_team, accessToken || undefined),
-      ]);
+      // Initialize score override from match data
+      setScoreOverrideHome(String(matchData.home_score ?? 0));
+      setScoreOverrideAway(String(matchData.away_score ?? 0));
+
+      // Fetch rosters — non-fatal so CSV-imported matches without roster data still load
+      let homeRoster: Awaited<ReturnType<typeof teamsApi.getRoster>> = [];
+      let awayRoster: Awaited<ReturnType<typeof teamsApi.getRoster>> = [];
+      try {
+        [homeRoster, awayRoster] = await Promise.all([
+          teamsApi.getRoster(matchData.home_team, accessToken || undefined),
+          teamsApi.getRoster(matchData.away_team, accessToken || undefined),
+        ]);
+      } catch (err) {
+        console.warn("[MatchDetailsScreen] Could not load rosters:", err);
+      }
 
       const homeAttendance: PlayerAttendance[] = homeRoster.map((m) => ({
         playerId: m.player,
@@ -712,6 +727,37 @@ export default function MatchDetailsScreen() {
   const isAwayLineupComplete = getIsAwayLineupComplete();
   const isHomeLineupComplete = getIsHomeLineupComplete();
 
+  // Use game-level scores when games have results, otherwise fall back to match-level scores
+  const gameHomeScore = getHomeScore();
+  const gameAwayScore = getAwayScore();
+  const hasGameResults = scoringState?.games.some((g) => g.winner !== null) ?? false;
+  const displayHomeScore = hasGameResults ? gameHomeScore : (match.home_score ?? 0);
+  const displayAwayScore = hasGameResults ? gameAwayScore : (match.away_score ?? 0);
+
+  // Show score override for operators on matches without game-level data
+  const hasNoGameData = !hasGameResults && (scoringState?.homeRoster.length === 0 || scoringState?.awayRoster.length === 0);
+  const showScoreOverride = isLeagueOperator && (hasNoGameData || isMatchCompleted);
+
+  const handleScoreOverrideSave = async () => {
+    if (!accessToken) return;
+    const homeVal = parseInt(scoreOverrideHome) || 0;
+    const awayVal = parseInt(scoreOverrideAway) || 0;
+    setIsSavingScoreOverride(true);
+    try {
+      const updated = await matchesApi.update(
+        matchId,
+        { home_score: homeVal, away_score: awayVal, status: "completed" },
+        accessToken
+      );
+      setMatch(updated);
+      Alert.alert("Saved", `Score updated to ${homeVal} - ${awayVal}.`);
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Failed to save score.");
+    } finally {
+      setIsSavingScoreOverride(false);
+    }
+  };
+
   const showAwaySubmit =
     isAwayLineupPhase &&
     (captainRole === "away" || isLeagueOperator);
@@ -731,8 +777,8 @@ export default function MatchDetailsScreen() {
         {/* Compact match header: date, teams, live score, status */}
         <MatchScoreHeader
           match={match}
-          homeScore={getHomeScore()}
-          awayScore={getAwayScore()}
+          homeScore={displayHomeScore}
+          awayScore={displayAwayScore}
           connectionStatus={connectionStatus}
           showConnectionStatus={showConnectionStatus}
           isCompleted={isMatchCompleted}
@@ -886,6 +932,60 @@ export default function MatchDetailsScreen() {
             onTableRunToggle={handleTableRunToggle}
             on8BallToggle={handle8BallToggle}
           />
+        )}
+
+        {/* Operator score override — for CSV-imported or completed matches without game data */}
+        {showScoreOverride && (
+          <View className="bg-white rounded-lg border border-purple-200 p-4">
+            <View className="flex-row items-center gap-2 mb-3">
+              <Edit3 size={16} color="#7C3AED" />
+              <Text className="text-sm font-semibold text-purple-700">
+                Edit Match Score
+              </Text>
+            </View>
+            {hasNoGameData && (
+              <Text className="text-xs text-gray-500 mb-3">
+                This match has no game-level data. You can set the final score directly.
+              </Text>
+            )}
+            <View className="flex-row items-center gap-3">
+              <View className="flex-1">
+                <Text className="text-xs text-gray-500 mb-1">{homeTeamName}</Text>
+                <TextInput
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-center text-lg font-bold text-gray-900 bg-white"
+                  keyboardType="number-pad"
+                  value={scoreOverrideHome}
+                  onChangeText={setScoreOverrideHome}
+                />
+              </View>
+              <Text className="text-gray-400 font-bold text-lg mt-4">-</Text>
+              <View className="flex-1">
+                <Text className="text-xs text-gray-500 mb-1">{awayTeamName}</Text>
+                <TextInput
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-center text-lg font-bold text-gray-900 bg-white"
+                  keyboardType="number-pad"
+                  value={scoreOverrideAway}
+                  onChangeText={setScoreOverrideAway}
+                />
+              </View>
+            </View>
+            <TouchableOpacity
+              onPress={handleScoreOverrideSave}
+              disabled={isSavingScoreOverride}
+              className={`mt-3 flex-row items-center justify-center gap-2 p-3 rounded-lg ${
+                isSavingScoreOverride ? "bg-gray-300" : "bg-purple-600"
+              }`}
+            >
+              {isSavingScoreOverride ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Check size={16} color="#FFFFFF" />
+              )}
+              <Text className="text-white font-semibold">
+                {isSavingScoreOverride ? "Saving..." : "Save Score"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Away captain (or operator): submit scorecard */}
