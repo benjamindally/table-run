@@ -9,6 +9,7 @@ import MatchDetailsScreen from "../screens/MatchDetailsScreen";
 import CreateSeasonScreen from "../screens/CreateSeasonScreen";
 import TeamManagementScreen from "../screens/TeamManagementScreen";
 import PlayoffBracketScreen from "../screens/PlayoffBracketScreen";
+import SeasonRolloverScreen from "../screens/SeasonRolloverScreen";
 import AppHeader from "../components/AppHeader";
 import type { SeasonsStackParamList } from "./types";
 
@@ -71,6 +72,13 @@ export default function SeasonsNavigator() {
         component={PlayoffBracketScreen}
         options={({ route }) => ({
           title: `${route.params.seasonName} — Playoffs`,
+        })}
+      />
+      <Stack.Screen
+        name="SeasonRollover"
+        component={SeasonRolloverScreen}
+        options={({ route }) => ({
+          title: `Rollover — ${route.params.seasonName}`,
         })}
       />
     </Stack.Navigator>

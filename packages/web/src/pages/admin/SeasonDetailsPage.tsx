@@ -39,6 +39,7 @@ import SeasonTeams from "../../components/seasons/SeasonTeams";
 import SeasonMatches from "../../components/seasons/SeasonMatches";
 import SeasonPlayerAnalytics from "../../components/seasons/SeasonPlayerAnalytics";
 import SeasonVenues from "../../components/seasons/SeasonVenues";
+import SeasonRolloverModal from "../../components/seasons/SeasonRolloverModal";
 import NextMatchCard from "../../components/NextMatchCard";
 import { useCurrentTeams } from "../../hooks/usePlayers";
 import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
@@ -117,6 +118,11 @@ const SeasonDetailsPage: React.FC = () => {
     is_active: false,
     is_archived: false,
   });
+
+  // ============================================================================
+  // ROLLOVER MODAL STATE
+  // ============================================================================
+  const [showRolloverModal, setShowRolloverModal] = useState(false);
 
   // ============================================================================
   // ARCHIVE CONFIRMATION MODAL STATE
@@ -509,6 +515,7 @@ const SeasonDetailsPage: React.FC = () => {
         onEditSeason={openEditSeasonModal}
         onArchive={() => setShowArchiveModal(true)}
         onImportCSV={() => setShowUploadModal(true)}
+        onRollover={() => setShowRolloverModal(true)}
       />
 
       {/* =====================================================================
@@ -1236,6 +1243,19 @@ const SeasonDetailsPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* =====================================================================
+          MODAL: SEASON ROLLOVER
+          Allows creating a new season from the current one, carrying over
+          teams and scoring configuration
+          ===================================================================== */}
+      <SeasonRolloverModal
+        isOpen={showRolloverModal}
+        onClose={() => setShowRolloverModal(false)}
+        seasonId={seasonId}
+        seasonName={season.name}
+        onSuccess={(newSeasonId) => navigate(`/admin/seasons/${newSeasonId}`)}
+      />
     </div>
   );
 };

@@ -922,5 +922,32 @@ export interface UnreadCount {
   unread_count: number;
 }
 
+/**
+ * Season Rollover Types
+ */
+export interface RolloverPreviewTeam {
+  team_id: number;
+  team_name: string;
+  venue_id: number | null;
+  venue_name: string | null;
+}
+
+export interface RolloverPreviewResponse {
+  source_season: {
+    id: number;
+    name: string;
+  };
+  teams: RolloverPreviewTeam[];
+  scoring_config: ScoringConfig;
+}
+
+export interface RolloverRequest {
+  name: string;
+  start_date: string;
+  end_date?: string | null;
+  team_ids?: number[];
+  scoring_config?: Partial<ScoringConfig>;
+}
+
 // Re-export websocket types
 export * from './websocket';

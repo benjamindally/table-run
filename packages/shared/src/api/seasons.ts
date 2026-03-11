@@ -21,6 +21,8 @@ import type {
   PlayoffBracketData,
   AdvancePlayoffRequest,
   AdvancePlayoffResponse,
+  RolloverPreviewResponse,
+  RolloverRequest,
 } from '../types';
 
 export const seasonsApi = {
@@ -207,4 +209,16 @@ export const seasonsApi = {
    */
   advancePlayoff: (seasonId: number, data: AdvancePlayoffRequest, token?: string) =>
     api.post<AdvancePlayoffResponse>(`/seasons/${seasonId}/advance-playoff/`, data, token),
+
+  /**
+   * Get rollover preview for a season (teams and scoring config to carry over)
+   */
+  rolloverPreview: (seasonId: number, token?: string) =>
+    api.get<RolloverPreviewResponse>(`/seasons/${seasonId}/rollover-preview/`, token),
+
+  /**
+   * Roll over a season to create a new one with selected teams and config
+   */
+  rollover: (seasonId: number, data: RolloverRequest, token?: string) =>
+    api.post<Season>(`/seasons/${seasonId}/rollover/`, data, token),
 };

@@ -76,6 +76,9 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
   const [collapsedSets, setCollapsedSets] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<"sets" | "table">("sets");
   const [statusOverride, setStatusOverride] = useState<LineupState | "">("");
+  const [scoreOverrideHome, setScoreOverrideHome] = useState(String(match.home_score ?? 0));
+  const [scoreOverrideAway, setScoreOverrideAway] = useState(String(match.away_score ?? 0));
+  const [isSavingScoreOverride, setIsSavingScoreOverride] = useState(false);
   const lineupFetchedRef = useRef(false);
 
   // Confirmation modal state
@@ -663,6 +666,33 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
     });
   };
 
+  // Score display: use game-level scores when available, otherwise match-level
+  const hasGameResults = games.some((g) => g.winner !== null);
+  const displayHomeScore = hasGameResults ? homeScore : (match.home_score ?? 0);
+  const displayAwayScore = hasGameResults ? awayScore : (match.away_score ?? 0);
+  const hasNoGameData = !hasGameResults && homeRoster.length === 0 && awayRoster.length === 0;
+
+  const handleScoreOverrideSave = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+    const homeVal = parseInt(scoreOverrideHome) || 0;
+    const awayVal = parseInt(scoreOverrideAway) || 0;
+    setIsSavingScoreOverride(true);
+    try {
+      await matchesApi.update(
+        match.id,
+        { home_score: homeVal, away_score: awayVal, status: "completed" },
+        token
+      );
+      toast.success(`Score updated to ${homeVal} - ${awayVal}`);
+      onSuccess?.();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save score");
+    } finally {
+      setIsSavingScoreOverride(false);
+    }
+  };
+
   // Calculate warnings
   const warnings: string[] = [];
   const gamesWithoutPlayers = games.filter((g) => !g.homePlayerId || !g.awayPlayerId).length;
@@ -744,15 +774,57 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
         <div className="flex items-center justify-between">
           <div className="text-center flex-1">
             <div className="text-sm text-gray-500">{homeTeam?.name}</div>
-            <div className="text-3xl font-bold text-primary">{homeScore}</div>
+            <div className="text-3xl font-bold text-primary">{displayHomeScore}</div>
           </div>
           <div className="text-2xl font-bold text-gray-400 px-4">-</div>
           <div className="text-center flex-1">
             <div className="text-sm text-gray-500">{awayTeam?.name}</div>
-            <div className="text-3xl font-bold text-primary">{awayScore}</div>
+            <div className="text-3xl font-bold text-primary">{displayAwayScore}</div>
           </div>
         </div>
       </div>
+
+      {/* Score Override — for CSV-imported or matches without game data */}
+      {(hasNoGameData || lineupState === "completed") && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-purple-700 mb-1">Edit Match Score</h3>
+          {hasNoGameData && (
+            <p className="text-xs text-gray-500 mb-3">
+              This match has no game-level data. You can set the final score directly.
+            </p>
+          )}
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <label className="text-xs text-gray-500 mb-1 block">{homeTeam?.name || "Home"}</label>
+              <input
+                type="number"
+                min="0"
+                className="w-full px-3 py-2 text-center text-lg font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                value={scoreOverrideHome}
+                onChange={(e) => setScoreOverrideHome(e.target.value)}
+              />
+            </div>
+            <span className="text-gray-400 font-bold text-lg pb-2">-</span>
+            <div className="flex-1">
+              <label className="text-xs text-gray-500 mb-1 block">{awayTeam?.name || "Away"}</label>
+              <input
+                type="number"
+                min="0"
+                className="w-full px-3 py-2 text-center text-lg font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                value={scoreOverrideAway}
+                onChange={(e) => setScoreOverrideAway(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={handleScoreOverrideSave}
+              disabled={isSavingScoreOverride}
+              className="px-4 py-2 bg-purple-600 text-white font-semibold rounded-md hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSavingScoreOverride ? "Saving..." : "Save Score"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Warnings Banner */}
       {warnings.length > 0 && (

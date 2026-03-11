@@ -4,7 +4,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { seasonsApi } from '../api';
-import type { Season, SeasonParticipation, Match, Venue, ScheduleConfiguration, SaveScheduleRequest, PlayoffConfiguration, SavePlayoffsRequest, AdvancePlayoffRequest } from '../api';
+import type { Season, SeasonParticipation, Match, Venue, ScheduleConfiguration, SaveScheduleRequest, PlayoffConfiguration, SavePlayoffsRequest, AdvancePlayoffRequest, RolloverRequest } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { meKeys } from './useMe';
 
@@ -422,6 +422,37 @@ export const useToggleFavorite = () => {
       seasonsApi.toggleFavorite(seasonId, getAuthToken() || undefined),
     onSuccess: () => {
       // Invalidate the /me endpoint to refresh seasons with updated favorite status
+      queryClient.invalidateQueries({ queryKey: meKeys.all });
+    },
+  });
+};
+
+/**
+ * Get rollover preview for a season
+ */
+export const useRolloverPreview = (seasonId: number, enabled: boolean = false) => {
+  const { getAuthToken } = useAuth();
+
+  return useQuery({
+    queryKey: [...seasonKeys.detail(seasonId), 'rollover-preview'] as const,
+    queryFn: () => seasonsApi.rolloverPreview(seasonId, getAuthToken() || undefined),
+    enabled: !!seasonId && enabled,
+  });
+};
+
+/**
+ * Roll over a season to create a new one
+ */
+export const useRolloverSeason = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ seasonId, data }: { seasonId: number; data: RolloverRequest }) =>
+      seasonsApi.rollover(seasonId, data, getAuthToken() || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seasonKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['leagues'] });
       queryClient.invalidateQueries({ queryKey: meKeys.all });
     },
   });
