@@ -128,7 +128,7 @@ export default function DatePickerField({
                 mode="date"
                 display="spinner"
                 onChange={handleChange}
-                style={{ height: 200 }}
+                style={{ height: 200, alignSelf: "center", width: "100%" }}
               />
             </Pressable>
           </Pressable>
