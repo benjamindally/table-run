@@ -21,27 +21,7 @@ import {
 } from "@league-genius/shared";
 import type { SeasonsStackScreenProps } from "../navigation/types";
 import { useAuthStore } from "../stores/authStore";
-
-// ── Date helpers (display: MM-DD-YYYY, API: YYYY-MM-DD) ──────────────────────
-
-function displayToApi(display: string): string {
-  const m = display.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-  if (!m) return "";
-  return `${m[3]}-${m[1]}-${m[2]}`;
-}
-
-function isValidDisplayDate(str: string): boolean {
-  if (!/^\d{2}-\d{2}-\d{4}$/.test(str)) return false;
-  const d = new Date(displayToApi(str));
-  return !isNaN(d.getTime());
-}
-
-function formatDateInput(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4)}`;
-}
+import DatePickerField from "../components/DatePickerField";
 
 // ── Scoring config constants ──────────────────────────────────────────────────
 
@@ -83,8 +63,8 @@ export default function SeasonRolloverScreen({
 
   // Form state
   const [name, setName] = useState("");
-  const [startDate, setStartDate] = useState(""); // MM-DD-YYYY
-  const [endDate, setEndDate] = useState("");     // MM-DD-YYYY
+  const [startDate, setStartDate] = useState(""); // YYYY-MM-DD
+  const [endDate, setEndDate] = useState("");     // YYYY-MM-DD
   const [selectedTeamIds, setSelectedTeamIds] = useState<Set<number>>(new Set());
 
   // Scoring config state
@@ -154,12 +134,8 @@ export default function SeasonRolloverScreen({
       Alert.alert("Missing Info", "Please enter a name for the new season.");
       return;
     }
-    if (!startDate || !isValidDisplayDate(startDate)) {
-      Alert.alert("Missing Info", "Please enter a valid start date (MM-DD-YYYY).");
-      return;
-    }
-    if (endDate && !isValidDisplayDate(endDate)) {
-      Alert.alert("Validation", "End date must be valid (MM-DD-YYYY) or left blank.");
+    if (!startDate) {
+      Alert.alert("Missing Info", "Please select a start date.");
       return;
     }
 
@@ -184,8 +160,8 @@ export default function SeasonRolloverScreen({
       setSubmitting(true);
       const result = await api.post<Season>(`/seasons/${seasonId}/rollover/`, {
         name: name.trim(),
-        start_date: displayToApi(startDate),
-        end_date: endDate ? displayToApi(endDate) : null,
+        start_date: startDate,
+        end_date: endDate || null,
         team_ids: Array.from(selectedTeamIds),
         scoring_config: scoringDiff,
       }, accessToken ?? undefined);
@@ -256,29 +232,20 @@ export default function SeasonRolloverScreen({
         <View className="bg-white rounded-lg p-4 border border-gray-200 space-y-3">
           <Text className="text-sm font-medium text-gray-700">Dates</Text>
 
-          <View>
-            <Text className="text-xs text-gray-500 mb-1">Start Date * (MM-DD-YYYY)</Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg px-3 py-2.5 text-base text-gray-900"
-              placeholder="MM-DD-YYYY"
-              value={startDate}
-              onChangeText={(v) => setStartDate(formatDateInput(v))}
-              keyboardType="number-pad"
-              maxLength={10}
-            />
-          </View>
+          <DatePickerField
+            label="Start Date"
+            value={startDate}
+            onChange={setStartDate}
+            placeholder="Select start date"
+            required
+          />
 
-          <View>
-            <Text className="text-xs text-gray-500 mb-1">End Date (optional, MM-DD-YYYY)</Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg px-3 py-2.5 text-base text-gray-900"
-              placeholder="MM-DD-YYYY"
-              value={endDate}
-              onChangeText={(v) => setEndDate(formatDateInput(v))}
-              keyboardType="number-pad"
-              maxLength={10}
-            />
-          </View>
+          <DatePickerField
+            label="End Date"
+            value={endDate}
+            onChange={setEndDate}
+            placeholder="Select end date (optional)"
+          />
         </View>
 
         {/* Teams */}

@@ -40,6 +40,7 @@ import {
 import { useAuthStore } from "../stores/authStore";
 import { useUserContextStore } from "../stores/userContextStore";
 import type { SeasonsStackScreenProps } from "../navigation/types";
+import DatePickerField from "../components/DatePickerField";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -641,20 +642,19 @@ export default function SeasonScheduleScreen({
         visible={openModal === "start_date"}
         title="Start Date"
         onClose={() => {
-          if (draftStartDate && /^\d{4}-\d{2}-\d{2}$/.test(draftStartDate)) {
+          if (draftStartDate) {
             setConfig((c) => ({ ...c, start_date: draftStartDate }));
           }
           setOpenModal(null);
         }}
       >
-        <Text className="text-sm text-gray-600 mb-2">Enter the first match day (MM-DD-YYYY)</Text>
-        <TextInput
-          className="border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900"
+        <Text className="text-sm text-gray-600 mb-2">Select the first match day</Text>
+        <DatePickerField
+          label="Start Date"
           value={draftStartDate}
-          onChangeText={setDraftStartDate}
-          placeholder="2025-09-03"
-          keyboardType="numbers-and-punctuation"
-          autoFocus
+          onChange={setDraftStartDate}
+          placeholder="Select start date"
+          required
         />
       </ParamModal>
 

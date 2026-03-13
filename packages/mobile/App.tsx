@@ -1,10 +1,11 @@
 import "./global.css"; // Temporarily disabled for testing
 import { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+
 import { NavigationContainer } from "@react-navigation/native";
 import type { LinkingOptions } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import * as SplashScreen from "expo-splash-screen";
 import { configureApi, setStorageAdapter } from "@league-genius/shared";
 import { RootNavigator } from "./src/navigation";
 import { useAuthStore } from "./src/stores/authStore";
@@ -21,6 +22,9 @@ import {
   Antonio_600SemiBold,
   Antonio_700Bold,
 } from "@expo-google-fonts/antonio";
+
+// Keep the native splash screen visible until we're ready
+SplashScreen.preventAutoHideAsync();
 
 // Configure shared package for mobile
 configureApi({ baseUrl: API_BASE_URL });
@@ -75,12 +79,14 @@ function AppContent() {
     init();
   }, [loadStoredAuth]);
 
+  useEffect(() => {
+    if (isReady && !isLoading && fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [isReady, isLoading, fontsLoaded]);
+
   if (!isReady || isLoading || !fontsLoaded) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#37474F" />
-      </View>
-    );
+    return null;
   }
 
   return (
@@ -99,11 +105,3 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-});

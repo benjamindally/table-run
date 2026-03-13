@@ -43,6 +43,7 @@ import {
 import { useAuthStore } from "../stores/authStore";
 import { useUserContextStore } from "../stores/userContextStore";
 import type { SeasonsStackScreenProps } from "../navigation/types";
+import DatePickerField from "../components/DatePickerField";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -495,14 +496,14 @@ function MatchupEditModal({
             </View>
 
             {/* Date */}
-            <Text className="text-sm font-medium text-gray-700 mb-1 mt-2">Date</Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900 mb-3"
-              value={draft.scheduled_date}
-              onChangeText={(v) => setDraft((d) => d ? { ...d, scheduled_date: v } : d)}
-              placeholder="YYYY-MM-DD"
-              keyboardType="numbers-and-punctuation"
-            />
+            <View className="mt-2 mb-3">
+              <DatePickerField
+                label="Date"
+                value={draft.scheduled_date}
+                onChange={(v) => setDraft((d) => d ? { ...d, scheduled_date: v } : d)}
+                placeholder="Select date"
+              />
+            </View>
 
             {/* Venue */}
             <Text className="text-sm font-medium text-gray-700 mb-1">Venue</Text>
@@ -1285,20 +1286,19 @@ export default function PlayoffBracketScreen({
         visible={openModal === "start_date"}
         title="Start Date"
         onClose={() => {
-          if (draftStartDate && /^\d{4}-\d{2}-\d{2}$/.test(draftStartDate)) {
+          if (draftStartDate) {
             setConfig((c) => ({ ...c, start_date: draftStartDate }));
           }
           setOpenModal(null);
         }}
       >
-        <Text className="text-sm text-gray-600 mb-2">Enter the first playoff date (YYYY-MM-DD)</Text>
-        <TextInput
-          className="border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900"
+        <Text className="text-sm text-gray-600 mb-2">Select the first playoff date</Text>
+        <DatePickerField
+          label="Start Date"
           value={draftStartDate}
-          onChangeText={setDraftStartDate}
-          placeholder="2026-04-15"
-          keyboardType="numbers-and-punctuation"
-          autoFocus
+          onChange={setDraftStartDate}
+          placeholder="Select start date"
+          required
         />
       </ParamModal>
 
