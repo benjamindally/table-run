@@ -11,12 +11,12 @@
     "splash": {
       "image": "./assets/league-genius-logo-black.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0a1628"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.leaguegenius.app",
-      "buildNumber": "4",
+      "buildNumber": "8",
       "infoPlist": {
         "CFBundleDisplayName": "League Genius",
         "ITSAppUsesNonExemptEncryption": false
@@ -27,10 +27,10 @@
     },
     "android": {
       "package": "com.leaguegenius.app",
-      "versionCode": 3,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/league-genius-logo-black.png",
-        "backgroundColor": "#0a1628"
+        "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -78,6 +78,11 @@
       "url": "https://u.expo.dev/9c79a88b-65f5-460a-9058-64897328fcc7",
       "checkOnLaunch": "ALWAYS",
       "fallbackToCacheTimeout": 3000
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      "expo-splash-screen",
+      "expo-updates"
+    ]
   }
 }

@@ -1,10 +1,13 @@
 import "./global.css"; // Temporarily disabled for testing
 import { useEffect, useState } from "react";
+import { AppState } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import * as Updates from "expo-updates";
+
 import { NavigationContainer } from "@react-navigation/native";
 import type { LinkingOptions } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import * as SplashScreen from "expo-splash-screen";
 import { configureApi, setStorageAdapter } from "@league-genius/shared";
 import { RootNavigator } from "./src/navigation";
 import { useAuthStore } from "./src/stores/authStore";
@@ -21,6 +24,9 @@ import {
   Antonio_600SemiBold,
   Antonio_700Bold,
 } from "@expo-google-fonts/antonio";
+
+// Keep the native splash screen visible until we're ready
+SplashScreen.preventAutoHideAsync();
 
 // Configure shared package for mobile
 configureApi({ baseUrl: API_BASE_URL });
@@ -75,12 +81,42 @@ function AppContent() {
     init();
   }, [loadStoredAuth]);
 
+  // Check for OTA updates on mount and when app comes to foreground
+  useEffect(() => {
+    if (__DEV__) return; // Skip in development
+
+    async function checkForUpdates() {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        // Silently fail — the app continues with the current bundle
+        console.log("OTA update check failed:", e);
+      }
+    }
+
+    checkForUpdates();
+
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        checkForUpdates();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (isReady && !isLoading && fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [isReady, isLoading, fontsLoaded]);
+
   if (!isReady || isLoading || !fontsLoaded) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#37474F" />
-      </View>
-    );
+    return null;
   }
 
   return (
@@ -99,11 +135,3 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-});

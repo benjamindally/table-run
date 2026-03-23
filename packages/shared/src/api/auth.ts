@@ -56,4 +56,11 @@ export const authApi = {
    */
   confirmPasswordReset: (data: PasswordResetConfirmRequest) =>
     api.post<PasswordResetConfirmResponse>('/auth/password-reset/confirm/', data),
+
+  /**
+   * Delete the authenticated user's account
+   * Requires password confirmation
+   */
+  deleteAccount: (password: string, token: string) =>
+    api.post('/auth/delete-account/', { password }, token),
 };

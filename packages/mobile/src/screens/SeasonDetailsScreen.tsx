@@ -5,10 +5,27 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from "react-native";
-import { Calendar, CalendarDays, Users, ChevronRight, ChevronDown, Clock, MapPin, Shield, Trophy, RefreshCw } from "lucide-react-native";
+import {
+  Calendar,
+  CalendarDays,
+  Users,
+  ChevronRight,
+  ChevronDown,
+  Clock,
+  MapPin,
+  Shield,
+  Trophy,
+  RefreshCw,
+  Archive,
+} from "lucide-react-native";
 import { useState, useEffect, useMemo } from "react";
-import { api, formatDateDisplay, type SeasonMatchesResponse } from "@league-genius/shared";
+import {
+  api,
+  formatDateDisplay,
+  type SeasonMatchesResponse,
+} from "@league-genius/shared";
 import type { SeasonsStackScreenProps } from "../navigation/types";
 import { useUserContextStore } from "../stores/userContextStore";
 
@@ -218,92 +235,8 @@ export default function SeasonDetailsScreen({
                   : "Teams"}
               </Text>
             </View>
-            {/* <View className="flex-row items-center gap-2">
-              <Trophy color="#6b7280" size={18} />
-              <Text className="text-sm text-gray-600">
-                {matches.filter((m) => m.status === "completed").length} /{" "}
-                {matches.length} Matches Completed
-              </Text>
-            </View> */}
           </View>
         </View>
-
-        {/* Season Schedule card — operators only */}
-        {isOperatorFn(season.league) && (
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("SeasonSchedule", {
-                seasonId,
-                seasonName: season.name,
-                leagueId: season.league,
-              })
-            }
-            className="bg-white rounded-lg p-4 border border-gray-200 flex-row items-center justify-between"
-          >
-            <View className="flex-row items-center gap-3">
-              <CalendarDays color="#26A69A" size={20} />
-              <Text className="text-base font-semibold text-gray-900">Season Schedule</Text>
-            </View>
-            <ChevronRight color="#9ca3af" size={20} />
-          </TouchableOpacity>
-        )}
-
-        {/* Playoffs — visible to all users */}
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate("PlayoffBracket", {
-              seasonId,
-              seasonName: season.name,
-              leagueId: season.league,
-            })
-          }
-          className="bg-white rounded-lg p-4 border border-gray-200 flex-row items-center justify-between"
-        >
-          <View className="flex-row items-center gap-3">
-            <Trophy color="#26A69A" size={20} />
-            <Text className="text-base font-semibold text-gray-900">Playoffs</Text>
-          </View>
-          <ChevronRight color="#9ca3af" size={20} />
-        </TouchableOpacity>
-
-        {/* Manage Teams — operators only */}
-        {isOperatorFn(season.league) && (
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("TeamManagement", {
-                seasonId,
-                seasonName: season.name,
-              })
-            }
-            className="bg-white rounded-lg p-4 border border-gray-200 flex-row items-center justify-between"
-          >
-            <View className="flex-row items-center gap-3">
-              <Shield color="#26A69A" size={20} />
-              <Text className="text-base font-semibold text-gray-900">Manage Teams</Text>
-            </View>
-            <ChevronRight color="#9ca3af" size={20} />
-          </TouchableOpacity>
-        )}
-
-        {/* Rollover Season — operators only */}
-        {isOperatorFn(season.league) && (
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("SeasonRollover", {
-                seasonId,
-                seasonName: season.name,
-                leagueId: season.league,
-              })
-            }
-            className="bg-white rounded-lg p-4 border border-gray-200 flex-row items-center justify-between"
-          >
-            <View className="flex-row items-center gap-3">
-              <RefreshCw color="#26A69A" size={20} />
-              <Text className="text-base font-semibold text-gray-900">Rollover Season</Text>
-            </View>
-            <ChevronRight color="#9ca3af" size={20} />
-          </TouchableOpacity>
-        )}
 
         {/* Your Next Match Card - TODO: Navigate to MatchScoreScreen */}
         {myNextMatch && (
@@ -337,7 +270,9 @@ export default function SeasonDetailsScreen({
                       : "text-gray-600"
                   }`}
                 >
-                  {userTeamIds.includes(myNextMatch.home_team_id) ? "Home" : "Away"}
+                  {userTeamIds.includes(myNextMatch.home_team_id)
+                    ? "Home"
+                    : "Away"}
                 </Text>
               </View>
               {myNextMatch.venue_name && (
@@ -352,8 +287,8 @@ export default function SeasonDetailsScreen({
           </View>
         )}
 
-        {/* Standings Section - Top 5 */}
-        <View className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-10">
+        {/* Standings Section - Grid Tiles */}
+        <View className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-4">
           <TouchableOpacity
             onPress={() => setStandingsCollapsed(!standingsCollapsed)}
             className="bg-gray-50 p-3 border-b border-gray-200 flex-row items-center justify-between"
@@ -368,14 +303,7 @@ export default function SeasonDetailsScreen({
             )}
           </TouchableOpacity>
           {!standingsCollapsed && (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("FullStandings", {
-                  seasonId,
-                  seasonName: season.name,
-                })
-              }
-            >
+            <>
               {standings.length === 0 ? (
                 <View className="p-8">
                   <Text className="text-gray-400 text-center">
@@ -383,61 +311,72 @@ export default function SeasonDetailsScreen({
                   </Text>
                 </View>
               ) : (
-                <View>
-                  {standings.slice(0, 5).map((team, index) => (
-                    <View
+                <View
+                  className="p-3"
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  {standings.slice(0, 6).map((team, index) => (
+                    <TouchableOpacity
                       key={`standing-${team.team_id}-${index}`}
-                      className={`p-4 ${
-                        index < 4 && index < standings.length - 1
-                          ? "border-b border-gray-200"
-                          : ""
-                      }`}
+                      onPress={() =>
+                        navigation.navigate("FullStandings", {
+                          seasonId,
+                          seasonName: season.name,
+                        })
+                      }
+                      className="bg-gray-50 rounded-lg p-3 border border-gray-200 mb-2"
+                      style={{ width: "48%" }}
                     >
-                      <View className="flex-row items-center gap-3">
-                        <View className="w-8 h-8 rounded-full bg-primary items-center justify-center">
+                      <View className="flex-row items-center gap-2 mb-1">
+                        <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
                           <Text className="text-white font-bold text-xs">
                             {index + 1}
                           </Text>
                         </View>
-                        <View className="flex-1">
-                          <View className="flex-row items-center justify-between mb-1">
-                            <Text className="text-base font-semibold text-gray-900 flex-1">
-                              {team.team_name}
-                            </Text>
-                            <Text className="text-lg font-bold text-primary">
-                              {team.points}
-                            </Text>
-                          </View>
-                          <View className="flex-row gap-4">
-                            <Text className="text-sm text-gray-600">
-                              W: {team.wins}
-                            </Text>
-                            <Text className="text-sm text-gray-600">
-                              L: {team.losses}
-                            </Text>
-                            <Text className="text-sm text-gray-600">
-                              GB: {index === 0 ? "-" : (standings[0].wins - standings[0].losses) - (team.wins - team.losses)}
-                            </Text>
-                          </View>
-                        </View>
+                        <Text
+                          className="text-sm font-semibold text-gray-900 flex-1"
+                          numberOfLines={1}
+                        >
+                          {team.team_name}
+                        </Text>
                       </View>
-                    </View>
+                      <View className="flex-row items-center justify-between mt-1">
+                        <Text className="text-xs text-gray-500">
+                          {team.wins}W - {team.losses}L
+                        </Text>
+                        <Text className="text-sm font-bold text-primary">
+                          {team.points}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
                   ))}
-                  {standings.length > 5 && (
-                    <View className="p-3 bg-gray-50 border-t border-gray-200">
-                      <Text className="text-sm text-primary text-center font-medium">
-                        View All {standings.length} Teams →
-                      </Text>
-                    </View>
-                  )}
                 </View>
               )}
-            </TouchableOpacity>
+              {standings.length > 6 && (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("FullStandings", {
+                      seasonId,
+                      seasonName: season.name,
+                    })
+                  }
+                  className="p-3 bg-gray-50 border-t border-gray-200"
+                >
+                  <Text className="text-sm text-primary text-center font-medium">
+                    View All {standings.length} Teams →
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
         </View>
 
-        {/* Matches Section - Recent Weeks */}
-        <View className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-10">
+        {/* Matches Section - Grid Tiles */}
+        <View className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-4">
           <TouchableOpacity
             onPress={() => setMatchesCollapsed(!matchesCollapsed)}
             className="bg-gray-50 p-3 border-b border-gray-200 flex-row items-center justify-between"
@@ -450,39 +389,47 @@ export default function SeasonDetailsScreen({
             )}
           </TouchableOpacity>
           {!matchesCollapsed && (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("FullMatches", {
-                  seasonId,
-                  seasonName: season.name,
-                })
-              }
-            >
-              <View className="p-4 space-y-4">
-                {matches.length === 0 ? (
-                  <View className="p-4">
-                    <Text className="text-gray-400 text-center">
-                      No matches scheduled
-                    </Text>
-                  </View>
-                ) : (
-                  <>
-                    {displayWeeks.map((weekNum) => (
-                      <View key={`week-${weekNum}`} className="space-y-2">
-                        <Text className="text-sm font-bold text-gray-700 mb-2">
-                          Week {weekNum}
-                        </Text>
+            <>
+              {matches.length === 0 ? (
+                <View className="p-8">
+                  <Text className="text-gray-400 text-center">
+                    No matches scheduled
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {displayWeeks.map((weekNum) => (
+                    <View key={`week-${weekNum}`} className="p-3">
+                      <Text className="text-sm font-bold text-gray-700 mb-2">
+                        Week {weekNum}
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          flexWrap: "wrap",
+                          justifyContent: "space-between",
+                        }}
+                      >
                         {matchesByWeek[weekNum].map((match, index) => (
-                          <View
+                          <TouchableOpacity
                             key={`match-${match.id}-${index}`}
+                            onPress={() =>
+                              navigation.navigate("MatchDetails", {
+                                matchId: match.id,
+                              })
+                            }
                             className="bg-gray-50 rounded-lg p-3 border border-gray-200 mb-2"
+                            style={{ width: "48%" }}
                           >
                             <View className="flex-row items-center justify-between mb-2">
-                              <Text className="text-xs text-gray-500">
+                              <Text
+                                className="text-xs text-gray-500"
+                                numberOfLines={1}
+                              >
                                 {formatDate(match.date)}
                               </Text>
                               <View
-                                className={`px-2 py-1 rounded ${
+                                className={`px-1.5 py-0.5 rounded ${
                                   match.status === "completed"
                                     ? "bg-green-100"
                                     : "bg-yellow-100"
@@ -497,47 +444,57 @@ export default function SeasonDetailsScreen({
                                 >
                                   {match.status === "completed"
                                     ? "Final"
-                                    : "Scheduled"}
+                                    : "Sched"}
                                 </Text>
                               </View>
                             </View>
-                            <View className="flex-row items-center justify-between">
-                              <Text className="text-sm font-medium text-gray-900 flex-1">
-                                {match.home_team_detail?.name || "TBD"}
-                              </Text>
-                              <View className="flex-row items-center gap-2">
-                                <Text className="text-base font-bold text-gray-900">
-                                  {match.home_score ?? "-"}
-                                </Text>
-                                <Text className="text-xs text-gray-400">vs</Text>
-                                <Text className="text-base font-bold text-gray-900">
-                                  {match.away_score ?? "-"}
-                                </Text>
-                              </View>
-                              <Text className="text-sm font-medium text-gray-900 flex-1 text-right">
-                                {match.away_team_detail?.name || "TBD"}
+                            <Text
+                              className="text-sm font-medium text-gray-900"
+                              numberOfLines={1}
+                            >
+                              {match.home_team_detail?.name || "TBD"}
+                            </Text>
+                            <View className="flex-row items-center gap-1 my-0.5">
+                              <Text className="text-xs text-gray-400">vs</Text>
+                              <Text className="text-sm font-bold text-gray-900">
+                                {match.home_score ?? "-"} -{" "}
+                                {match.away_score ?? "-"}
                               </Text>
                             </View>
-                          </View>
+                            <Text
+                              className="text-sm font-medium text-gray-900"
+                              numberOfLines={1}
+                            >
+                              {match.away_team_detail?.name || "TBD"}
+                            </Text>
+                          </TouchableOpacity>
                         ))}
                       </View>
-                    ))}
-                    {weeks.length > 0 && (
-                      <View className="p-3 bg-gray-50 border-t border-gray-200 rounded-lg">
-                        <Text className="text-sm text-primary text-center font-medium">
-                          View All Matches →
-                        </Text>
-                      </View>
-                    )}
-                  </>
-                )}
-              </View>
-            </TouchableOpacity>
+                    </View>
+                  ))}
+                </>
+              )}
+              {weeks.length > 0 && (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("FullMatches", {
+                      seasonId,
+                      seasonName: season.name,
+                    })
+                  }
+                  className="p-3 bg-gray-50 border-t border-gray-200"
+                >
+                  <Text className="text-sm text-primary text-center font-medium">
+                    View All Matches →
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
         </View>
 
-        {/* Players Section - Top 5 */}
-        <View className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-10">
+        {/* Players Section - Grid Tiles */}
+        <View className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-4">
           <TouchableOpacity
             onPress={() => setPlayersCollapsed(!playersCollapsed)}
             className="bg-gray-50 p-3 border-b border-gray-200 flex-row items-center justify-between"
@@ -552,14 +509,7 @@ export default function SeasonDetailsScreen({
             )}
           </TouchableOpacity>
           {!playersCollapsed && (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("FullPlayers", {
-                  seasonId,
-                  seasonName: season.name,
-                })
-              }
-            >
+            <>
               {players.length === 0 ? (
                 <View className="p-8">
                   <Text className="text-gray-400 text-center">
@@ -567,57 +517,238 @@ export default function SeasonDetailsScreen({
                   </Text>
                 </View>
               ) : (
-                <View>
+                <View
+                  className="p-3"
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    justifyContent: "space-between",
+                  }}
+                >
                   {players
                     .sort((a, b) => b.total_wins - a.total_wins)
-                    .slice(0, 5)
+                    .slice(0, 6)
                     .map((player, index) => (
-                      <View
+                      <TouchableOpacity
                         key={`player-${player.player_id}-${index}`}
-                        className={`p-4 ${
-                          index < 4 && index < players.length - 1
-                            ? "border-b border-gray-200"
-                            : ""
-                        }`}
+                        onPress={() =>
+                          navigation.navigate("FullPlayers", {
+                            seasonId,
+                            seasonName: season.name,
+                          })
+                        }
+                        className="bg-gray-50 rounded-lg p-3 border border-gray-200 mb-2"
+                        style={{ width: "48%" }}
                       >
-                        <View className="flex-row items-center justify-between mb-1">
-                          <Text className="text-base font-semibold text-gray-900 flex-1">
-                            {player.player_name}
-                          </Text>
-                          <Text className="text-xs text-gray-500">
-                            {player.team_name}
-                          </Text>
-                        </View>
-                        <View className="flex-row gap-4">
-                          <Text className="text-sm text-gray-600">
-                            W: {player.total_wins}
-                          </Text>
-                          <Text className="text-sm text-gray-600">
-                            L: {player.total_losses}
-                          </Text>
-                          <Text className="text-sm text-gray-600">
-                            GP: {player.total_games}
+                        <Text
+                          className="text-sm font-semibold text-gray-900"
+                          numberOfLines={1}
+                        >
+                          {player.player_name}
+                        </Text>
+                        <Text
+                          className="text-xs text-gray-500 mb-1"
+                          numberOfLines={1}
+                        >
+                          {player.team_name}
+                        </Text>
+                        <View className="flex-row items-center justify-between">
+                          <Text className="text-xs text-gray-600">
+                            {player.total_wins}W - {player.total_losses}L
                           </Text>
                           {player.total_games > 0 && (
-                            <Text className="text-sm text-gray-600">
-                              Win%: {player.win_percentage.toFixed(0)}%
+                            <Text className="text-xs font-bold text-primary">
+                              {player.win_percentage.toFixed(0)}%
                             </Text>
                           )}
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     ))}
-                  {players.length > 5 && (
-                    <View className="p-3 bg-gray-50 border-t border-gray-200">
-                      <Text className="text-sm text-primary text-center font-medium">
-                        View All {players.length} Players →
-                      </Text>
-                    </View>
-                  )}
                 </View>
               )}
-            </TouchableOpacity>
+              {players.length > 6 && (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("FullPlayers", {
+                      seasonId,
+                      seasonName: season.name,
+                    })
+                  }
+                  className="p-3 bg-gray-50 border-t border-gray-200"
+                >
+                  <Text className="text-sm text-primary text-center font-medium">
+                    View All {players.length} Players →
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
         </View>
+
+        {/* Action Tiles — 2x2 grid */}
+        {(() => {
+          const isOperator = isOperatorFn(season.league);
+          const actionItems: {
+            key: string;
+            label: string;
+            icon: React.ReactNode;
+          }[] = [
+            ...(isOperator
+              ? [
+                  {
+                    key: "schedule",
+                    label: "Schedule",
+                    icon: <CalendarDays color="#26A69A" size={24} />,
+                  },
+                ]
+              : []),
+            {
+              key: "playoffs",
+              label: "Playoffs",
+              icon: <Trophy color="#26A69A" size={24} />,
+            },
+            ...(isOperator
+              ? [
+                  {
+                    key: "teams",
+                    label: "Manage Teams",
+                    icon: <Shield color="#26A69A" size={24} />,
+                  },
+                  {
+                    key: "rollover",
+                    label: "Rollover",
+                    icon: <RefreshCw color="#26A69A" size={24} />,
+                  },
+                ]
+              : []),
+          ];
+
+          const handleActionPress = (key: string) => {
+            switch (key) {
+              case "schedule":
+                navigation.navigate("SeasonSchedule", {
+                  seasonId,
+                  seasonName: season.name,
+                  leagueId: season.league,
+                });
+                break;
+              case "playoffs":
+                navigation.navigate("PlayoffBracket", {
+                  seasonId,
+                  seasonName: season.name,
+                  leagueId: season.league,
+                });
+                break;
+              case "teams":
+                navigation.navigate("TeamManagement", {
+                  seasonId,
+                  seasonName: season.name,
+                });
+                break;
+              case "rollover":
+                navigation.navigate("SeasonRollover", {
+                  seasonId,
+                  seasonName: season.name,
+                  leagueId: season.league,
+                });
+                break;
+            }
+          };
+
+          return (
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "space-between",
+                marginTop: 16,
+              }}
+            >
+              {actionItems.map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  onPress={() => handleActionPress(item.key)}
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200 items-center justify-center mb-2"
+                  style={{ width: "48%" }}
+                >
+                  {item.icon}
+                  <Text className="text-xs font-semibold text-gray-900 mt-2 text-center">
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          );
+        })()}
+
+        {/* Archive Season — operators only */}
+        {isOperatorFn(season.league) && (
+          <TouchableOpacity
+            onPress={() => {
+              if (season.is_archived) {
+                Alert.alert(
+                  "Unarchive Season?",
+                  "This will make the season visible in active season lists again.",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Unarchive",
+                      onPress: async () => {
+                        try {
+                          await api.patch(`/seasons/${seasonId}/`, {
+                            is_archived: false,
+                          });
+                          setSeason({ ...season, is_archived: false });
+                        } catch (error) {
+                          console.error("Failed to unarchive season:", error);
+                        }
+                      },
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert(
+                  "Archive Season?",
+                  "This will hide the season from active season lists. You can unarchive it later.",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Archive",
+                      style: "destructive",
+                      onPress: async () => {
+                        try {
+                          await api.patch(`/seasons/${seasonId}/`, {
+                            is_archived: true,
+                          });
+                          navigation.goBack();
+                        } catch (error) {
+                          console.error("Failed to archive season:", error);
+                        }
+                      },
+                    },
+                  ]
+                );
+              }
+            }}
+            className={`rounded-lg p-3 border flex-row items-center justify-center gap-2 ${
+              season.is_archived
+                ? "bg-white border-gray-300"
+                : "bg-red-50 border-red-200"
+            }`}
+          >
+            <Archive
+              color={season.is_archived ? "#6b7280" : "#dc2626"}
+              size={18}
+            />
+            <Text
+              className={`text-sm font-semibold ${
+                season.is_archived ? "text-gray-700" : "text-red-600"
+              }`}
+            >
+              {season.is_archived ? "Unarchive Season" : "Archive Season"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
