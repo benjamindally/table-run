@@ -1,6 +1,8 @@
 import "./global.css"; // Temporarily disabled for testing
 import { useEffect, useState } from "react";
+import { AppState } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import * as Updates from "expo-updates";
 
 import { NavigationContainer } from "@react-navigation/native";
 import type { LinkingOptions } from "@react-navigation/native";
@@ -78,6 +80,34 @@ function AppContent() {
     };
     init();
   }, [loadStoredAuth]);
+
+  // Check for OTA updates on mount and when app comes to foreground
+  useEffect(() => {
+    if (__DEV__) return; // Skip in development
+
+    async function checkForUpdates() {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        // Silently fail — the app continues with the current bundle
+        console.log("OTA update check failed:", e);
+      }
+    }
+
+    checkForUpdates();
+
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        checkForUpdates();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (isReady && !isLoading && fontsLoaded) {

@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { Plus, X, Users, ChevronRight } from "lucide-react-native";
+import { Plus, X, Users } from "lucide-react-native";
 import {
   seasonsApi,
   teamsApi,
@@ -141,52 +141,57 @@ export default function TeamManagementScreen({
             </Text>
           </View>
         ) : (
-          <View className="space-y-3">
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+            }}
+          >
             {teams.map((participation) => {
               const team = participation.team_detail;
               if (!team) return null;
               return (
                 <TouchableOpacity
                   key={team.id}
-                  className="bg-white rounded-lg p-4 border border-gray-200"
+                  className="bg-gray-50 rounded-lg p-3 border border-gray-200 mb-2"
+                  style={{ width: "48%" }}
                   onPress={() =>
                     (navigation as any).navigate("TeamDetails", {
                       teamId: team.id,
                     })
                   }
                 >
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-1">
-                      <Text className="text-base font-semibold text-gray-900">
-                        {team.name}
-                      </Text>
-                      {team.establishment && (
-                        <Text className="text-sm text-gray-500 mt-0.5">
-                          {team.establishment}
-                        </Text>
-                      )}
-                      <Text className="text-xs text-gray-400 mt-1">
-                        {team.player_count ?? 0} player
-                        {team.player_count !== 1 ? "s" : ""}
-                      </Text>
-                    </View>
-                    <View className="flex-row items-center gap-2">
-                      <View
-                        className={`px-2 py-1 rounded-full ${
-                          team.active ? "bg-green-100" : "bg-gray-100"
+                  <View className="flex-row items-center justify-between mb-1">
+                    <Text
+                      className="text-sm font-semibold text-gray-900 flex-1"
+                      numberOfLines={1}
+                    >
+                      {team.name}
+                    </Text>
+                    <View
+                      className={`px-1.5 py-0.5 rounded-full ${
+                        participation.is_active ? "bg-green-100" : "bg-gray-100"
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-medium ${
+                          participation.is_active ? "text-green-700" : "text-gray-600"
                         }`}
                       >
-                        <Text
-                          className={`text-xs font-medium ${
-                            team.active ? "text-green-700" : "text-gray-600"
-                          }`}
-                        >
-                          {team.active ? "Active" : "Inactive"}
-                        </Text>
-                      </View>
-                      <ChevronRight color="#9ca3af" size={20} />
+                        {participation.is_active ? "Active" : "Inactive"}
+                      </Text>
                     </View>
                   </View>
+                  {team.establishment && (
+                    <Text className="text-xs text-gray-500" numberOfLines={1}>
+                      {team.establishment}
+                    </Text>
+                  )}
+                  <Text className="text-xs text-gray-400 mt-1">
+                    {team.player_count ?? 0} player
+                    {team.player_count !== 1 ? "s" : ""}
+                  </Text>
                 </TouchableOpacity>
               );
             })}

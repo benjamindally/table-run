@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Modal,
   Pressable,
+  Switch,
 } from "react-native";
 import { Calendar, Users, ChevronRight, Plus, X } from "lucide-react-native";
 import { useState, useEffect } from "react";
@@ -28,6 +29,7 @@ export default function SeasonsTabScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showLeaguePicker, setShowLeaguePicker] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   const operatorLeagues = myLeagues.filter((l) => l.is_operator);
   const isAnyOperator = operatorLeagues.length > 0;
@@ -95,7 +97,10 @@ export default function SeasonsTabScreen() {
   }
 
   // Determine which seasons to show
-  const seasonsToShow = isAuthenticated && mySeasons.length > 0 ? mySeasons : publicSeasons;
+  const allSeasons = isAuthenticated && mySeasons.length > 0 ? mySeasons : publicSeasons;
+  const seasonsToShow = showArchived
+    ? allSeasons
+    : allSeasons.filter((s) => !("is_archived" in s) || !(s as { is_archived?: boolean }).is_archived);
   const showingMySeasons = isAuthenticated && mySeasons.length > 0;
 
   return (
@@ -117,6 +122,19 @@ export default function SeasonsTabScreen() {
                 : "Browse active seasons across all leagues"}
             </Text>
           </View>
+
+          {/* Show Archived Toggle — operators only */}
+          {isAnyOperator && showingMySeasons && (
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-sm text-gray-600">Show archived seasons</Text>
+              <Switch
+                value={showArchived}
+                onValueChange={setShowArchived}
+                trackColor={{ false: "#d1d5db", true: "#26A69A" }}
+                thumbColor="#fff"
+              />
+            </View>
+          )}
 
           {/* Browse All Link for authenticated users */}
           {showingMySeasons && (
@@ -160,9 +178,15 @@ export default function SeasonsTabScreen() {
                         {season.name}
                       </Text>
                       <Text
-                        className={`text-sm font-medium ${getStatusColor(season.is_active)}`}
+                        className={`text-sm font-medium ${
+                          ("is_archived" in season && (season as { is_archived?: boolean }).is_archived)
+                            ? "text-gray-400"
+                            : getStatusColor(season.is_active)
+                        }`}
                       >
-                        {season.is_active ? "Active" : "Inactive"}
+                        {("is_archived" in season && (season as { is_archived?: boolean }).is_archived)
+                          ? "Archived"
+                          : season.is_active ? "Active" : "Inactive"}
                       </Text>
                     </View>
                     {"league_name" in season && (

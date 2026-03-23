@@ -600,48 +600,95 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
   const autoAssignAll = useCallback(() => {
     const homePlayers = presentHomePlayers.map((p) => p.playerId);
     const awayPlayers = presentAwayPlayers.map((p) => p.playerId);
+    const hasEnoughHome = homePlayers.length >= 4;
+    const hasEnoughAway = awayPlayers.length >= 4;
 
-    if (homePlayers.length < 4 || awayPlayers.length < 4) {
-      toast.error("Need at least 4 present players on each team");
+    if (!hasEnoughHome && !hasEnoughAway) {
+      toast.error("Need at least 4 present players on a team");
       return;
     }
 
-    const usedMatchups = new Set<string>();
     const setsCount = Math.ceil(gamesCount / 4);
 
-    for (let setNum = 1; setNum <= setsCount; setNum++) {
-      const setStartIndex = (setNum - 1) * 4;
-      const availableHome = [...homePlayers];
-      const availableAway = [...awayPlayers];
+    if (hasEnoughHome && hasEnoughAway) {
+      // Paired assignment with matchup deduplication
+      const usedMatchups = new Set<string>();
 
-      for (let gameInSet = 0; gameInSet < 4; gameInSet++) {
-        const gameIndex = setStartIndex + gameInSet;
-        if (gameIndex >= gamesCount) break;
-        if (availableHome.length === 0 || availableAway.length === 0) break;
+      for (let setNum = 1; setNum <= setsCount; setNum++) {
+        const setStartIndex = (setNum - 1) * 4;
+        const availableHome = [...homePlayers];
+        const availableAway = [...awayPlayers];
 
-        const homePlayerId = availableHome.shift()!;
-        let awayPlayerId: number | null = null;
+        for (let gameInSet = 0; gameInSet < 4; gameInSet++) {
+          const gameIndex = setStartIndex + gameInSet;
+          if (gameIndex >= gamesCount) break;
+          if (availableHome.length === 0 || availableAway.length === 0) break;
 
-        for (let i = 0; i < availableAway.length; i++) {
-          const candidateAwayId = availableAway[i];
-          const matchupKey = `${homePlayerId}-${candidateAwayId}`;
-          if (!usedMatchups.has(matchupKey)) {
-            awayPlayerId = candidateAwayId;
-            availableAway.splice(i, 1);
-            usedMatchups.add(matchupKey);
-            break;
+          const homePlayerId = availableHome.shift()!;
+          let awayPlayerId: number | null = null;
+
+          for (let i = 0; i < availableAway.length; i++) {
+            const candidateAwayId = availableAway[i];
+            const matchupKey = `${homePlayerId}-${candidateAwayId}`;
+            if (!usedMatchups.has(matchupKey)) {
+              awayPlayerId = candidateAwayId;
+              availableAway.splice(i, 1);
+              usedMatchups.add(matchupKey);
+              break;
+            }
+          }
+
+          if (awayPlayerId) {
+            handlePlayerChange(gameIndex, "home", homePlayerId);
+            handlePlayerChange(gameIndex, "away", awayPlayerId);
           }
         }
+      }
+      toast.success("Players auto-assigned to all games");
+    } else if (hasEnoughAway) {
+      for (let setNum = 1; setNum <= setsCount; setNum++) {
+        const setStartIndex = (setNum - 1) * 4;
+        const available = [...awayPlayers];
 
-        if (awayPlayerId) {
-          handlePlayerChange(gameIndex, "home", homePlayerId);
-          handlePlayerChange(gameIndex, "away", awayPlayerId);
+        for (let gameInSet = 0; gameInSet < 4; gameInSet++) {
+          const gameIndex = setStartIndex + gameInSet;
+          if (gameIndex >= gamesCount) break;
+          if (available.length === 0) break;
+          handlePlayerChange(gameIndex, "away", available.shift()!);
         }
       }
-    }
+      toast.success("Away players auto-assigned");
+    } else if (hasEnoughHome) {
+      const usedMatchups = new Set<string>();
 
-    toast.success("Players auto-assigned to all games");
-  }, [presentHomePlayers, presentAwayPlayers, gamesCount, handlePlayerChange]);
+      for (let setNum = 1; setNum <= setsCount; setNum++) {
+        const setStartIndex = (setNum - 1) * 4;
+        const available = [...homePlayers];
+
+        for (let gameInSet = 0; gameInSet < 4; gameInSet++) {
+          const gameIndex = setStartIndex + gameInSet;
+          if (gameIndex >= gamesCount) break;
+          if (available.length === 0) break;
+
+          const existingAwayId = games[gameIndex]?.awayPlayerId;
+          let assignedId: number | null = null;
+
+          for (let i = 0; i < available.length; i++) {
+            const key = `${available[i]}-${existingAwayId}`;
+            if (!existingAwayId || !usedMatchups.has(key)) {
+              assignedId = available[i];
+              available.splice(i, 1);
+              if (existingAwayId) usedMatchups.add(key);
+              break;
+            }
+          }
+
+          if (assignedId) handlePlayerChange(gameIndex, "home", assignedId);
+        }
+      }
+      toast.success("Home players auto-assigned");
+    }
+  }, [presentHomePlayers, presentAwayPlayers, gamesCount, games, handlePlayerChange]);
 
   // Mark all players present for a team
   const markAllPresent = useCallback((team: "home" | "away") => {

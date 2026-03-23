@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.leaguegenius.app",
-      "buildNumber": "6",
+      "buildNumber": "8",
       "infoPlist": {
         "CFBundleDisplayName": "League Genius",
         "ITSAppUsesNonExemptEncryption": false
@@ -81,7 +81,8 @@
     },
     "plugins": [
       "@react-native-community/datetimepicker",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "expo-updates"
     ]
   }
 }

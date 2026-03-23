@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   User,
   Mail,
@@ -8,13 +8,16 @@ import {
   Trophy,
   Edit3,
   Shield,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
+import DeleteAccountModal from "../../components/DeleteAccountModal";
 
 const ProfilePage: React.FC = () => {
   const { user, player } = useAuth();
   const { leagues, teams } = useLeagueSeason();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Mock data for demo - in production these would come from API
   const memberSince = "January 2024";
@@ -227,6 +230,33 @@ const ProfilePage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Account */}
+      <div className="bg-white rounded-lg shadow-sm p-6 border border-red-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold text-red-600 uppercase tracking-wider mb-1">
+              Delete Account
+            </h3>
+            <p className="text-sm text-dark-300">
+              Permanently delete your account and all associated data. This
+              cannot be undone.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium flex-shrink-0"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Account
+          </button>
+        </div>
+      </div>
+
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+      />
     </div>
   );
 };
