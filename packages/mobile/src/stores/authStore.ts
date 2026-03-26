@@ -24,6 +24,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
   loadStoredAuth: () => Promise<void>;
   refreshAccessToken: () => Promise<boolean>;
   updateProfile: (data: PlayerUpdateData) => Promise<void>;
@@ -114,6 +115,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // Ignore logout errors
     }
+
+    // Clear stored data
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(USER_KEY);
+
+    // Clear user context
+    useUserContextStore.getState().clearUserContext();
+
+    // Clear notifications
+    useNotificationsStore.getState().disconnectWebSocket();
+    useNotificationsStore.getState().clearNotifications();
+
+    // Clear match scoring state
+    useMatchScoringStore.getState().clearMatch();
+
+    set({
+      user: null,
+      player: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false,
+    });
+  },
+
+  deleteAccount: async (password: string) => {
+    const { accessToken } = get();
+    if (!accessToken) throw new Error("Not authenticated");
+
+    await authApi.deleteAccount(password, accessToken);
 
     // Clear stored data
     await SecureStore.deleteItemAsync(TOKEN_KEY);
