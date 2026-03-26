@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { User, LogOut, ChevronRight, LogIn, Info, Pencil, X } from "lucide-react-native";
+import { User, LogOut, ChevronRight, LogIn, Info, Pencil, X, Trash2, AlertTriangle, Eye, EyeOff } from "lucide-react-native";
 import { useAuthStore } from "../stores/authStore";
 import type { RootStackScreenProps } from "../navigation/types";
 
@@ -23,10 +23,18 @@ export default function ProfileScreen() {
   const player = useAuthStore((state) => state.player);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const logout = useAuthStore((state) => state.logout);
+  const deleteAccount = useAuthStore((state) => state.deleteAccount);
   const updateProfile = useAuthStore((state) => state.updateProfile);
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Delete account state
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
 
   // Edit form state — initialised when modal opens
   const [firstName, setFirstName] = useState("");
@@ -77,6 +85,33 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const openDeleteModal = () => {
+    setDeletePassword("");
+    setDeleteError("");
+    setShowDeletePassword(false);
+    setDeleteModalVisible(true);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword.trim()) {
+      setDeleteError("Please enter your password to continue.");
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError("");
+
+    try {
+      await deleteAccount(deletePassword);
+      setDeleteModalVisible(false);
+    } catch (err: any) {
+      const message = err?.message || "Something went wrong. Please try again.";
+      setDeleteError(message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <ScrollView className="flex-1 bg-gray-50">
@@ -119,7 +154,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <ScrollView className="flex-1 bg-gray-50">
       {/* Profile Header */}
       <View className="bg-white p-6 items-center border-b border-gray-100">
         <View className="w-20 h-20 bg-primary-100 rounded-full items-center justify-center mb-3">
@@ -171,6 +206,142 @@ export default function ProfileScreen() {
           <Text className="text-red-500 font-medium ml-2">Sign Out</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Delete Account */}
+      <View className="mt-6 px-4 mb-8">
+        <View className="border border-red-200 rounded-lg bg-red-50 p-4">
+          <Text className="text-sm font-semibold text-red-800 mb-1">
+            Delete Account
+          </Text>
+          <Text className="text-xs text-red-600 mb-3">
+            Permanently delete your account and all associated data. This action
+            cannot be undone.
+          </Text>
+          <TouchableOpacity
+            className="bg-red-600 rounded-md py-3 flex-row items-center justify-center"
+            onPress={openDeleteModal}
+          >
+            <Trash2 color="#fff" size={18} />
+            <Text className="text-white font-semibold ml-2">Delete Account</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Delete Account Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => !isDeleting && setDeleteModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          className="flex-1 bg-white"
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          {/* Header */}
+          <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-gray-200">
+            <Text className="text-lg font-bold text-gray-900">Delete Your Account</Text>
+            <TouchableOpacity
+              onPress={() => !isDeleting && setDeleteModalVisible(false)}
+              className="p-1"
+            >
+              <X color="#6b7280" size={22} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            className="flex-1 px-4 pt-4"
+            contentContainerStyle={{ paddingBottom: 24 }}
+          >
+            {/* Warning */}
+            <View className="flex-row bg-red-50 rounded-lg p-3 mb-4">
+              <View className="bg-red-100 rounded-full p-2 mr-3 self-start">
+                <AlertTriangle color="#dc2626" size={20} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm text-gray-700 mb-2">
+                  We're sad to see you go! Before you continue, here's what will
+                  happen if you delete your account:
+                </Text>
+                <Text className="text-sm text-gray-600 mb-1">
+                  {"\u2022"} Your personal data, player profile, stats, and team
+                  memberships will be permanently removed.
+                </Text>
+                <Text className="text-sm text-gray-600 mb-1">
+                  {"\u2022"} Any teams where you're the only captain will be
+                  deactivated.
+                </Text>
+                <Text className="text-sm text-gray-600 mb-2">
+                  {"\u2022"} Past match results will still be visible, but your
+                  name will no longer be attached.
+                </Text>
+                <Text className="text-sm font-semibold text-gray-900">
+                  This action is permanent and cannot be undone.
+                </Text>
+              </View>
+            </View>
+
+            {/* Password field */}
+            <Text className="text-sm font-medium text-gray-700 mb-1">
+              Confirm your password
+            </Text>
+            <View className="flex-row items-center border border-gray-300 rounded-lg">
+              <TextInput
+                className="flex-1 px-3 py-2.5 text-gray-900"
+                value={deletePassword}
+                onChangeText={(text) => {
+                  setDeletePassword(text);
+                  setDeleteError("");
+                }}
+                placeholder="Enter your password"
+                placeholderTextColor="#9CA3AF"
+                secureTextEntry={!showDeletePassword}
+                editable={!isDeleting}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowDeletePassword(!showDeletePassword)}
+                className="px-3"
+              >
+                {showDeletePassword ? (
+                  <EyeOff color="#6b7280" size={20} />
+                ) : (
+                  <Eye color="#6b7280" size={20} />
+                )}
+              </TouchableOpacity>
+            </View>
+            {deleteError ? (
+              <Text className="text-sm text-red-600 mt-1">{deleteError}</Text>
+            ) : null}
+          </ScrollView>
+
+          {/* Footer */}
+          <View className="px-4 py-4 border-t border-gray-200 flex-row gap-3">
+            <TouchableOpacity
+              onPress={() => setDeleteModalVisible(false)}
+              disabled={isDeleting}
+              className="flex-1 py-3 rounded-lg border border-gray-300 items-center"
+            >
+              <Text className="font-semibold text-gray-700">Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDeleteAccount}
+              disabled={isDeleting || !deletePassword.trim()}
+              className={`flex-1 py-3 rounded-lg items-center ${
+                isDeleting || !deletePassword.trim()
+                  ? "bg-red-300"
+                  : "bg-red-600"
+              }`}
+            >
+              {isDeleting ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text className="font-semibold text-white">Delete My Account</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Edit Profile Modal */}
       <Modal
@@ -287,6 +458,6 @@ export default function ProfileScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </ScrollView>
   );
 }
