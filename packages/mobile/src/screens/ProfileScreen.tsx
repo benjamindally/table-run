@@ -9,12 +9,79 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from "react-native";
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { User, LogOut, ChevronRight, LogIn, Info, Pencil, X, Trash2, AlertTriangle, Eye, EyeOff } from "lucide-react-native";
+import { User, LogOut, ChevronRight, LogIn, Info, Pencil, X, Trash2, AlertTriangle, Eye, EyeOff, Crown, ExternalLink } from "lucide-react-native";
 import { useAuthStore } from "../stores/authStore";
+import { useSubscriptionStore } from "../stores/subscriptionStore";
 import type { RootStackScreenProps } from "../navigation/types";
+
+function SubscriptionCard({
+  navigation,
+}: {
+  navigation: RootStackScreenProps<"Profile">["navigation"];
+}) {
+  const entitlements = useSubscriptionStore((s) => s.entitlements);
+  const isPro = entitlements?.tier === "pro";
+
+  const handleManageSubscription = () => {
+    const url =
+      Platform.OS === "ios"
+        ? "https://apps.apple.com/account/subscriptions"
+        : "https://play.google.com/store/account/subscriptions";
+    Linking.openURL(url);
+  };
+
+  return (
+    <View className="mt-4 px-4">
+      <View className="bg-white rounded-lg border border-gray-200 p-4">
+        <View className="flex-row items-center mb-3">
+          <Crown color={isPro ? "#d97706" : "#9ca3af"} size={20} />
+          <Text className="text-sm font-semibold text-gray-900 ml-2">
+            Subscription
+          </Text>
+        </View>
+
+        {isPro ? (
+          <>
+            <View className="bg-amber-50 rounded-lg px-3 py-2 mb-3 flex-row items-center">
+              <Text className="text-sm font-medium text-amber-800">
+                League Genius Pro
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleManageSubscription}
+              className="flex-row items-center justify-center py-2.5 rounded-lg border border-gray-300"
+            >
+              <ExternalLink color="#4B5563" size={16} />
+              <Text className="text-sm font-medium text-gray-700 ml-2">
+                Manage Subscription
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text className="text-sm text-gray-500 mb-3">
+              Free Plan — Upgrade to create leagues and unlock pro features.
+            </Text>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("Paywall", { source: "profile" })
+              }
+              className="bg-primary rounded-lg py-3 items-center"
+            >
+              <Text className="text-white font-semibold text-sm">
+                Upgrade to Pro
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </View>
+  );
+}
 
 export default function ProfileScreen() {
   const navigation =
@@ -181,6 +248,9 @@ export default function ProfileScreen() {
           <Text className="text-sm font-medium text-gray-700">Edit Profile</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Subscription Section */}
+      <SubscriptionCard navigation={navigation} />
 
       {/* Menu Items */}
       <View className="mt-4">

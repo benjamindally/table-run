@@ -3,7 +3,7 @@
  */
 
 import { api } from './client';
-import type { MeResponse } from '../types';
+import type { MeResponse, Entitlements } from '../types';
 
 export const meApi = {
   /**
@@ -11,4 +11,10 @@ export const meApi = {
    */
   getMe: (token?: string) =>
     api.get<MeResponse>('/me/', token),
+
+  /**
+   * Get current user's subscription entitlements
+   */
+  getEntitlements: (token?: string) =>
+    api.get<Entitlements>('/entitlements/me/', token),
 };

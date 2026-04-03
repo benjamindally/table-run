@@ -12,6 +12,7 @@ import {
   isLeagueOperator,
   canEditMatch as canEditMatchUtil,
 } from '@league-genius/shared';
+import { configureRevenueCatWeb } from '../hooks/useSubscription';
 
 // Define user types
 export interface User {
@@ -109,6 +110,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(JSON.parse(savedUser));
         setPlayer(JSON.parse(savedPlayer));
 
+        // Identify user in RevenueCat web SDK on session restore
+        const parsedPlayer = JSON.parse(savedPlayer);
+        if (parsedPlayer?.id) {
+          configureRevenueCatWeb(`player_${parsedPlayer.id}`);
+        }
+
         // Attempt to refresh the token on app load to ensure it's valid
         // This prevents using an expired access token
         try {
@@ -156,6 +163,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('refreshToken', data.refresh);
     localStorage.setItem('user', JSON.stringify(data.user));
     localStorage.setItem('player', JSON.stringify(data.player));
+
+    // Identify user in RevenueCat web SDK
+    if (data.player?.id) {
+      configureRevenueCatWeb(`player_${data.player.id}`);
+    }
   };
 
   const login = async (data: LoginData): Promise<void> => {

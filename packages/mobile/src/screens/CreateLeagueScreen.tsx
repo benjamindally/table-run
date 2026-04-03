@@ -20,6 +20,7 @@ import {
   type ScoringConfig,
 } from "@league-genius/shared";
 import { useAuthStore } from "../stores/authStore";
+import { useSubscriptionStore } from "../stores/subscriptionStore";
 import type { LeaguesStackScreenProps } from "../navigation/types";
 
 // ── Scoring config constants ──────────────────────────────────────────────────
@@ -147,6 +148,15 @@ export default function CreateLeagueScreen({
     if (!name.trim()) {
       Alert.alert("Validation", "League name is required");
       return;
+    }
+
+    // Gate: require subscription to create a new league
+    if (!isEditMode) {
+      const { isPro } = useSubscriptionStore.getState();
+      if (!isPro()) {
+        (navigation as any).navigate("Paywall", { source: "create_league" });
+        return;
+      }
     }
 
     setSaving(true);

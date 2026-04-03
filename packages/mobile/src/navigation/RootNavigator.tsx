@@ -8,6 +8,7 @@ import TeamDetailsScreen from "../screens/TeamDetailsScreen";
 import ClaimPlayerScreen from "../screens/auth/ClaimPlayerScreen";
 import ActivatePlayerScreen from "../screens/auth/ActivatePlayerScreen";
 import PlayerManagementScreen from "../screens/PlayerManagementScreen";
+import PaywallScreen from "../screens/PaywallScreen";
 import type { RootStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -111,6 +112,14 @@ export default function RootNavigator() {
             fontSize: 18,
           },
           title: "Activate Account",
+        }}
+      />
+      <Stack.Screen
+        name="Paywall"
+        component={PaywallScreen}
+        options={{
+          presentation: "modal",
+          headerShown: false,
         }}
       />
       <Stack.Screen

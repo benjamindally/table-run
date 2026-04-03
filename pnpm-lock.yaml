@@ -64,6 +64,9 @@ importers:
       react-native-gesture-handler:
         specifier: ~2.28.0
         version: 2.28.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      react-native-purchases:
+        specifier: ^9.15.0
+        version: 9.15.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       react-native-safe-area-context:
         specifier: ^5.6.2
         version: 5.6.2(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -98,6 +101,9 @@ importers:
       '@league-genius/shared':
         specifier: workspace:*
         version: link:../shared
+      '@revenuecat/purchases-js':
+        specifier: ^1.30.0
+        version: 1.30.0
       '@tanstack/react-query':
         specifier: ^5.90.10
         version: 5.90.20(react@18.3.1)
@@ -1337,6 +1343,18 @@ packages:
   '@remix-run/router@1.23.2':
     resolution: {integrity: sha512-Ic6m2U/rMjTkhERIa/0ZtXJP17QUi2CbWE7cqx4J58M8aA3QTfW+2UlQ4psvTX9IO1RfNVhK3pcpdjej7L+t2w==}
     engines: {node: '>=14.0.0'}
+
+  '@revenuecat/purchases-js-hybrid-mappings@17.53.0':
+    resolution: {integrity: sha512-Cq4cpN7w+boIhsc1o9jftmn36pg+eJzNmhOBQlc4WEl22Djx3QGcqj449LBvMtOAsS7qxq/sggmuUP+4MVsSCg==}
+
+  '@revenuecat/purchases-js@1.29.0':
+    resolution: {integrity: sha512-0nZ+YhT8949jx9gyoxnAly7xXmuxWXLozZ1cdImZxHHY0IpYNR8QOme0AdPXT8HTf0vW04zQjVAsxVUlIS7vqA==}
+
+  '@revenuecat/purchases-js@1.30.0':
+    resolution: {integrity: sha512-aNlk6lPWrJ1DncPnw0WZh8nZKbd5S++EcsQxlLnv3HX/jOnMO54zr0SKsz3GJyFa6zh04N6b3qHAgWWm51EWpg==}
+
+  '@revenuecat/purchases-typescript-internal@17.53.0':
+    resolution: {integrity: sha512-jAZ7vOgSE5PSDJZqLRoUBVUnqsMcDx+SDXB8E6qZf+mgHIfLeb4vlKqdGaiAXSF9d7R0qbqL8U/PT/r9b/b0Yw==}
 
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
@@ -3379,6 +3397,16 @@ packages:
     peerDependencies:
       react: '*'
       react-native: '*'
+
+  react-native-purchases@9.15.0:
+    resolution: {integrity: sha512-0O5JBefbbCLkP3VVP9y3g4ETCupP3+ka5eVAUkefcf//7j3S7s3pUw5IvwicUR2AMVthykZlma2QKkvd1DGw3w==}
+    peerDependencies:
+      react: '>= 16.6.3'
+      react-native: '>= 0.73.0'
+      react-native-web: '*'
+    peerDependenciesMeta:
+      react-native-web:
+        optional: true
 
   react-native-reanimated@4.2.1:
     resolution: {integrity: sha512-/NcHnZMyOvsD/wYXug/YqSKw90P9edN0kEPL5lP4PFf1aQ4F1V7MKe/E0tvfkXKIajy3Qocp5EiEnlcrK/+BZg==}
@@ -5543,6 +5571,16 @@ snapshots:
       nanoid: 3.3.11
 
   '@remix-run/router@1.23.2': {}
+
+  '@revenuecat/purchases-js-hybrid-mappings@17.53.0':
+    dependencies:
+      '@revenuecat/purchases-js': 1.29.0
+
+  '@revenuecat/purchases-js@1.29.0': {}
+
+  '@revenuecat/purchases-js@1.30.0': {}
+
+  '@revenuecat/purchases-typescript-internal@17.53.0': {}
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 
@@ -7710,6 +7748,13 @@ snapshots:
 
   react-native-is-edge-to-edge@1.2.1(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
     dependencies:
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
+
+  react-native-purchases@9.15.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
+    dependencies:
+      '@revenuecat/purchases-js-hybrid-mappings': 17.53.0
+      '@revenuecat/purchases-typescript-internal': 17.53.0
       react: 19.1.0
       react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
 

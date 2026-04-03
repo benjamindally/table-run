@@ -9,15 +9,21 @@ import {
   Edit3,
   Shield,
   Trash2,
+  Crown,
+  ExternalLink,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
+import { useSubscription } from "../../hooks/useSubscription";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
+import PaywallModal from "../../components/PaywallModal";
 
 const ProfilePage: React.FC = () => {
   const { user, player } = useAuth();
   const { leagues, teams } = useLeagueSeason();
+  const { isPro } = useSubscription();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // Mock data for demo - in production these would come from API
   const memberSince = "January 2024";
@@ -200,6 +206,42 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
 
+          {/* Subscription */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-4">
+              Subscription
+            </h3>
+            {isPro ? (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Crown className="h-5 w-5 text-amber-500" />
+                  <span className="text-sm font-semibold text-dark">League Genius Pro</span>
+                </div>
+                <a
+                  href="https://apps.apple.com/account/subscriptions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-dark-400 hover:bg-gray-50 transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Manage Subscription
+                </a>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-dark-300 mb-3">
+                  Free Plan — Upgrade to create leagues and unlock pro features.
+                </p>
+                <button
+                  onClick={() => setShowPaywall(true)}
+                  className="w-full btn btn-primary btn-sm"
+                >
+                  Upgrade to Pro
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Leagues Operating */}
           {operatorLeagues.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm p-6">
@@ -256,6 +298,11 @@ const ProfilePage: React.FC = () => {
       <DeleteAccountModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
+      />
+
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
       />
     </div>
   );
