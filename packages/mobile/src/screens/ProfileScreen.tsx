@@ -13,7 +13,21 @@ import {
 } from "react-native";
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { User, LogOut, ChevronRight, LogIn, Info, Pencil, X, Trash2, AlertTriangle, Eye, EyeOff, Crown, ExternalLink } from "lucide-react-native";
+import {
+  User,
+  LogOut,
+  ChevronRight,
+  LogIn,
+  Info,
+  Pencil,
+  X,
+  Trash2,
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  Crown,
+  ExternalLink,
+} from "lucide-react-native";
 import { useAuthStore } from "../stores/authStore";
 import { useSubscriptionStore } from "../stores/subscriptionStore";
 import type { RootStackScreenProps } from "../navigation/types";
@@ -115,7 +129,9 @@ export default function ProfileScreen() {
     setLastName(user?.last_name ?? "");
     setEmail(user?.email ?? "");
     setPhone(player?.phone ?? "");
-    setSkillLevel(player?.skill_level != null ? String(player.skill_level) : "");
+    setSkillLevel(
+      player?.skill_level != null ? String(player.skill_level) : ""
+    );
     setEditModalVisible(true);
   };
 
@@ -245,7 +261,9 @@ export default function ProfileScreen() {
           className="mt-4 flex-row items-center gap-2 bg-gray-100 px-4 py-2 rounded-full"
         >
           <Pencil size={14} color="#4B5563" />
-          <Text className="text-sm font-medium text-gray-700">Edit Profile</Text>
+          <Text className="text-sm font-medium text-gray-700">
+            Edit Profile
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -260,7 +278,9 @@ export default function ProfileScreen() {
             onPress={() => navigation.navigate("About")}
           >
             <Info color="#26A69A" size={20} />
-            <Text className="flex-1 text-gray-900 ml-3">About League Genius</Text>
+            <Text className="flex-1 text-gray-900 ml-3">
+              About League Genius
+            </Text>
             <ChevronRight color="#9ca3af" size={20} />
           </TouchableOpacity>
         </View>
@@ -276,25 +296,15 @@ export default function ProfileScreen() {
           <Text className="text-red-500 font-medium ml-2">Sign Out</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Delete Account */}
-      <View className="mt-6 px-4 mb-8">
-        <View className="border border-red-200 rounded-lg bg-red-50 p-4">
-          <Text className="text-sm font-semibold text-red-800 mb-1">
-            Delete Account
-          </Text>
-          <Text className="text-xs text-red-600 mb-3">
-            Permanently delete your account and all associated data. This action
-            cannot be undone.
-          </Text>
-          <TouchableOpacity
-            className="bg-red-600 rounded-md py-3 flex-row items-center justify-center"
-            onPress={openDeleteModal}
-          >
-            <Trash2 color="#fff" size={18} />
-            <Text className="text-white font-semibold ml-2">Delete Account</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Logout Button */}
+      <View className="mt-4 px-4">
+        <TouchableOpacity
+          className="bg-red-600 rounded-lg py-4 border border-gray-200 flex-row items-center justify-center"
+          onPress={openDeleteModal}
+        >
+          <Trash2 color="#fff" size={18} />
+          <Text className="text-white font-medium ml-2">Delete</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Delete Account Modal */}
@@ -310,7 +320,9 @@ export default function ProfileScreen() {
         >
           {/* Header */}
           <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-gray-200">
-            <Text className="text-lg font-bold text-gray-900">Delete Your Account</Text>
+            <Text className="text-lg font-bold text-gray-900">
+              Delete Your Account
+            </Text>
             <TouchableOpacity
               onPress={() => !isDeleting && setDeleteModalVisible(false)}
               className="p-1"
@@ -406,7 +418,9 @@ export default function ProfileScreen() {
               {isDeleting ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text className="font-semibold text-white">Delete My Account</Text>
+                <Text className="font-semibold text-white">
+                  Delete My Account
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -426,7 +440,9 @@ export default function ProfileScreen() {
         >
           {/* Header */}
           <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-gray-200">
-            <Text className="text-lg font-bold text-gray-900">Edit Profile</Text>
+            <Text className="text-lg font-bold text-gray-900">
+              Edit Profile
+            </Text>
             <TouchableOpacity
               onPress={() => setEditModalVisible(false)}
               className="p-1"

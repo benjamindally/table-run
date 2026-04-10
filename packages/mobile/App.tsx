@@ -15,8 +15,8 @@ import { useAuthStore } from "./src/stores/authStore";
 import { mobileStorageAdapter } from "./src/adapters/storage";
 import { API_BASE_URL, REVENUECAT_API_KEY } from "./src/config";
 import type { RootStackParamList } from "./src/navigation/types";
+import { useFonts } from "expo-font";
 import {
-  useFonts,
   Antonio_100Thin,
   Antonio_200ExtraLight,
   Antonio_300Light,
@@ -113,13 +113,22 @@ function AppContent() {
     return () => subscription.remove();
   }, []);
 
+  // useEffect(() => {
+  //   if (isReady && !isLoading && fontsLoaded) {
+  //     SplashScreen.hideAsync();
+  //   }
+  // }, [isReady, isLoading, fontsLoaded]);
+
+  // if (!isReady || isLoading || !fontsLoaded) {
+  //   return null;
+  // }
   useEffect(() => {
-    if (isReady && !isLoading && fontsLoaded) {
+    if (isReady && !isLoading) {
       SplashScreen.hideAsync();
     }
-  }, [isReady, isLoading, fontsLoaded]);
+  }, [isReady, isLoading]);
 
-  if (!isReady || isLoading || !fontsLoaded) {
+  if (!isReady || isLoading) {
     return null;
   }
 
@@ -138,4 +147,3 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-

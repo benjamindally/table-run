@@ -24,10 +24,26 @@ import type { RootStackScreenProps } from "../navigation/types";
 import type { PurchasesPackage } from "react-native-purchases";
 
 const PRO_FEATURES = [
-  { icon: BarChart3, label: "Advanced Statistics", description: "Deep player and team analytics" },
-  { icon: Play, label: "Live Scoring Replay", description: "Review matches play-by-play" },
-  { icon: Palette, label: "Custom Branding", description: "Personalize your league's look" },
-  { icon: Headphones, label: "Priority Support", description: "Fast, dedicated help when you need it" },
+  {
+    icon: BarChart3,
+    label: "Manage Multiple Leagues",
+    description: "Scheduling, scoring, record keeping all in one place",
+  },
+  {
+    icon: Play,
+    label: "Live Scoring",
+    description: "Score and see matches play-by-play",
+  },
+  {
+    icon: Palette,
+    label: "Built for League Operators",
+    description: "Save hours a week with automated management",
+  },
+  {
+    icon: Headphones,
+    label: "Priority Support",
+    description: "Fast, dedicated help when you need it",
+  },
 ];
 
 export default function PaywallScreen() {
@@ -54,7 +70,10 @@ export default function PaywallScreen() {
 
   const handlePurchase = async () => {
     if (!defaultPackage) {
-      Alert.alert("Error", "No subscription package available. Please try again later.");
+      Alert.alert(
+        "Error",
+        "No subscription package available. Please try again later."
+      );
       return;
     }
 
@@ -79,13 +98,22 @@ export default function PaywallScreen() {
           { text: "OK", onPress: () => navigation.goBack() },
         ]);
       } else {
-        Alert.alert("No Subscription Found", "We couldn't find an active subscription for your account.");
+        Alert.alert(
+          "No Subscription Found",
+          "We couldn't find an active subscription for your account."
+        );
       }
     }
   };
 
   const priceLabel = defaultPackage
-    ? `${defaultPackage.product.priceString}/${defaultPackage.packageType === "MONTHLY" ? "mo" : defaultPackage.packageType === "ANNUAL" ? "yr" : "period"}`
+    ? `${defaultPackage.product.priceString}/${
+        defaultPackage.packageType === "MONTHLY"
+          ? "mo"
+          : defaultPackage.packageType === "ANNUAL"
+          ? "yr"
+          : "period"
+      }`
     : null;
 
   return (
@@ -93,7 +121,9 @@ export default function PaywallScreen() {
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 pt-4 pb-3">
         <View className="w-8" />
-        <Text className="text-lg font-bold text-gray-900">League Genius Pro</Text>
+        <Text className="text-lg font-bold text-gray-900">
+          League Genius Pro
+        </Text>
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-1">
           <X color="#6b7280" size={22} />
         </TouchableOpacity>
