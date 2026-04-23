@@ -10,6 +10,8 @@ interface SubscriptionState {
   entitlements: Entitlements | null;
   offerings: PurchasesOfferings | null;
   isLoading: boolean;
+  isLoadingOfferings: boolean;
+  offeringsError: string | null;
   error: string | null;
 
   // Derived
@@ -29,6 +31,8 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   entitlements: null,
   offerings: null,
   isLoading: false,
+  isLoadingOfferings: false,
+  offeringsError: null,
   error: null,
 
   isPro: () => get().entitlements?.tier === "pro",
@@ -60,11 +64,17 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   },
 
   loadOfferings: async () => {
+    set({ isLoadingOfferings: true, offeringsError: null });
     try {
       const offerings = await Purchases.getOfferings();
-      set({ offerings });
+      set({ offerings, isLoadingOfferings: false });
     } catch (error) {
       console.error("[Subscription] Failed to load offerings:", error);
+      set({
+        offeringsError:
+          error instanceof Error ? error.message : "Failed to load offerings",
+        isLoadingOfferings: false,
+      });
     }
   },
 
@@ -115,6 +125,8 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       entitlements: null,
       offerings: null,
       isLoading: false,
+      isLoadingOfferings: false,
+      offeringsError: null,
       error: null,
     });
   },

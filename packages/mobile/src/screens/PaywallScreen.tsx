@@ -6,8 +6,6 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
-  Linking,
-  Platform,
 } from "react-native";
 import {
   Crown,
@@ -52,7 +50,9 @@ export default function PaywallScreen() {
 
   const offerings = useSubscriptionStore((s) => s.offerings);
   const isLoading = useSubscriptionStore((s) => s.isLoading);
+  const isLoadingOfferings = useSubscriptionStore((s) => s.isLoadingOfferings);
   const error = useSubscriptionStore((s) => s.error);
+  const offeringsError = useSubscriptionStore((s) => s.offeringsError);
   const purchasePackage = useSubscriptionStore((s) => s.purchasePackage);
   const restorePurchases = useSubscriptionStore((s) => s.restorePurchases);
   const loadOfferings = useSubscriptionStore((s) => s.loadOfferings);
@@ -185,26 +185,32 @@ export default function PaywallScreen() {
             </Text>
           )}
 
-          {error && (
+          {(error || offeringsError) && (
             <Text className="text-center text-red-500 text-sm mb-3">
-              {error}
+              {error || offeringsError}
             </Text>
           )}
 
           <TouchableOpacity
-            onPress={handlePurchase}
-            disabled={purchasing || isLoading || !defaultPackage}
+            onPress={
+              offeringsError && !defaultPackage ? loadOfferings : handlePurchase
+            }
+            disabled={purchasing || isLoading || isLoadingOfferings || (!defaultPackage && !offeringsError)}
             className={`rounded-xl py-4 items-center mb-3 ${
-              purchasing || isLoading || !defaultPackage
+              purchasing || isLoading || isLoadingOfferings || (!defaultPackage && !offeringsError)
                 ? "bg-primary/60"
                 : "bg-primary"
             }`}
           >
-            {purchasing || isLoading ? (
+            {purchasing || isLoading || isLoadingOfferings ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-white font-bold text-base">
-                {defaultPackage ? "Subscribe Now" : "Loading..."}
+                {defaultPackage
+                  ? "Subscribe Now"
+                  : offeringsError
+                  ? "Retry"
+                  : "Loading..."}
               </Text>
             )}
           </TouchableOpacity>
