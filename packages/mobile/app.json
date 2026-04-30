@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.leaguegenius.app",
-      "buildNumber": "8",
+      "buildNumber": "10",
       "infoPlist": {
         "CFBundleDisplayName": "League Genius",
         "ITSAppUsesNonExemptEncryption": false
@@ -27,7 +27,7 @@
     },
     "android": {
       "package": "com.leaguegenius.app",
-      "versionCode": 7,
+      "versionCode": 10,
       "adaptiveIcon": {
         "foregroundImage": "./assets/league-genius-logo-black.png",
         "backgroundColor": "#000000"

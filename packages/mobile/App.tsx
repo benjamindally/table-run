@@ -1,3 +1,4 @@
+import "react-native-gesture-handler";
 import "./global.css"; // Temporarily disabled for testing
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
@@ -8,14 +9,15 @@ import { NavigationContainer } from "@react-navigation/native";
 import type { LinkingOptions } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
+// SUBSCRIPTIONS_DISABLED: import Purchases from "react-native-purchases";
 import { configureApi, setStorageAdapter } from "@league-genius/shared";
 import { RootNavigator } from "./src/navigation";
 import { useAuthStore } from "./src/stores/authStore";
 import { mobileStorageAdapter } from "./src/adapters/storage";
-import { API_BASE_URL } from "./src/config";
+import { API_BASE_URL /*, REVENUECAT_API_KEY*/ } from "./src/config";
 import type { RootStackParamList } from "./src/navigation/types";
+import { useFonts } from "expo-font";
 import {
-  useFonts,
   Antonio_100Thin,
   Antonio_200ExtraLight,
   Antonio_300Light,
@@ -31,6 +33,8 @@ SplashScreen.preventAutoHideAsync();
 // Configure shared package for mobile
 configureApi({ baseUrl: API_BASE_URL });
 setStorageAdapter(mobileStorageAdapter);
+
+// SUBSCRIPTIONS_DISABLED: Purchases.configure({ apiKey: REVENUECAT_API_KEY });
 
 // Deep link / Universal Link configuration
 // Custom scheme (dev/fallback): leaguegenius://
@@ -109,13 +113,22 @@ function AppContent() {
     return () => subscription.remove();
   }, []);
 
+  // useEffect(() => {
+  //   if (isReady && !isLoading && fontsLoaded) {
+  //     SplashScreen.hideAsync();
+  //   }
+  // }, [isReady, isLoading, fontsLoaded]);
+
+  // if (!isReady || isLoading || !fontsLoaded) {
+  //   return null;
+  // }
   useEffect(() => {
-    if (isReady && !isLoading && fontsLoaded) {
+    if (isReady && !isLoading) {
       SplashScreen.hideAsync();
     }
-  }, [isReady, isLoading, fontsLoaded]);
+  }, [isReady, isLoading]);
 
-  if (!isReady || isLoading || !fontsLoaded) {
+  if (!isReady || isLoading) {
     return null;
   }
 
@@ -134,4 +147,3 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-

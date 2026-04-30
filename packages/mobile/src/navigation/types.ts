@@ -71,6 +71,7 @@ export type RootStackParamList = {
   Profile: undefined;
   About: undefined;
   Notifications: undefined;
+  // SUBSCRIPTIONS_DISABLED: Paywall: { source?: string } | undefined;
   TeamDetails: { teamId: number; teamName: string };
   ClaimPlayer: { token: string };
   ActivatePlayer: { token: string };

@@ -18,9 +18,11 @@ import {
   useApplyScoringPreset,
   useUpdateScoringConfig,
 } from "../../hooks/useLeagues";
+import { useSubscription } from "../../hooks/useSubscription";
 import type { ScoringConfig, ScoringPreset } from "../../api";
 import ScoringConfigSection from "../../components/ScoringConfigSection";
 import { ParameterBox } from "../../components/scheduling";
+import PaywallModal from "../../components/PaywallModal";
 
 const PRESET_DEFAULTS: Record<ScoringPreset, Partial<ScoringConfig>> = {
   bca_8ball: {
@@ -194,6 +196,10 @@ const AdminCreateLeaguePage: React.FC = () => {
   const [draftSetsPerMatch, setDraftSetsPerMatch] = useState(4);
   const [draftIsPublic, setDraftIsPublic] = useState(true);
 
+  // Subscription gate
+  const { isPro } = useSubscription();
+  const [showPaywall, setShowPaywall] = useState(false);
+
   // Submission error
   const [submitError, setSubmitError] = useState("");
 
@@ -325,6 +331,13 @@ const AdminCreateLeaguePage: React.FC = () => {
 
   const handleSubmit = async () => {
     setSubmitError("");
+
+    // Gate: require subscription to create a league
+    if (!isPro) {
+      setShowPaywall(true);
+      return;
+    }
+
     const validationError = validate();
     if (validationError) {
       setSubmitError(validationError);
@@ -855,6 +868,12 @@ const AdminCreateLeaguePage: React.FC = () => {
           />
         </ModalWrapper>
       )}
+
+      {/* Paywall modal for free-tier users */}
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+      />
     </div>
   );
 };

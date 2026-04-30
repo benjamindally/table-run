@@ -638,6 +638,21 @@ export interface MeResponse {
   leagues: MeLeague[];
   upcoming_matches: MeMatch[];
   upcoming_byes: MeBye[];
+  entitlements?: Entitlements;
+}
+
+/**
+ * Subscription & Entitlements Types
+ */
+export interface Entitlements {
+  tier: 'free' | 'pro';
+  source: string;
+  features: {
+    advanced_stats: boolean;
+    live_scoring_replay: boolean;
+    custom_branding: boolean;
+    priority_support: boolean;
+  };
 }
 
 /**

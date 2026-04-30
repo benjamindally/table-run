@@ -7,7 +7,9 @@
     "dev": "pnpm --filter @league-genius/web dev",
     "build": "pnpm --filter @league-genius/web build",
     "lint": "pnpm --filter @league-genius/web lint",
-    "preview": "pnpm --filter @league-genius/web preview"
+    "preview": "pnpm --filter @league-genius/web preview",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "engines": {
     "node": ">=18"

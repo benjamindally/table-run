@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
 import { authApi, playersApi, setRefreshTokenCallback, type AuthResponse, type Player, type PlayerUpdateData, type RegisterData } from "@league-genius/shared";
+// SUBSCRIPTIONS_DISABLED: import Purchases from "react-native-purchases";
 import { useUserContextStore } from "./userContextStore";
 import { useNotificationsStore } from "./notificationsStore";
 import { useMatchScoringStore } from "./matchScoringStore";
+// SUBSCRIPTIONS_DISABLED: import { useSubscriptionStore } from "./subscriptionStore";
 
 interface AuthUser {
   id: number;
@@ -63,8 +65,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
 
+      // SUBSCRIPTIONS_DISABLED:
+      // if (data.player?.id) {
+      //   try { await Purchases.logIn(`player_${data.player.id}`); } catch (e) {}
+      // }
+
       // Load user context (leagues, teams, seasons)
       useUserContextStore.getState().loadUserContext();
+
+      // SUBSCRIPTIONS_DISABLED:
+      // useSubscriptionStore.getState().loadEntitlements();
+      // useSubscriptionStore.getState().loadOfferings();
 
       // Initialize notifications
       useNotificationsStore.getState().fetchUnreadCount();
@@ -96,7 +107,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
 
+      // SUBSCRIPTIONS_DISABLED:
+      // if (authData.player?.id) {
+      //   try { await Purchases.logIn(`player_${authData.player.id}`); } catch (e) {}
+      // }
+
       useUserContextStore.getState().loadUserContext();
+
+      // SUBSCRIPTIONS_DISABLED:
+      // useSubscriptionStore.getState().loadEntitlements();
+      // useSubscriptionStore.getState().loadOfferings();
+
       useNotificationsStore.getState().fetchUnreadCount();
       useNotificationsStore.getState().connectWebSocket();
     } catch (error) {
@@ -130,6 +151,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Clear match scoring state
     useMatchScoringStore.getState().clearMatch();
 
+    // SUBSCRIPTIONS_DISABLED:
+    // useSubscriptionStore.getState().clearSubscription();
+    // try { await Purchases.logOut(); } catch {}
+
     set({
       user: null,
       player: null,
@@ -158,6 +183,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     // Clear match scoring state
     useMatchScoringStore.getState().clearMatch();
+
+    // SUBSCRIPTIONS_DISABLED:
+    // useSubscriptionStore.getState().clearSubscription();
+    // try { await Purchases.logOut(); } catch {}
 
     set({
       user: null,
@@ -191,8 +220,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (!refreshed) {
           await get().logout();
         } else {
+          // SUBSCRIPTIONS_DISABLED:
+          // const { player } = get();
+          // if (player?.id) {
+          //   try { await Purchases.logIn(`player_${player.id}`); } catch (e) {}
+          // }
+
           // Load user context after successful token refresh
           useUserContextStore.getState().loadUserContext();
+
+          // SUBSCRIPTIONS_DISABLED:
+          // useSubscriptionStore.getState().loadEntitlements();
+          // useSubscriptionStore.getState().loadOfferings();
 
           // Initialize notifications
           useNotificationsStore.getState().fetchUnreadCount();
