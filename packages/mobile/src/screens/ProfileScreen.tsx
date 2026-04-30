@@ -25,13 +25,14 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
-  Crown,
-  ExternalLink,
+  // SUBSCRIPTIONS_DISABLED: Crown,
+  // SUBSCRIPTIONS_DISABLED: ExternalLink,
 } from "lucide-react-native";
 import { useAuthStore } from "../stores/authStore";
-import { useSubscriptionStore } from "../stores/subscriptionStore";
+// SUBSCRIPTIONS_DISABLED: import { useSubscriptionStore } from "../stores/subscriptionStore";
 import type { RootStackScreenProps } from "../navigation/types";
 
+/* SUBSCRIPTIONS_DISABLED: SubscriptionCard component removed
 function SubscriptionCard({
   navigation,
 }: {
@@ -96,6 +97,7 @@ function SubscriptionCard({
     </View>
   );
 }
+*/
 
 export default function ProfileScreen() {
   const navigation =
@@ -267,8 +269,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Subscription Section */}
-      <SubscriptionCard navigation={navigation} />
+      {/* SUBSCRIPTIONS_DISABLED: <SubscriptionCard navigation={navigation} /> */}
 
       {/* Menu Items */}
       <View className="mt-4">

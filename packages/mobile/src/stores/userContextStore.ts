@@ -10,7 +10,7 @@ import {
   type MeBye,
 } from "@league-genius/shared";
 import { useAuthStore } from "./authStore";
-import { useSubscriptionStore } from "./subscriptionStore";
+// SUBSCRIPTIONS_DISABLED: import { useSubscriptionStore } from "./subscriptionStore";
 
 interface UserContextState {
   player: MePlayer | null;
@@ -74,8 +74,7 @@ export const useUserContextStore = create<UserContextState>((set, get) => ({
         isLoading: false,
       });
 
-      // Sync entitlements from /me/ response to subscription store
-      useSubscriptionStore.getState().setEntitlements(response.entitlements);
+      // SUBSCRIPTIONS_DISABLED: useSubscriptionStore.getState().setEntitlements(response.entitlements);
     } catch (error) {
       console.error("[UserContext] Failed:", error);
       set({

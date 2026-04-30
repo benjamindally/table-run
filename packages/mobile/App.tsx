@@ -1,3 +1,4 @@
+import "react-native-gesture-handler";
 import "./global.css"; // Temporarily disabled for testing
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
@@ -8,12 +9,12 @@ import { NavigationContainer } from "@react-navigation/native";
 import type { LinkingOptions } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
-import Purchases from "react-native-purchases";
+// SUBSCRIPTIONS_DISABLED: import Purchases from "react-native-purchases";
 import { configureApi, setStorageAdapter } from "@league-genius/shared";
 import { RootNavigator } from "./src/navigation";
 import { useAuthStore } from "./src/stores/authStore";
 import { mobileStorageAdapter } from "./src/adapters/storage";
-import { API_BASE_URL, REVENUECAT_API_KEY } from "./src/config";
+import { API_BASE_URL /*, REVENUECAT_API_KEY*/ } from "./src/config";
 import type { RootStackParamList } from "./src/navigation/types";
 import { useFonts } from "expo-font";
 import {
@@ -33,8 +34,7 @@ SplashScreen.preventAutoHideAsync();
 configureApi({ baseUrl: API_BASE_URL });
 setStorageAdapter(mobileStorageAdapter);
 
-// Configure RevenueCat SDK
-Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+// SUBSCRIPTIONS_DISABLED: Purchases.configure({ apiKey: REVENUECAT_API_KEY });
 
 // Deep link / Universal Link configuration
 // Custom scheme (dev/fallback): leaguegenius://

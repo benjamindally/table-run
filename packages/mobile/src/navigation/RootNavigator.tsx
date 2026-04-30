@@ -8,7 +8,7 @@ import TeamDetailsScreen from "../screens/TeamDetailsScreen";
 import ClaimPlayerScreen from "../screens/auth/ClaimPlayerScreen";
 import ActivatePlayerScreen from "../screens/auth/ActivatePlayerScreen";
 import PlayerManagementScreen from "../screens/PlayerManagementScreen";
-import PaywallScreen from "../screens/PaywallScreen";
+// SUBSCRIPTIONS_DISABLED: import PaywallScreen from "../screens/PaywallScreen";
 import type { RootStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -114,6 +114,7 @@ export default function RootNavigator() {
           title: "Activate Account",
         }}
       />
+      {/* SUBSCRIPTIONS_DISABLED:
       <Stack.Screen
         name="Paywall"
         component={PaywallScreen}
@@ -122,6 +123,7 @@ export default function RootNavigator() {
           headerShown: false,
         }}
       />
+      */}
       <Stack.Screen
         name="PlayerManagement"
         component={PlayerManagementScreen}

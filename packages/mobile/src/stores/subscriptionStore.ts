@@ -1,3 +1,5 @@
+/* SUBSCRIPTIONS_DISABLED: entire file commented out — re-enable when adding IAP back
+
 import { create } from "zustand";
 import Purchases, {
   type PurchasesOfferings,
@@ -131,3 +133,5 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     });
   },
 }));
+
+*/

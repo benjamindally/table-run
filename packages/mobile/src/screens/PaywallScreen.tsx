@@ -1,3 +1,5 @@
+/* SUBSCRIPTIONS_DISABLED: entire file commented out — re-enable when adding IAP back
+
 import { useEffect, useState } from "react";
 import {
   View,
@@ -118,7 +120,6 @@ export default function PaywallScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      {/* Header */}
       <View className="flex-row items-center justify-between px-4 pt-4 pb-3">
         <View className="w-8" />
         <Text className="text-lg font-bold text-gray-900">
@@ -133,7 +134,6 @@ export default function PaywallScreen() {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 32 }}
       >
-        {/* Hero */}
         <View className="items-center px-6 pt-6 pb-8">
           <View className="bg-amber-100 rounded-full p-4 mb-4">
             <Crown color="#d97706" size={40} />
@@ -146,7 +146,6 @@ export default function PaywallScreen() {
           </Text>
         </View>
 
-        {/* Features */}
         <View className="px-4 mb-6">
           <View className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             {PRO_FEATURES.map((feature, index) => {
@@ -177,7 +176,6 @@ export default function PaywallScreen() {
           </View>
         </View>
 
-        {/* Price + CTA */}
         <View className="px-4">
           {priceLabel && (
             <Text className="text-center text-gray-600 text-sm mb-3">
@@ -215,7 +213,6 @@ export default function PaywallScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Restore */}
           <TouchableOpacity
             onPress={handleRestore}
             disabled={purchasing}
@@ -231,3 +228,5 @@ export default function PaywallScreen() {
     </View>
   );
 }
+
+*/
