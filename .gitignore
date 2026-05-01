@@ -27,3 +27,7 @@ dist-ssr
 *.code-workspace
 
 .claude
+
+# Expo generated native dirs
+packages/mobile/ios
+packages/mobile/android
