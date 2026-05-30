@@ -6,7 +6,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { Users, Trophy } from "lucide-react-native";
+import { Users, Trophy, Library } from "lucide-react-native";
+import { useNavigation as useRootNavigation } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import type { MainTabParamList } from "../navigation/types";
 import { useState, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,10 +19,12 @@ import { useUserContextStore } from "../stores/userContextStore";
 import type { PlayersStackParamList } from "../navigation/types";
 
 type NavigationProp = NativeStackNavigationProp<PlayersStackParamList>;
+type TabNavProp = BottomTabNavigationProp<MainTabParamList>;
 type SeasonOption = Pick<MeSeason, "id" | "name" | "league_name" | "is_active">;
 
 export default function PlayersTabScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const tabNavigation = useRootNavigation<TabNavProp>();
   const { isAuthenticated, accessToken } = useAuthStore();
   const { mySeasons, isLoaded: contextLoaded } = useUserContextStore();
 
@@ -57,6 +62,8 @@ export default function PlayersTabScreen() {
           setSeasonOptions(mySeasons);
           const defaultSeason = mySeasons.find((s) => s.is_active) ?? mySeasons[0];
           setSelectedSeasonId(defaultSeason.id);
+        } else if (isAuthenticated && mySeasons.length === 0) {
+          setLoading(false);
         } else if (!isAuthenticated) {
           try {
             const res = await api.get<{ results: SeasonOption[] }>("/seasons/");
@@ -163,14 +170,34 @@ export default function PlayersTabScreen() {
         ) : players.length === 0 ? (
           <View className="bg-white rounded-lg p-8 border border-gray-200 items-center">
             <Users color="#9ca3af" size={48} />
-            <Text className="text-gray-500 text-center mt-4 text-lg font-medium">
-              No player data available
-            </Text>
-            <Text className="text-gray-400 text-center mt-2">
-              {isAuthenticated
-                ? "Stats will appear once matches are played"
-                : "Check back after matches have been completed"}
-            </Text>
+            {isAuthenticated && seasonOptions.length === 0 ? (
+              <>
+                <Text className="text-gray-700 text-center mt-4 text-lg font-semibold">
+                  You're not in a league yet
+                </Text>
+                <Text className="text-gray-400 text-center mt-2 mb-6">
+                  Join a league to see player stats and leaderboards.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => tabNavigation.navigate("Leagues")}
+                  className="flex-row items-center gap-2 bg-primary px-5 py-3 rounded-full"
+                >
+                  <Library color="#fff" size={16} />
+                  <Text className="text-white font-semibold text-sm">Browse Leagues</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text className="text-gray-500 text-center mt-4 text-lg font-medium">
+                  No player data available
+                </Text>
+                <Text className="text-gray-400 text-center mt-2">
+                  {isAuthenticated
+                    ? "Stats will appear once matches are played"
+                    : "Check back after matches have been completed"}
+                </Text>
+              </>
+            )}
           </View>
         ) : (
           <View className="bg-white rounded-lg border border-gray-200 overflow-hidden pb-20">
