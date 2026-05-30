@@ -1,3 +1,8 @@
+import Bugsnag from "@bugsnag/expo";
+Bugsnag.start();
+import BugsnagPerformance from "@bugsnag/expo-performance";
+BugsnagPerformance.start();
+
 import "react-native-gesture-handler";
 import "./global.css"; // Temporarily disabled for testing
 import { useEffect, useState } from "react";
@@ -140,10 +145,12 @@ function AppContent() {
   );
 }
 
-export default function App() {
+function App() {
   return (
     <SafeAreaProvider>
       <AppContent />
     </SafeAreaProvider>
   );
 }
+
+export default BugsnagPerformance.withInstrumentedAppStarts(App);

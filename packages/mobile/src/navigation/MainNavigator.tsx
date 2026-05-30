@@ -1,5 +1,11 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Home, Library, Calendar, GanttChartSquare, Users } from "lucide-react-native";
+import {
+  Home,
+  Library,
+  Calendar,
+  GanttChartSquare,
+  Users,
+} from "lucide-react-native";
 import HomeNavigator from "./HomeNavigator";
 import LeaguesNavigator from "./LeaguesNavigator";
 import SeasonsNavigator from "./SeasonsNavigator";

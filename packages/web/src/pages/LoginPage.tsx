@@ -171,7 +171,7 @@ const LoginPage: React.FC = () => {
                   Password
                 </label>
                 <Link
-                  to="mailto:contact@leaguegenius.app"
+                  to="/forgot-password"
                   className="text-sm text-primary hover:text-primary-600"
                 >
                   Forgot password?
