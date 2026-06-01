@@ -43,7 +43,7 @@ export const authApi = {
    * Request a password reset email
    */
   requestPasswordReset: (email: string) =>
-    api.post('/auth/password-reset/', { email }),
+    api.post('/auth/password-reset/request/', { email }),
 
   /**
    * Validate password reset token before showing form
