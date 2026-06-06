@@ -26,6 +26,7 @@ import {
   X,
   Search,
   Megaphone,
+  Trash2,
 } from "lucide-react-native";
 import {
   teamsApi,
@@ -224,7 +225,13 @@ function ManageCaptainsModal({
               <Text className="text-gray-400">No roster members to promote</Text>
             </View>
           ) : (
-            roster.map((membership, index) => {
+            [...roster]
+              .sort((a, b) =>
+                (a.player_detail?.full_name || "").localeCompare(
+                  b.player_detail?.full_name || ""
+                )
+              )
+              .map((membership, index) => {
               const isCaptain = currentCaptainIds.includes(membership.player);
               const isLoading = toggling === membership.player;
               return (
@@ -486,7 +493,14 @@ export default function TeamDetailsScreen({
         teamsApi.getSeasons(teamId),
       ]);
       setTeam(teamResponse);
-      setRoster(rosterResponse);
+      // Sort roster alphabetically by player name (B-16 parity with web)
+      setRoster(
+        [...rosterResponse].sort((a, b) =>
+          (a.player_detail?.full_name || "").localeCompare(
+            b.player_detail?.full_name || ""
+          )
+        )
+      );
       setSeasons(seasonsResponse);
     } catch (error) {
       console.error("Failed to load team data:", error);
@@ -516,6 +530,31 @@ export default function TeamDetailsScreen({
 
   const captainIds = team?.captains_detail?.map((c) => c.player) ?? [];
   const rosterPlayerIds = roster.map((m) => m.player);
+
+  const [removingPlayerId, setRemovingPlayerId] = useState<number | null>(null);
+
+  const handleRemoveMember = (membership: TeamMembership) => {
+    const name = membership.player_detail?.full_name || "this player";
+    Alert.alert("Remove Player", `Remove ${name} from this team?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          if (!accessToken) return;
+          setRemovingPlayerId(membership.player);
+          try {
+            await teamsApi.removeMember(teamId, membership.player, accessToken);
+            await loadTeamData();
+          } catch (err: any) {
+            Alert.alert("Error", err?.message || "Failed to remove player");
+          } finally {
+            setRemovingPlayerId(null);
+          }
+        },
+      },
+    ]);
+  };
 
   // Derive league context for announcements from the team's season participations
   const teamLeague = (() => {
@@ -619,7 +658,7 @@ export default function TeamDetailsScreen({
           </View>
 
           {/* Team Captains Section */}
-          {(team.captains_detail?.length > 0 || canManage) && (
+          {((team.captains_detail?.length ?? 0) > 0 || canManage) && (
             <View className="bg-white rounded-lg p-4 border border-gray-200 mt-3">
               <View className="flex-row items-center justify-between mb-3">
                 <View className="flex-row items-center gap-2">
@@ -769,23 +808,39 @@ export default function TeamDetailsScreen({
                               )}
                             </View>
                           </View>
-                          <View className="items-end">
-                            <View
-                              className={`px-2 py-1 rounded-full ${
-                                membership.is_active ? "bg-green-100" : "bg-gray-100"
-                              }`}
-                            >
-                              <Text
-                                className={`text-xs font-medium ${
-                                  membership.is_active ? "text-green-700" : "text-gray-600"
+                          <View className="flex-row items-center gap-2">
+                            <View className="items-end">
+                              <View
+                                className={`px-2 py-1 rounded-full ${
+                                  membership.is_active ? "bg-green-100" : "bg-gray-100"
                                 }`}
                               >
-                                {membership.is_active ? "Active" : "Inactive"}
+                                <Text
+                                  className={`text-xs font-medium ${
+                                    membership.is_active ? "text-green-700" : "text-gray-600"
+                                  }`}
+                                >
+                                  {membership.is_active ? "Active" : "Inactive"}
+                                </Text>
+                              </View>
+                              <Text className="text-xs text-gray-400 mt-1">
+                                Joined {formatDate(membership.joined_at)}
                               </Text>
                             </View>
-                            <Text className="text-xs text-gray-400 mt-1">
-                              Joined {formatDate(membership.joined_at)}
-                            </Text>
+                            {canManage && (
+                              <TouchableOpacity
+                                onPress={() => handleRemoveMember(membership)}
+                                disabled={removingPlayerId === membership.player}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                className="p-2"
+                              >
+                                {removingPlayerId === membership.player ? (
+                                  <ActivityIndicator size="small" color="#ef4444" />
+                                ) : (
+                                  <Trash2 color="#ef4444" size={18} />
+                                )}
+                              </TouchableOpacity>
+                            )}
                           </View>
                         </View>
                       );

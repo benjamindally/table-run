@@ -55,7 +55,10 @@ const SeasonTeams: React.FC<SeasonTeamsProps> = ({
           {teams && teams.length > 0 ? (
             <>
               <div className="space-y-2">
-                {(expanded ? teams : teams.slice(0, initialLimit)).map(
+                {(expanded
+                  ? teams.slice().sort((a, b) => (a.team_detail?.name || '').localeCompare(b.team_detail?.name || ''))
+                  : teams.slice().sort((a, b) => (a.team_detail?.name || '').localeCompare(b.team_detail?.name || '')).slice(0, initialLimit)
+                ).map(
                   (participation) => (
                     <div
                       key={participation.id}

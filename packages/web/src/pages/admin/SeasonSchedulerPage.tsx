@@ -257,8 +257,14 @@ const SeasonSchedulerPage: React.FC = () => {
   // Add new match (manual mode)
   const handleAddMatch = () => {
     setIsAddingMatch(true);
-    // Default to next week or week 1
-    setAddMatchWeek(schedule && schedule.length > 0 ? schedule.length + 1 : 1);
+    // Default to the most recent existing week so consecutive matches stay
+    // grouped together. The user can switch weeks (or start a new one) via the
+    // week tile selector in the modal.
+    setAddMatchWeek(
+      schedule && schedule.length > 0
+        ? Math.max(...schedule.map((w) => w.week_number))
+        : 1
+    );
   };
 
   // Update venue table counts
@@ -278,8 +284,25 @@ const SeasonSchedulerPage: React.FC = () => {
   const handleSaveNewMatch = (newMatch: ScheduleMatch) => {
     if (!schedule) return;
 
+    // The match date is the source of truth for which week it belongs to:
+    // derive the week from the date relative to the season start. Fall back to
+    // the explicitly-selected week if no start date is available.
+    const startDate = season?.start_date || config.start_date;
+    let targetWeek = addMatchWeek;
+    if (startDate && newMatch.date) {
+      const start = new Date(startDate + "T00:00:00");
+      const target = new Date(newMatch.date + "T00:00:00");
+      if (!isNaN(start.getTime()) && !isNaN(target.getTime())) {
+        const diffDays = Math.floor(
+          (target.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        const derived = Math.floor(diffDays / 7) + 1;
+        if (derived >= 1) targetWeek = derived;
+      }
+    }
+
     // Find or create the week
-    const weekIndex = schedule.findIndex((w) => w.week_number === addMatchWeek);
+    const weekIndex = schedule.findIndex((w) => w.week_number === targetWeek);
     let newSchedule = [...schedule];
 
     if (weekIndex >= 0) {
@@ -291,7 +314,7 @@ const SeasonSchedulerPage: React.FC = () => {
     } else {
       // Create new week
       const newWeek: ScheduleWeek = {
-        week_number: addMatchWeek,
+        week_number: targetWeek,
         date: newMatch.date,
         matches: [newMatch],
       };
@@ -457,6 +480,9 @@ const SeasonSchedulerPage: React.FC = () => {
         teams={teams || []}
         venues={venues || []}
         weekNumber={addMatchWeek}
+        existingWeeks={schedule ? schedule.map((w) => w.week_number) : []}
+        onWeekChange={setAddMatchWeek}
+        seasonStartDate={season?.start_date || config.start_date}
         onSave={handleSaveNewMatch}
         isNewMatch
       />
