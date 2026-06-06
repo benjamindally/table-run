@@ -134,16 +134,16 @@ const MatchForm: React.FC<MatchFormProps> = ({
     }
   }, [isMatchLive]);
 
-  // Initialize rosters when data loads (only if empty)
-  // Also check if any games already have players assigned (from match_state arriving first)
+  // Initialize rosters when data loads; also merge any newly added players into an
+  // already-initialised roster so a player added mid-match appears immediately.
   useEffect(() => {
-    if (homeRosterData && state?.homeRoster.length === 0) {
-      // Check if any games already have home players assigned
+    if (!homeRosterData) return;
+
+    if (state?.homeRoster.length === 0) {
       const assignedPlayerIds = new Set<number>();
       games.forEach((g) => {
         if (g.homePlayerId) assignedPlayerIds.add(g.homePlayerId);
       });
-
       setHomeRoster(
         homeRosterData.map((member) => ({
           playerId: member.player,
@@ -151,17 +151,29 @@ const MatchForm: React.FC<MatchFormProps> = ({
           present: assignedPlayerIds.has(member.player),
         }))
       );
+    } else if (state?.homeRoster) {
+      const existingIds = new Set(state.homeRoster.map((p) => p.playerId));
+      const newPlayers = homeRosterData
+        .filter((m) => !existingIds.has(m.player))
+        .map((m) => ({
+          playerId: m.player,
+          playerName: m.player_detail?.full_name || "Unknown",
+          present: false,
+        }));
+      if (newPlayers.length > 0) {
+        setHomeRoster([...state.homeRoster, ...newPlayers]);
+      }
     }
-  }, [homeRosterData, setHomeRoster, state?.homeRoster.length, games]);
+  }, [homeRosterData, setHomeRoster, state?.homeRoster, games]);
 
   useEffect(() => {
-    if (awayRosterData && state?.awayRoster.length === 0) {
-      // Check if any games already have away players assigned
+    if (!awayRosterData) return;
+
+    if (state?.awayRoster.length === 0) {
       const assignedPlayerIds = new Set<number>();
       games.forEach((g) => {
         if (g.awayPlayerId) assignedPlayerIds.add(g.awayPlayerId);
       });
-
       setAwayRoster(
         awayRosterData.map((member) => ({
           playerId: member.player,
@@ -169,8 +181,20 @@ const MatchForm: React.FC<MatchFormProps> = ({
           present: assignedPlayerIds.has(member.player),
         }))
       );
+    } else if (state?.awayRoster) {
+      const existingIds = new Set(state.awayRoster.map((p) => p.playerId));
+      const newPlayers = awayRosterData
+        .filter((m) => !existingIds.has(m.player))
+        .map((m) => ({
+          playerId: m.player,
+          playerName: m.player_detail?.full_name || "Unknown",
+          present: false,
+        }));
+      if (newPlayers.length > 0) {
+        setAwayRoster([...state.awayRoster, ...newPlayers]);
+      }
     }
-  }, [awayRosterData, setAwayRoster, state?.awayRoster.length, games]);
+  }, [awayRosterData, setAwayRoster, state?.awayRoster, games]);
 
   // Fetch lineup data when captain needs to see the other team's lineup
   // - Home captain: fetches when entering home lineup phase (to see away lineup)

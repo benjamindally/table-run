@@ -53,6 +53,12 @@ export const teamsApi = {
     api.post<TeamMembership>(`/teams/${teamId}/add_member/`, { player_id: playerId }, token),
 
   /**
+   * Remove a member from the team roster
+   */
+  removeMember: (teamId: number, playerId: number, token?: string) =>
+    api.post<{ status: string }>(`/teams/${teamId}/remove_member/`, { player_id: playerId }, token),
+
+  /**
    * Add a captain to the team
    */
   addCaptain: (teamId: number, playerId: number, token?: string) =>

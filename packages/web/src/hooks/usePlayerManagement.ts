@@ -36,6 +36,9 @@ export const usePlayerManagement = ({
   const [isSearching, setIsSearching] = useState(false);
   const [searchResultCount, setSearchResultCount] = useState(0);
 
+  const sortByName = (a: Player, b: Player) =>
+    (a.full_name || '').localeCompare(b.full_name || '');
+
   const loadData = async () => {
     setIsLoading(true);
 
@@ -43,7 +46,7 @@ export const usePlayerManagement = ({
       // All logged-in users can browse the player directory
       if (accessToken) {
         const playersResponse = await playersApi.getAll(accessToken);
-        setAllPlayers(playersResponse.results);
+        setAllPlayers([...playersResponse.results].sort(sortByName));
         setNextPageUrl(playersResponse.next);
         setTotalCount(playersResponse.count);
 
@@ -85,7 +88,7 @@ export const usePlayerManagement = ({
       }
 
       const data = await response.json();
-      setAllPlayers((prev) => [...prev, ...data.results]);
+      setAllPlayers((prev) => [...prev, ...data.results].sort(sortByName));
       setNextPageUrl(data.next);
     } catch (err: any) {
       console.error("Error loading more players:", err);
@@ -130,7 +133,7 @@ export const usePlayerManagement = ({
         );
 
         const playerDetails = await Promise.all(playerDetailsPromises);
-        setSearchResults(playerDetails);
+        setSearchResults([...playerDetails].sort(sortByName));
         setSearchResultCount(response.count);
       } catch (err: unknown) {
         console.error("Search error:", err);

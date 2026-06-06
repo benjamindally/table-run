@@ -17,7 +17,7 @@ import { formatDateDisplay } from "@league-genius/shared";
 import { useInfinitePlayers } from "../../hooks/usePlayers";
 import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { teamsApi } from "../../api";
+import { teamsApi, playersApi } from "../../api";
 import { useAuth } from "../../contexts/AuthContext";
 import { toast } from "react-toastify";
 import { teamsKeys } from "../../hooks/useTeams";
@@ -42,6 +42,13 @@ const TeamDetailsPage: React.FC = () => {
   const [showCaptainModal, setShowCaptainModal] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [playerSearchTerm, setPlayerSearchTerm] = useState("");
+  const [showCreatePlayerForm, setShowCreatePlayerForm] = useState(false);
+  const [createPlayerData, setCreatePlayerData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+  });
 
   // Get players for the add player modal (filtered by current league)
   const {
@@ -51,8 +58,10 @@ const TeamDetailsPage: React.FC = () => {
     isFetchingNextPage,
   } = useInfinitePlayers(currentLeagueId ?? undefined);
 
-  // Flatten all pages into a single array of players
-  const allPlayers = playersData?.pages.flatMap((page) => page.results) ?? [];
+  // Flatten all pages into a single array of players, sorted alphabetically
+  const allPlayers = (playersData?.pages.flatMap((page) => page.results) ?? [])
+    .slice()
+    .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
 
   // Update mutation
   const updateMutation = useMutation({
@@ -109,6 +118,38 @@ const TeamDetailsPage: React.FC = () => {
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to add player");
+    },
+  });
+
+  // Remove member mutation
+  const removeMemberMutation = useMutation({
+    mutationFn: (playerId: number) =>
+      teamsApi.removeMember(teamId, playerId, getAuthToken() || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamsKeys.roster(teamId) });
+      toast.success("Player removed from team");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to remove player");
+    },
+  });
+
+  // Create new player then immediately add to roster
+  const createPlayerMutation = useMutation({
+    mutationFn: async (data: { first_name: string; last_name: string; email: string; phone?: string }) => {
+      const token = getAuthToken() || undefined;
+      const newPlayer = await playersApi.create(data, token);
+      await teamsApi.addMember(teamId, newPlayer.id, token);
+      return newPlayer;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamsKeys.roster(teamId) });
+      toast.success("Player created and added to team!");
+      setShowCreatePlayerForm(false);
+      setCreatePlayerData({ first_name: "", last_name: "", email: "", phone: "" });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to create player");
     },
   });
 
@@ -362,7 +403,7 @@ const TeamDetailsPage: React.FC = () => {
           <>
             {/* Mobile Card View */}
             <div className="sm:hidden space-y-3">
-              {roster.map((membership) => (
+              {roster.slice().sort((a, b) => (a.player_detail?.full_name || '').localeCompare(b.player_detail?.full_name || '')).map((membership) => (
                 <div
                   key={membership.id}
                   className="p-4 border border-gray-200 rounded-lg"
@@ -401,14 +442,27 @@ const TeamDetailsPage: React.FC = () => {
                     <span className="text-xs text-dark-300">
                       Joined {formatDateDisplay(membership.joined_at)}
                     </span>
-                    <button
-                      onClick={() =>
-                        navigate(`/admin/players/${membership.player}`)
-                      }
-                      className="btn btn-outline btn-sm"
-                    >
-                      View
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/players/${membership.player}`)
+                        }
+                        className="btn btn-outline btn-sm"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Remove ${membership.player_detail?.full_name} from this team?`)) {
+                            removeMemberMutation.mutate(membership.player);
+                          }
+                        }}
+                        disabled={removeMemberMutation.isPending}
+                        className="btn btn-sm bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -437,7 +491,7 @@ const TeamDetailsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {roster.map((membership) => (
+                  {roster.slice().sort((a, b) => (a.player_detail?.full_name || '').localeCompare(b.player_detail?.full_name || '')).map((membership) => (
                     <tr key={membership.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-3">
@@ -480,14 +534,27 @@ const TeamDetailsPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() =>
-                            navigate(`/admin/players/${membership.player}`)
-                          }
-                          className="btn btn-outline btn-sm"
-                        >
-                          View Player
-                        </button>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() =>
+                              navigate(`/admin/players/${membership.player}`)
+                            }
+                            className="btn btn-outline btn-sm"
+                          >
+                            View Player
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Remove ${membership.player_detail?.full_name} from this team?`)) {
+                                removeMemberMutation.mutate(membership.player);
+                              }
+                            }}
+                            disabled={removeMemberMutation.isPending}
+                            className="btn btn-sm bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -689,7 +756,7 @@ const TeamDetailsPage: React.FC = () => {
               </p>
 
               <div className="space-y-2">
-                {roster.map((membership) => {
+                {roster.slice().sort((a, b) => (a.player_detail?.full_name || '').localeCompare(b.player_detail?.full_name || '')).map((membership) => {
                   const isCaptain =
                     team.captains_detail?.some(
                       (c) => c.player === membership.player
@@ -766,6 +833,8 @@ const TeamDetailsPage: React.FC = () => {
                 onClick={() => {
                   setShowAddPlayerModal(false);
                   setPlayerSearchTerm("");
+                  setShowCreatePlayerForm(false);
+                  setCreatePlayerData({ first_name: "", last_name: "", email: "", phone: "" });
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -774,17 +843,79 @@ const TeamDetailsPage: React.FC = () => {
             </div>
 
             <div className="p-6 overflow-y-auto flex-1">
-              {/* Create New Player Button */}
-              <button
-                onClick={() => {
-                  // TODO: Navigate to create player page
-                  toast.info("Create new player - coming soon!");
-                }}
-                className="w-full mb-4 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors flex items-center justify-center gap-2 text-dark-300 hover:text-primary-600"
-              >
-                <UserPlus className="h-5 w-5" />
-                <span className="font-medium">Create New Player</span>
-              </button>
+              {/* Create New Player */}
+              {!showCreatePlayerForm ? (
+                <button
+                  onClick={() => setShowCreatePlayerForm(true)}
+                  className="w-full mb-4 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors flex items-center justify-center gap-2 text-dark-300 hover:text-primary-600"
+                >
+                  <UserPlus className="h-5 w-5" />
+                  <span className="font-medium">Create New Player</span>
+                </button>
+              ) : (
+                <div className="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-dark">New Player</h4>
+                    <button
+                      onClick={() => {
+                        setShowCreatePlayerForm(false);
+                        setCreatePlayerData({ first_name: "", last_name: "", email: "", phone: "" });
+                      }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="First name *"
+                      value={createPlayerData.first_name}
+                      onChange={(e) => setCreatePlayerData((p) => ({ ...p, first_name: e.target.value }))}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Last name *"
+                      value={createPlayerData.last_name}
+                      onChange={(e) => setCreatePlayerData((p) => ({ ...p, last_name: e.target.value }))}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="Email *"
+                    value={createPlayerData.email}
+                    onChange={(e) => setCreatePlayerData((p) => ({ ...p, email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone (optional)"
+                    value={createPlayerData.phone}
+                    onChange={(e) => setCreatePlayerData((p) => ({ ...p, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!createPlayerData.first_name || !createPlayerData.last_name || !createPlayerData.email) {
+                        toast.error("First name, last name, and email are required");
+                        return;
+                      }
+                      createPlayerMutation.mutate({
+                        first_name: createPlayerData.first_name,
+                        last_name: createPlayerData.last_name,
+                        email: createPlayerData.email,
+                        ...(createPlayerData.phone ? { phone: createPlayerData.phone } : {}),
+                      });
+                    }}
+                    disabled={createPlayerMutation.isPending}
+                    className="w-full btn btn-primary btn-sm"
+                  >
+                    {createPlayerMutation.isPending ? "Creating..." : "Create & Add to Team"}
+                  </button>
+                </div>
+              )}
 
               <div className="mb-4">
                 <input
@@ -874,6 +1005,8 @@ const TeamDetailsPage: React.FC = () => {
                 onClick={() => {
                   setShowAddPlayerModal(false);
                   setPlayerSearchTerm("");
+                  setShowCreatePlayerForm(false);
+                  setCreatePlayerData({ first_name: "", last_name: "", email: "", phone: "" });
                 }}
                 className="btn btn-outline btn-sm"
               >
