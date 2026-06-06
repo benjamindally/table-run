@@ -36,13 +36,18 @@ export const usePlayers = (leagueId?: number) => {
  * Get players with infinite loading (load more)
  * @param leagueId - Optional league ID to filter players by league
  */
-export const useInfinitePlayers = (leagueId?: number) => {
+export const useInfinitePlayers = (leagueId?: number, search?: string) => {
   const { getAuthToken } = useAuth();
+  const trimmedSearch = search?.trim() || undefined;
 
   return useInfiniteQuery({
-    queryKey: [...playerKeys.list(leagueId ? `league_${leagueId}` : undefined), 'infinite'],
+    queryKey: [
+      ...playerKeys.list(leagueId ? `league_${leagueId}` : undefined),
+      'infinite',
+      trimmedSearch ?? '',
+    ],
     queryFn: ({ pageParam = 1 }) =>
-      playersApi.getAll(getAuthToken() || undefined, { leagueId, page: pageParam }),
+      playersApi.getAll(getAuthToken() || undefined, { leagueId, page: pageParam, search: trimmedSearch }),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       // If there's a next URL, return the next page number

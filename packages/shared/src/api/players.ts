@@ -11,11 +11,12 @@ export const playersApi = {
    */
   getAll: (
     token?: string,
-    options?: { leagueId?: number; page?: number }
+    options?: { leagueId?: number; page?: number; search?: string }
   ) => {
     const params = new URLSearchParams();
     if (options?.leagueId) params.append('league_id', options.leagueId.toString());
     if (options?.page) params.append('page', options.page.toString());
+    if (options?.search) params.append('search', options.search);
     const queryString = params.toString();
     return api.get<PaginatedResponse<Player>>(
       `/players/${queryString ? `?${queryString}` : ''}`,

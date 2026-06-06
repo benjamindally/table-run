@@ -260,6 +260,23 @@ export const useUpdateVenue = () => {
 };
 
 /**
+ * Delete a venue (soft delete / deactivate)
+ */
+export const useDeleteVenue = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: (venueId: number) =>
+      seasonsApi.deleteVenue(venueId, getAuthToken() || undefined),
+    onSuccess: () => {
+      // Invalidate all season venue queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: seasonKeys.all });
+    },
+  });
+};
+
+/**
  * Create a new venue
  */
 export const useCreateVenue = () => {

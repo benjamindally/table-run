@@ -168,6 +168,16 @@ export const seasonsApi = {
     api.patch<Venue>(`/venues/${venueId}/`, data, token),
 
   /**
+   * Delete a venue (soft delete).
+   *
+   * Venues are deactivated rather than hard-deleted so that historical
+   * matches and teams keep their reference; deactivated venues are filtered
+   * out of active venue lists. League operators only (enforced server-side).
+   */
+  deleteVenue: (venueId: number, token?: string) =>
+    api.patch<Venue>(`/venues/${venueId}/`, { is_active: false }, token),
+
+  /**
    * Create a new venue for a league
    */
   createVenue: (data: { league: number; name: string; address?: string; city?: string; state?: string; zip_code?: string; table_count: number }, token?: string) =>

@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { Plus, Pencil, X, MapPin } from "lucide-react-native";
+import { Plus, Pencil, X, MapPin, Trash2 } from "lucide-react-native";
 import { api, seasonsApi, type Venue } from "@league-genius/shared";
 import { useAuthStore } from "../stores/authStore";
 import type { LeaguesStackScreenProps } from "../navigation/types";
@@ -49,6 +49,7 @@ export default function VenueManagementScreen({
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
   const [draft, setDraft] = useState<VenueDraft>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const loadVenues = useCallback(async () => {
     try {
@@ -129,6 +130,38 @@ export default function VenueManagementScreen({
     } finally {
       setSaving(false);
     }
+  };
+
+  const performDelete = async (venue: Venue) => {
+    setDeleting(true);
+    try {
+      // Soft delete: venue is deactivated, not removed, so historical
+      // matches keep their reference. League operators only (server-enforced).
+      await seasonsApi.deleteVenue(venue.id, accessToken ?? undefined);
+      setModalVisible(false);
+      loadVenues();
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to delete venue");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDelete = () => {
+    if (!editingVenue) return;
+    const venue = editingVenue;
+    Alert.alert(
+      "Delete Venue",
+      `Delete "${venue.name}"? It will be removed from your active venues and no longer available for scheduling. Existing matches keep their records.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => performDelete(venue),
+        },
+      ]
+    );
   };
 
   const updateDraft = (field: keyof VenueDraft, value: string) => {
@@ -320,27 +353,47 @@ export default function VenueManagementScreen({
           </ScrollView>
 
           {/* Footer */}
-          <View className="px-4 py-4 border-t border-gray-200 flex-row gap-3">
-            <TouchableOpacity
-              onPress={() => setModalVisible(false)}
-              disabled={saving}
-              className="flex-1 py-3 rounded-lg border border-gray-300 items-center"
-            >
-              <Text className="font-semibold text-gray-700">Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={saving}
-              className="flex-1 py-3 rounded-lg bg-primary items-center"
-            >
-              {saving ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text className="font-semibold text-white">
-                  {editingVenue ? "Save" : "Add Venue"}
-                </Text>
-              )}
-            </TouchableOpacity>
+          <View className="px-4 py-4 border-t border-gray-200">
+            {editingVenue && (
+              <TouchableOpacity
+                onPress={handleDelete}
+                disabled={saving || deleting}
+                className="flex-row items-center justify-center py-3 mb-3 rounded-lg border border-red-300"
+              >
+                {deleting ? (
+                  <ActivityIndicator color="#dc2626" size="small" />
+                ) : (
+                  <>
+                    <Trash2 size={16} color="#dc2626" />
+                    <Text className="font-semibold text-red-600 ml-2">
+                      Delete Venue
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                disabled={saving || deleting}
+                className="flex-1 py-3 rounded-lg border border-gray-300 items-center"
+              >
+                <Text className="font-semibold text-gray-700">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSave}
+                disabled={saving || deleting}
+                className="flex-1 py-3 rounded-lg bg-primary items-center"
+              >
+                {saving ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text className="font-semibold text-white">
+                    {editingVenue ? "Save" : "Add Venue"}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>

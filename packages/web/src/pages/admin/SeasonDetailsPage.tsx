@@ -17,7 +17,7 @@
 
 import React, { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, X, Calendar, Trophy } from "lucide-react";
+import { ArrowLeft, Upload, X, Calendar, Trophy, Trash2 } from "lucide-react";
 import {
   useSeason,
   useSeasonTeams,
@@ -30,6 +30,7 @@ import {
   useUpdateSeason,
   useCreateVenue,
   useUpdateVenue,
+  useDeleteVenue,
 } from "../../hooks/useSeasons";
 import { toast } from "react-toastify";
 import Modal from "../../components/Modal";
@@ -84,6 +85,7 @@ const SeasonDetailsPage: React.FC = () => {
   const updateSeasonMutation = useUpdateSeason(); // Update season details
   const createVenueMutation = useCreateVenue(); // Create new venue
   const updateVenueMutation = useUpdateVenue(); // Update existing venue
+  const deleteVenueMutation = useDeleteVenue(); // Soft-delete (deactivate) a venue
 
   // ============================================================================
   // CSV IMPORT MODAL STATE
@@ -135,6 +137,7 @@ const SeasonDetailsPage: React.FC = () => {
   // ============================================================================
   const [showVenueModal, setShowVenueModal] = useState(false);
   const [venueToEdit, setVenueToEdit] = useState<Venue | null>(null);
+  const [venueToDelete, setVenueToDelete] = useState<Venue | null>(null);
   const [venueFormData, setVenueFormData] = useState({
     name: "",
     address: "",
@@ -388,6 +391,27 @@ const SeasonDetailsPage: React.FC = () => {
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to save venue"
+      );
+    }
+  };
+
+  /**
+   * Soft-deletes (deactivates) a venue after confirmation.
+   * The venue is preserved in the database so historical matches keep their
+   * reference; it simply stops appearing in active venue lists.
+   */
+  const handleDeleteVenue = async () => {
+    if (!venueToDelete) return;
+
+    try {
+      await deleteVenueMutation.mutateAsync(venueToDelete.id);
+      toast.success("Venue deleted");
+      setVenueToDelete(null);
+      setShowVenueModal(false);
+      setVenueToEdit(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete venue"
       );
     }
   };
@@ -1163,7 +1187,22 @@ const SeasonDetailsPage: React.FC = () => {
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4">
+            {venueToEdit && (
+              <button
+                onClick={() => setVenueToDelete(venueToEdit)}
+                title="Delete venue"
+                aria-label="Delete venue"
+                className="btn btn-outline text-red-600 border-red-300 hover:bg-red-50 px-3 self-start sm:self-auto sm:mr-auto"
+                disabled={
+                  createVenueMutation.isPending ||
+                  updateVenueMutation.isPending ||
+                  deleteVenueMutation.isPending
+                }
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
             <button
               onClick={() => setShowVenueModal(false)}
               className="btn btn-outline w-full sm:w-auto"
@@ -1193,6 +1232,52 @@ const SeasonDetailsPage: React.FC = () => {
                 "Save Changes"
               ) : (
                 "Add Venue"
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* =====================================================================
+          MODAL: DELETE VENUE CONFIRMATION
+          Confirms soft-deleting (deactivating) a venue
+          ===================================================================== */}
+      <Modal
+        isOpen={venueToDelete !== null}
+        onClose={() => setVenueToDelete(null)}
+        title="Delete Venue"
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-dark-300">
+            Are you sure you want to delete{" "}
+            <strong>{venueToDelete?.name}</strong>?
+          </p>
+          <p className="text-sm text-dark-300">
+            The venue will be removed from your active venues and will no longer
+            be available for scheduling. Existing matches keep their records.
+          </p>
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
+            <button
+              onClick={() => setVenueToDelete(null)}
+              className="btn btn-outline w-full sm:w-auto"
+              disabled={deleteVenueMutation.isPending}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteVenue}
+              className="btn btn-primary bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto"
+              disabled={deleteVenueMutation.isPending}
+            >
+              {deleteVenueMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                "Delete Venue"
               )}
             </button>
           </div>

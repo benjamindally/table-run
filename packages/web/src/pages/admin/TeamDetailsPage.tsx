@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -11,8 +11,15 @@ import {
   X,
   Check,
   UserPlus,
+  UserMinus,
+  Trash2,
 } from "lucide-react";
-import { useTeam, useTeamRoster, useTeamSeasons } from "../../hooks/useTeams";
+import {
+  useTeam,
+  useTeamRoster,
+  useTeamSeasons,
+  useDeleteTeam,
+} from "../../hooks/useTeams";
 import { formatDateDisplay } from "@league-genius/shared";
 import { useInfinitePlayers } from "../../hooks/usePlayers";
 import { useLeagueSeason } from "../../contexts/LeagueSeasonContext";
@@ -29,11 +36,23 @@ const TeamDetailsPage: React.FC = () => {
   const { getAuthToken } = useAuth();
   const queryClient = useQueryClient();
 
-  const { currentLeagueId } = useLeagueSeason();
+  const { currentLeagueId, currentLeague, teams: myTeams } = useLeagueSeason();
 
   const { data: team, isLoading, error } = useTeam(teamId);
   const { data: roster } = useTeamRoster(teamId);
   const { data: seasons } = useTeamSeasons(teamId);
+  const deleteTeamMutation = useDeleteTeam();
+
+  // Who can delete this team: a captain of THIS team, or an operator of the
+  // league currently being worked in. (League-scoped, not "operator of any
+  // league".) The backend enforces this regardless of what the UI shows.
+  const isThisTeamCaptain = myTeams.some(
+    (t) => t.id === teamId && t.is_captain
+  );
+  const isCurrentLeagueOperator = currentLeague?.is_operator ?? false;
+  const canManageTeam = isThisTeamCaptain || isCurrentLeagueOperator;
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -42,6 +61,7 @@ const TeamDetailsPage: React.FC = () => {
   const [showCaptainModal, setShowCaptainModal] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [playerSearchTerm, setPlayerSearchTerm] = useState("");
+  const [debouncedPlayerSearch, setDebouncedPlayerSearch] = useState("");
   const [showCreatePlayerForm, setShowCreatePlayerForm] = useState(false);
   const [createPlayerData, setCreatePlayerData] = useState({
     first_name: "",
@@ -50,13 +70,20 @@ const TeamDetailsPage: React.FC = () => {
     phone: "",
   });
 
-  // Get players for the add player modal (filtered by current league)
+  // Debounce the modal search term so we don't hit the server on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedPlayerSearch(playerSearchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [playerSearchTerm]);
+
+  // Get players for the add player modal (server-side search across the whole
+  // league, filtered + paginated by the backend — not just the loaded pages)
   const {
     data: playersData,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfinitePlayers(currentLeagueId ?? undefined);
+  } = useInfinitePlayers(currentLeagueId ?? undefined, debouncedPlayerSearch);
 
   // Flatten all pages into a single array of players, sorted alphabetically
   const allPlayers = (playersData?.pages.flatMap((page) => page.results) ?? [])
@@ -174,6 +201,19 @@ const TeamDetailsPage: React.FC = () => {
     setIsEditing(false);
   };
 
+  const handleDeleteTeam = async () => {
+    try {
+      await deleteTeamMutation.mutateAsync(teamId);
+      toast.success("Team deleted");
+      setShowDeleteModal(false);
+      navigate("/admin/teams");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete team"
+      );
+    }
+  };
+
   const handleToggleCaptain = async (playerId: number, isCaptain: boolean) => {
     if (isCaptain) {
       // Removing captain - show confirmation
@@ -235,14 +275,26 @@ const TeamDetailsPage: React.FC = () => {
           </div>
         </div>
         {!isEditing ? (
-          <button
-            onClick={handleEdit}
-            className="btn btn-primary btn-sm flex items-center justify-center w-full sm:w-auto"
-          >
-            <Edit className="h-4 w-4 sm:mr-1" />
-            <span className="hidden sm:inline">Edit Team</span>
-            <span className="sm:hidden ml-1">Edit</span>
-          </button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <button
+              onClick={handleEdit}
+              className="btn btn-primary btn-sm flex items-center justify-center flex-1 sm:flex-none"
+            >
+              <Edit className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Edit Team</span>
+              <span className="sm:hidden ml-1">Edit</span>
+            </button>
+            {canManageTeam && (
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                title="Delete team"
+                aria-label="Delete team"
+                className="btn btn-outline btn-sm flex items-center justify-center text-red-600 border-red-300 hover:bg-red-50 px-2"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         ) : (
           <div className="flex gap-2 w-full sm:w-auto">
             <button
@@ -458,9 +510,11 @@ const TeamDetailsPage: React.FC = () => {
                           }
                         }}
                         disabled={removeMemberMutation.isPending}
-                        className="btn btn-sm bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                        title="Remove player"
+                        aria-label="Remove player"
+                        className="btn btn-outline btn-sm px-2 text-dark-300"
                       >
-                        Remove
+                        <UserMinus className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -550,9 +604,11 @@ const TeamDetailsPage: React.FC = () => {
                               }
                             }}
                             disabled={removeMemberMutation.isPending}
-                            className="btn btn-sm bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                            title="Remove player"
+                            aria-label="Remove player"
+                            className="btn btn-outline btn-sm px-2 text-dark-300"
                           >
-                            Remove
+                            <UserMinus className="h-4 w-4" />
                           </button>
                         </div>
                       </td>
@@ -732,6 +788,58 @@ const TeamDetailsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Team Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full mx-2 sm:mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-dark">Delete Team</h3>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-dark-300">
+                Are you sure you want to delete{" "}
+                <strong>{team.name}</strong>?
+              </p>
+              <p className="text-sm text-dark-300">
+                The team will be removed from active team lists. Its season
+                history and match records are preserved.
+              </p>
+
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={deleteTeamMutation.isPending}
+                  className="btn btn-outline w-full sm:w-auto"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteTeam}
+                  disabled={deleteTeamMutation.isPending}
+                  className="btn btn-primary bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto"
+                >
+                  {deleteTeamMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Team"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Manage Captains Modal */}
       {showCaptainModal && roster && (
@@ -929,13 +1037,11 @@ const TeamDetailsPage: React.FC = () => {
 
               <div className="space-y-2">
                 {(() => {
+                  // Search is performed server-side (see useInfinitePlayers);
+                  // here we only hide players already on the roster.
                   const rosterPlayerIds = new Set(roster?.map((m) => m.player) || []);
                   const availablePlayers = allPlayers.filter(
-                    (player) =>
-                      !rosterPlayerIds.has(player.id) &&
-                      (playerSearchTerm === "" ||
-                        player.full_name?.toLowerCase().includes(playerSearchTerm.toLowerCase()) ||
-                        player.email?.toLowerCase().includes(playerSearchTerm.toLowerCase()))
+                    (player) => !rosterPlayerIds.has(player.id)
                   );
 
                   if (availablePlayers.length === 0) {

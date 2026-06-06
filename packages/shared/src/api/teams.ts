@@ -41,6 +41,17 @@ export const teamsApi = {
     api.patch<Team>(`/teams/${id}/`, data, token),
 
   /**
+   * Delete a team (soft delete).
+   *
+   * The backend flips the team's `active` flag rather than removing the row,
+   * so season participations, matches, and standings keep their references.
+   * Allowed for a captain of the team or an operator of its league
+   * (enforced server-side).
+   */
+  delete: (id: number, token?: string) =>
+    api.delete<void>(`/teams/${id}/`, token),
+
+  /**
    * Get team roster (active members)
    */
   getRoster: (teamId: number, token?: string) =>

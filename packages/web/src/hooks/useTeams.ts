@@ -82,6 +82,22 @@ export const useCreateTeam = () => {
 };
 
 /**
+ * Hook to delete (soft-delete) a team
+ */
+export const useDeleteTeam = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: (teamId: number) =>
+      teamsApi.delete(teamId, getAuthToken() || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamsKeys.lists() });
+    },
+  });
+};
+
+/**
  * Bulk create result for tracking individual team creation status
  */
 export interface BulkCreateResult {

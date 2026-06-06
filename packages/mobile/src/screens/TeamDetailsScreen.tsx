@@ -556,6 +556,35 @@ export default function TeamDetailsScreen({
     ]);
   };
 
+  const [deletingTeam, setDeletingTeam] = useState(false);
+
+  const handleDeleteTeam = () => {
+    if (!team) return;
+    Alert.alert(
+      "Delete Team",
+      `Delete "${team.name}"? It will be removed from active team lists. Its season history and match records are preserved.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (!accessToken) return;
+            setDeletingTeam(true);
+            try {
+              await teamsApi.delete(teamId, accessToken);
+              navigation.goBack();
+            } catch (err: any) {
+              Alert.alert("Error", err?.message || "Failed to delete team");
+            } finally {
+              setDeletingTeam(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Derive league context for announcements from the team's season participations
   const teamLeague = (() => {
     for (const sp of seasons) {
@@ -654,6 +683,26 @@ export default function TeamDetailsScreen({
                   You are a captain of this team
                 </Text>
               </View>
+            )}
+
+            {/* Delete Team */}
+            {canManage && (
+              <TouchableOpacity
+                onPress={handleDeleteTeam}
+                disabled={deletingTeam}
+                className="mt-3 flex-row items-center justify-center py-3 rounded-lg border border-red-300"
+              >
+                {deletingTeam ? (
+                  <ActivityIndicator color="#dc2626" size="small" />
+                ) : (
+                  <>
+                    <Trash2 size={16} color="#dc2626" />
+                    <Text className="font-semibold text-red-600 ml-2">
+                      Delete Team
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
             )}
           </View>
 
