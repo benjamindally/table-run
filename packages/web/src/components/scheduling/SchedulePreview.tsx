@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, Plus, TreePine } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, TreePine, X } from "lucide-react";
 import type { ScheduleWeek, ScheduleMatch } from "../../api";
 import { formatDateDisplay } from "@league-genius/shared";
 
 interface SchedulePreviewProps {
   schedule: ScheduleWeek[];
   onEditMatch: (weekIndex: number, matchIndex: number) => void;
+  onRemoveMatch?: (weekIndex: number, matchIndex: number) => void;
   onAddMatch?: () => void;
   initialWeeksToShow?: number;
   isManualMode?: boolean;
@@ -14,6 +15,7 @@ interface SchedulePreviewProps {
 const SchedulePreview: React.FC<SchedulePreviewProps> = ({
   schedule,
   onEditMatch,
+  onRemoveMatch,
   onAddMatch,
   initialWeeksToShow = 4,
   isManualMode = false,
@@ -117,6 +119,11 @@ const SchedulePreview: React.FC<SchedulePreviewProps> = ({
                         key={match.temp_id || match.id || matchIndex}
                         match={match}
                         onClick={() => onEditMatch(weekIndex, matchIndex)}
+                        onRemove={
+                          onRemoveMatch
+                            ? () => onRemoveMatch(weekIndex, matchIndex)
+                            : undefined
+                        }
                       />
                     ))}
                   </div>
@@ -154,9 +161,28 @@ const SchedulePreview: React.FC<SchedulePreviewProps> = ({
 interface MatchCardProps {
   match: ScheduleMatch;
   onClick: () => void;
+  onRemove?: () => void;
 }
 
-const MatchCard: React.FC<MatchCardProps> = ({ match, onClick }) => {
+const RemoveButton: React.FC<{ onRemove: () => void; label: string }> = ({
+  onRemove,
+  label,
+}) => (
+  <button
+    type="button"
+    aria-label={label}
+    title={label}
+    onClick={(e) => {
+      e.stopPropagation();
+      onRemove();
+    }}
+    className="p-1 rounded text-dark-300 hover:text-red-600 hover:bg-red-50 transition-colors"
+  >
+    <X className="h-4 w-4" />
+  </button>
+);
+
+const MatchCard: React.FC<MatchCardProps> = ({ match, onClick, onRemove }) => {
   // Bye match card
   if (match.is_bye) {
     return (
@@ -169,9 +195,12 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onClick }) => {
             <p className="font-medium text-sm text-dark">
               {match.bye_team_name || `Team ${match.bye_team_id}`}
             </p>
-            <span className="px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded text-xs font-medium">
-              BYE
-            </span>
+            <div className="flex items-center gap-1">
+              <span className="px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded text-xs font-medium">
+                BYE
+              </span>
+              {onRemove && <RemoveButton onRemove={onRemove} label="Remove bye" />}
+            </div>
           </div>
           <p className="text-xs text-dark-400">No opponent this week</p>
         </div>
@@ -195,7 +224,10 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onClick }) => {
               {match.away_team_name || (match.away_team_id ? `Team ${match.away_team_id}` : "TBD")}
             </p>
           </div>
-          <span className="text-xs text-dark-300">vs</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-dark-300">vs</span>
+            {onRemove && <RemoveButton onRemove={onRemove} label="Remove match" />}
+          </div>
         </div>
         <div className="flex items-center justify-between text-xs text-dark-400">
           <span className="truncate">

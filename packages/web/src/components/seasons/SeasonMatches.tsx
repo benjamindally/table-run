@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { ChevronDown, ChevronUp, Upload } from "lucide-react";
+import { ChevronDown, ChevronUp, Upload, Trash2 } from "lucide-react";
 import type { Match, ScheduleBye } from "../../api";
 import { formatDateDisplay } from "@league-genius/shared";
 
@@ -9,6 +9,11 @@ interface SeasonMatchesProps {
   editable?: boolean | ((match: Match) => boolean);
   onImportSchedule?: () => void;
   onEditMatch?: (match: Match) => void;
+  /**
+   * Delete a match. Only shown (alongside `editable`) for matches that are
+   * still 'scheduled' — completed matches carry results and can't be deleted.
+   */
+  onDeleteMatch?: (match: Match) => void;
   initialWeeksToShow?: number;
   isUserTeamMatch?: (match: Match) => boolean;
 }
@@ -19,6 +24,7 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
   editable = false,
   onImportSchedule,
   onEditMatch,
+  onDeleteMatch,
   initialWeeksToShow = 3,
   isUserTeamMatch,
 }) => {
@@ -210,16 +216,34 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
                             <span>
                               {formatDateDisplay(match.date)}
                             </span>
-                            {match.status === "completed" && (
-                              <span className="px-1.5 py-0.5 bg-green-100 text-green-800 rounded">
-                                ✓
-                              </span>
-                            )}
-                            {match.status === "scheduled" && (
-                              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
-                                Scheduled
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {match.status === "completed" && (
+                                <span className="px-1.5 py-0.5 bg-green-100 text-green-800 rounded">
+                                  ✓
+                                </span>
+                              )}
+                              {match.status === "scheduled" && (
+                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
+                                  Scheduled
+                                </span>
+                              )}
+                              {matchEditable &&
+                                onDeleteMatch &&
+                                match.status === "scheduled" && (
+                                  <button
+                                    type="button"
+                                    aria-label="Delete match"
+                                    title="Delete match"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDeleteMatch(match);
+                                    }}
+                                    className="p-1 rounded text-dark-300 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                            </div>
                           </div>
                         </div>
                       </div>

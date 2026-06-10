@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { matchesApi } from '../api';
 import { Match } from '../api';
 import { useAuth } from '../contexts/AuthContext';
+import { seasonKeys } from './useSeasons';
 
 // Query keys for caching
 export const matchKeys = {
@@ -70,6 +71,25 @@ export const useUpdateMatch = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: matchKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: matchKeys.lists() });
+    },
+  });
+};
+
+/**
+ * Delete a match (league operators only; scheduled matches only).
+ * seasonId is required so the season's match list and standings refresh.
+ */
+export const useDeleteMatch = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ id }: { id: number; seasonId: number }) =>
+      matchesApi.delete(id, getAuthToken() || undefined),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: matchKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.matches(variables.seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.standings(variables.seasonId) });
     },
   });
 };

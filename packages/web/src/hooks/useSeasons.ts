@@ -243,6 +243,25 @@ export const useSaveSchedule = () => {
 };
 
 /**
+ * Clear all scheduled matches (and byes) for a season so the operator can
+ * start over. Completed matches are left in place.
+ */
+export const useClearSeasonMatches = () => {
+  const queryClient = useQueryClient();
+  const { getAuthToken } = useAuth();
+
+  return useMutation({
+    mutationFn: (seasonId: number) =>
+      seasonsApi.clearMatches(seasonId, getAuthToken() || undefined),
+    onSuccess: (_, seasonId) => {
+      queryClient.invalidateQueries({ queryKey: seasonKeys.matches(seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.standings(seasonId) });
+      queryClient.invalidateQueries({ queryKey: seasonKeys.detail(seasonId) });
+    },
+  });
+};
+
+/**
  * Update a venue (e.g., table_count)
  */
 export const useUpdateVenue = () => {

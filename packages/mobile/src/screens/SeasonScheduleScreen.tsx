@@ -26,13 +26,16 @@ import {
   TreePine,
   AlertTriangle,
   Check,
+  Trash2,
 } from "lucide-react-native";
 import { useState, useEffect, useCallback } from "react";
 import {
   seasonsApi,
+  matchesApi,
   formatDateDisplay,
   type ScheduleConfiguration,
   type ScheduleWeek,
+  type ScheduleMatch,
   type ScheduleWarning,
   type Venue,
   type SeasonParticipation,
@@ -215,6 +218,7 @@ export default function SeasonScheduleScreen({
           away_team_id: m.away_team ?? null,
           away_team_name: m.away_team_detail?.name,
           date: m.date,
+          status: m.status,
         });
       }
       // Include byes
@@ -351,6 +355,88 @@ export default function SeasonScheduleScreen({
   // ── Display weeks (preview takes precedence) ──
   const displayWeeks = previewWeeks ?? liveWeeks;
   const isPreview = previewWeeks !== null;
+
+  // Number of saved scheduled matches (drives the "Clear" button)
+  const scheduledMatchCount = liveWeeks.reduce(
+    (sum, w) => sum + w.matches.filter((m) => !m.is_bye && m.status === "scheduled").length,
+    0
+  );
+
+  // ── Remove a match from the unsaved preview (client-side only) ──
+  const handleRemovePreviewMatch = (weekNumber: number, matchIndex: number) => {
+    setPreviewWeeks((prev) => {
+      if (!prev) return prev;
+      return prev
+        .map((w) =>
+          w.week_number === weekNumber
+            ? { ...w, matches: w.matches.filter((_, i) => i !== matchIndex) }
+            : w
+        )
+        .filter((w) => w.matches.length > 0 || w.is_break_week);
+    });
+  };
+
+  // ── Delete a single saved (scheduled) match ──
+  const handleDeleteLiveMatch = (match: ScheduleMatch) => {
+    if (!match.id) return;
+    Alert.alert(
+      "Delete Match",
+      `Delete ${match.home_team_name ?? "TBD"} vs ${match.away_team_name ?? "TBD"}? This can't be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await matchesApi.delete(match.id!, accessToken ?? undefined);
+              setRefreshing(true);
+              await loadSchedule();
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Failed to delete match.";
+              Alert.alert("Error", msg);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // ── Clear all scheduled matches for the season ──
+  const handleClearMatches = () => {
+    Alert.alert(
+      "Clear Scheduled Matches",
+      `Delete all ${scheduledMatchCount} scheduled match${
+        scheduledMatchCount === 1 ? "" : "es"
+      } (and any byes)? Completed matches are kept. This can't be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const result = await seasonsApi.clearMatches(seasonId, accessToken ?? undefined);
+              setRefreshing(true);
+              await loadSchedule();
+              const skipped = result.skipped_completed
+                ? ` ${result.skipped_completed} completed kept.`
+                : "";
+              Alert.alert(
+                "Matches Cleared",
+                `Deleted ${result.deleted_matches} scheduled match${
+                  result.deleted_matches === 1 ? "" : "es"
+                }.${skipped}`
+              );
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Failed to clear matches.";
+              Alert.alert("Error", msg);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   // ── Config display helpers ──
   const selectedTeamCount = config.selected_team_ids?.length ?? 0;
@@ -522,6 +608,19 @@ export default function SeasonScheduleScreen({
           </View>
         )}
 
+        {/* ── Clear scheduled matches (operator, live mode) ── */}
+        {!isPreview && canGenerate && scheduledMatchCount > 0 && (
+          <TouchableOpacity
+            onPress={handleClearMatches}
+            className="flex-row items-center justify-center gap-2 border border-red-200 bg-red-50 rounded-lg py-2.5"
+          >
+            <Trash2 color="#dc2626" size={16} />
+            <Text className="text-sm font-semibold text-red-600">
+              Clear scheduled matches ({scheduledMatchCount})
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* ── Schedule weeks ── */}
         {displayWeeks.length === 0 ? (
           <View className="bg-white rounded-lg border border-gray-200 p-8 items-center">
@@ -584,6 +683,14 @@ export default function SeasonScheduleScreen({
                           </View>
                         );
                       }
+                      // Operator can remove an unsaved preview match, or delete
+                      // a saved match that is still 'scheduled'.
+                      const canRemove =
+                        canGenerate &&
+                        (isPreview || match.status === "scheduled");
+                      const onRemovePress = isPreview
+                        ? () => handleRemovePreviewMatch(week.week_number, idx)
+                        : () => handleDeleteLiveMatch(match);
                       return (
                         <View
                           key={`match-${match.id ?? idx}`}
@@ -591,9 +698,20 @@ export default function SeasonScheduleScreen({
                         >
                           <View className="flex-row items-center justify-between mb-1">
                             <Text className="text-xs text-gray-500">{formatMatchDate(match.date)}</Text>
-                            {match.venue_name && (
-                              <Text className="text-xs text-gray-400">{match.venue_name}</Text>
-                            )}
+                            <View className="flex-row items-center gap-2">
+                              {match.venue_name && (
+                                <Text className="text-xs text-gray-400">{match.venue_name}</Text>
+                              )}
+                              {canRemove && (
+                                <TouchableOpacity
+                                  onPress={onRemovePress}
+                                  hitSlop={8}
+                                  className="p-0.5"
+                                >
+                                  <Trash2 color="#dc2626" size={15} />
+                                </TouchableOpacity>
+                              )}
+                            </View>
                           </View>
                           <View className="flex-row items-center justify-between">
                             <Text className="text-sm font-semibold text-gray-900 flex-1" numberOfLines={1}>

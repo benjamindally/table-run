@@ -31,7 +31,9 @@ import {
   useCreateVenue,
   useUpdateVenue,
   useDeleteVenue,
+  useClearSeasonMatches,
 } from "../../hooks/useSeasons";
+import { useDeleteMatch } from "../../hooks/useMatches";
 import { toast } from "react-toastify";
 import Modal from "../../components/Modal";
 import SeasonOverview from "../../components/seasons/SeasonOverview";
@@ -86,6 +88,8 @@ const SeasonDetailsPage: React.FC = () => {
   const createVenueMutation = useCreateVenue(); // Create new venue
   const updateVenueMutation = useUpdateVenue(); // Update existing venue
   const deleteVenueMutation = useDeleteVenue(); // Soft-delete (deactivate) a venue
+  const deleteMatchMutation = useDeleteMatch(); // Delete a single scheduled match
+  const clearMatchesMutation = useClearSeasonMatches(); // Clear all scheduled matches
 
   // ============================================================================
   // CSV IMPORT MODAL STATE
@@ -146,6 +150,17 @@ const SeasonDetailsPage: React.FC = () => {
     zip_code: "",
     table_count: 1,
   });
+
+  // ============================================================================
+  // MATCH DELETION STATE
+  // Single-match delete confirmation + bulk "clear scheduled matches" confirm
+  // ============================================================================
+  const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
+  const [showClearMatchesModal, setShowClearMatchesModal] = useState(false);
+
+  // Only 'scheduled' matches are deletable; this drives the "Clear" button.
+  const scheduledMatchCount =
+    matches?.filter((m) => m.status === "scheduled").length ?? 0;
   const [originalVenueData, setOriginalVenueData] = useState<{
     name: string;
     address: string;
@@ -204,6 +219,39 @@ const SeasonDetailsPage: React.FC = () => {
    */
   const handleEditMatch = (match: Match) => {
     navigate(`/admin/matches/${match.id}/score`);
+  };
+
+  /**
+   * Deletes the single scheduled match selected in the confirm modal.
+   */
+  const handleDeleteMatch = async () => {
+    if (!matchToDelete) return;
+    try {
+      await deleteMatchMutation.mutateAsync({ id: matchToDelete.id, seasonId });
+      toast.success("Match deleted");
+      setMatchToDelete(null);
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to delete match");
+    }
+  };
+
+  /**
+   * Deletes all scheduled matches (and byes) for the season so the operator
+   * can start the schedule over. Completed matches are left untouched.
+   */
+  const handleClearMatches = async () => {
+    try {
+      const result = await clearMatchesMutation.mutateAsync(seasonId);
+      const skipped = result.skipped_completed
+        ? ` ${result.skipped_completed} completed match${
+            result.skipped_completed === 1 ? "" : "es"
+          } kept.`
+        : "";
+      toast.success(`Cleared ${result.deleted_matches} scheduled matches.${skipped}`);
+      setShowClearMatchesModal(false);
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to clear matches");
+    }
   };
 
   /**
@@ -614,13 +662,27 @@ const SeasonDetailsPage: React.FC = () => {
 
       {/* Show SeasonMatches when there are matches */}
       {matches && matches.length > 0 && (
-        <SeasonMatches
-          matches={matches}
-          byes={byes}
-          editable={true}
-          onImportSchedule={() => setShowScheduleImportModal(true)}
-          onEditMatch={handleEditMatch}
-        />
+        <div className="space-y-3">
+          {scheduledMatchCount > 0 && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowClearMatchesModal(true)}
+                className="btn btn-outline btn-sm flex items-center text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Clear scheduled matches ({scheduledMatchCount})
+              </button>
+            </div>
+          )}
+          <SeasonMatches
+            matches={matches}
+            byes={byes}
+            editable={true}
+            onImportSchedule={() => setShowScheduleImportModal(true)}
+            onEditMatch={handleEditMatch}
+            onDeleteMatch={(match) => setMatchToDelete(match)}
+          />
+        </div>
       )}
 
       {/* =====================================================================
@@ -1278,6 +1340,105 @@ const SeasonDetailsPage: React.FC = () => {
                 </>
               ) : (
                 "Delete Venue"
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* =====================================================================
+          MODAL: DELETE MATCH CONFIRMATION
+          Confirms deleting a single scheduled match
+          ===================================================================== */}
+      <Modal
+        isOpen={matchToDelete !== null}
+        onClose={() => setMatchToDelete(null)}
+        title="Delete Match"
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-dark-300">
+            Delete the match between{" "}
+            <strong>
+              {matchToDelete?.home_team_detail?.name ||
+                `Team ${matchToDelete?.home_team}`}
+            </strong>{" "}
+            and{" "}
+            <strong>
+              {matchToDelete?.away_team_detail?.name ||
+                `Team ${matchToDelete?.away_team}`}
+            </strong>
+            ?
+          </p>
+          <p className="text-sm text-dark-300">This can't be undone.</p>
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
+            <button
+              onClick={() => setMatchToDelete(null)}
+              className="btn btn-outline w-full sm:w-auto"
+              disabled={deleteMatchMutation.isPending}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteMatch}
+              className="btn btn-primary bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto"
+              disabled={deleteMatchMutation.isPending}
+            >
+              {deleteMatchMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                "Delete Match"
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* =====================================================================
+          MODAL: CLEAR SCHEDULED MATCHES CONFIRMATION
+          Confirms bulk-deleting all scheduled matches for the season
+          ===================================================================== */}
+      <Modal
+        isOpen={showClearMatchesModal}
+        onClose={() => setShowClearMatchesModal(false)}
+        title="Clear Scheduled Matches"
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-dark-300">
+            Delete all <strong>{scheduledMatchCount}</strong> scheduled match
+            {scheduledMatchCount === 1 ? "" : "es"} (and any byes) for this
+            season?
+          </p>
+          <p className="text-sm text-dark-300">
+            Completed matches with recorded scores are kept. This can't be
+            undone.
+          </p>
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
+            <button
+              onClick={() => setShowClearMatchesModal(false)}
+              className="btn btn-outline w-full sm:w-auto"
+              disabled={clearMatchesMutation.isPending}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleClearMatches}
+              className="btn btn-primary bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto"
+              disabled={clearMatchesMutation.isPending}
+            >
+              {clearMatchesMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                  Clearing...
+                </>
+              ) : (
+                "Clear Matches"
               )}
             </button>
           </div>
