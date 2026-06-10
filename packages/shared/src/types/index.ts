@@ -361,6 +361,7 @@ export interface ScheduleMatch {
   venue_id?: number | null;
   venue_name?: string;
   date: string;
+  status?: string;              // For existing matches: 'scheduled' | 'completed' | ...
   is_bye?: boolean;
   bye_team_id?: number;         // Team with bye this week
   bye_team_name?: string;

@@ -26,8 +26,8 @@ read-only visibility.
 
 ## Data Model
 
-Dues live on `PlayerSeasonStats` (`packages`/backend `rack/league/models.py`),
-which is the existing `player + season + team` join. Two new fields:
+Dues live on `PlayerSeasonStats` (backend: `rack/league/models.py`), which is the
+existing `player + season + team` join. Two new fields:
 
 ```python
 dues_paid = models.BooleanField(

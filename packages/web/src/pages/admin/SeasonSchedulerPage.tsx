@@ -237,20 +237,28 @@ const SeasonSchedulerPage: React.FC = () => {
     setHasEdits(true);
   };
 
-  // Delete match
-  const handleDeleteMatch = () => {
-    if (!schedule || !editingMatch) return;
+  // Remove a match from the in-memory schedule (shared by the edit modal's
+  // delete button and the inline ✕ on each card). Nothing is persisted until
+  // Save Schedule, so this is pure client-side state.
+  const removeMatchAt = (weekIndex: number, matchIndex: number) => {
+    if (!schedule) return;
 
     const newSchedule = [...schedule];
-    newSchedule[editingMatch.weekIndex] = {
-      ...newSchedule[editingMatch.weekIndex],
-      matches: newSchedule[editingMatch.weekIndex].matches.filter(
-        (_, i) => i !== editingMatch.matchIndex
-      ),
+    newSchedule[weekIndex] = {
+      ...newSchedule[weekIndex],
+      matches: newSchedule[weekIndex].matches.filter((_, i) => i !== matchIndex),
     };
-    // Remove empty weeks
-    setSchedule(newSchedule.filter((week) => week.matches.length > 0 || week.is_break_week));
+    // Remove now-empty weeks (keep break weeks)
+    setSchedule(
+      newSchedule.filter((week) => week.matches.length > 0 || week.is_break_week)
+    );
     setHasEdits(true);
+  };
+
+  // Delete match (from edit modal)
+  const handleDeleteMatch = () => {
+    if (!editingMatch) return;
+    removeMatchAt(editingMatch.weekIndex, editingMatch.matchIndex);
     setEditingMatch(null);
   };
 
@@ -422,6 +430,7 @@ const SeasonSchedulerPage: React.FC = () => {
           <SchedulePreview
             schedule={schedule || []}
             onEditMatch={handleEditMatch}
+            onRemoveMatch={removeMatchAt}
             onAddMatch={isManualMode ? handleAddMatch : undefined}
             isManualMode={isManualMode}
           />

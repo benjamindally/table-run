@@ -31,6 +31,13 @@ export const matchesApi = {
     api.patch<Match>(`/matches/${id}/`, data, token),
 
   /**
+   * Delete a match (league operators only; scheduled matches only).
+   * Completed matches are rejected by the backend.
+   */
+  delete: (id: number, token?: string) =>
+    api.delete<void>(`/matches/${id}/`, token),
+
+  /**
    * Submit match score (team staff only)
    */
   submitScore: (matchId: number, scores: MatchScoreSubmission, token?: string) =>

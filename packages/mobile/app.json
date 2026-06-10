@@ -3,7 +3,7 @@
     "name": "League Genius",
     "slug": "league-genius",
     "scheme": "leaguegenius",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/league-genius-logo-black.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.leaguegenius.app",
-      "buildNumber": "15",
+      "buildNumber": "17",
       "infoPlist": {
         "CFBundleDisplayName": "League Genius",
         "ITSAppUsesNonExemptEncryption": false
@@ -27,7 +27,7 @@
     },
     "android": {
       "package": "com.leaguegenius.app",
-      "versionCode": 14,
+      "versionCode": 16,
       "adaptiveIcon": {
         "foregroundImage": "./assets/league-genius-logo-black.png",
         "backgroundColor": "#000000"

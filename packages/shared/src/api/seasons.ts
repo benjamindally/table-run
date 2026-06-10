@@ -162,6 +162,17 @@ export const seasonsApi = {
     api.post<{ success: boolean; matches_created: number }>(`/seasons/${seasonId}/save-schedule/`, data, token),
 
   /**
+   * Delete all scheduled matches and byes for a season (operator only).
+   * Completed matches are left in place; counts are returned.
+   */
+  clearMatches: (seasonId: number, token?: string) =>
+    api.post<{ deleted_matches: number; deleted_byes: number; skipped_completed: number }>(
+      `/seasons/${seasonId}/clear-matches/`,
+      {},
+      token
+    ),
+
+  /**
    * Update a venue
    */
   updateVenue: (venueId: number, data: Partial<Venue>, token?: string) =>
