@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, ArrowLeftRight, Trash2, Plus } from "lucide-react";
+import { X, ArrowLeftRight, Trash2, Calendar } from "lucide-react";
 import type { ScheduleMatch, Venue, SeasonParticipation } from "../../api";
+import { SearchableSelect } from "./SearchableSelect";
 
 interface ScheduleMatchEditModalProps {
   isOpen: boolean;
@@ -12,9 +13,8 @@ interface ScheduleMatchEditModalProps {
   onSave: (updatedMatch: ScheduleMatch) => void;
   onDelete?: () => void;
   isNewMatch?: boolean;
-  // For new matches: the weeks that already exist so the user can pick one
-  // (or start a new week) via tile selector instead of being forced into a new week.
-  existingWeeks?: number[];
+  // For new matches: notified when the derived week changes (kept in sync with
+  // the chosen date) so the parent can group the match into the right week.
   onWeekChange?: (week: number) => void;
   // Season start date (YYYY-MM-DD) — lets the modal keep the week and the match
   // date in sync: picking a date derives the week, and picking a week fills the date.
@@ -52,13 +52,15 @@ const ScheduleMatchEditModal: React.FC<ScheduleMatchEditModalProps> = ({
   onSave,
   onDelete,
   isNewMatch = false,
-  existingWeeks = [],
   onWeekChange,
   seasonStartDate = "",
 }) => {
   const [homeTeamId, setHomeTeamId] = useState<number | null>(null);
   const [awayTeamId, setAwayTeamId] = useState<number | null>(null);
   const [venueId, setVenueId] = useState<number | null>(null);
+  // Tracks whether the operator has explicitly chosen a venue. Until they do,
+  // the venue auto-follows the home team's home venue.
+  const [venueTouched, setVenueTouched] = useState(false);
   const [date, setDate] = useState("");
   const [isBye, setIsBye] = useState(false);
   const [byeTeamId, setByeTeamId] = useState<number | null>(null);
@@ -76,6 +78,8 @@ const ScheduleMatchEditModal: React.FC<ScheduleMatchEditModalProps> = ({
       setHomeTeamId(match.home_team_id);
       setAwayTeamId(match.away_team_id);
       setVenueId(match.venue_id || null);
+      // Existing matches already have a venue chosen — don't auto-override it.
+      setVenueTouched(true);
       setDate(match.date || "");
       setIsBye(match.is_bye || false);
       setByeTeamId(match.bye_team_id || null);
@@ -85,6 +89,7 @@ const ScheduleMatchEditModal: React.FC<ScheduleMatchEditModalProps> = ({
       setHomeTeamId(null);
       setAwayTeamId(null);
       setVenueId(null);
+      setVenueTouched(false);
       setDate(seasonStartDate ? dateForWeek(weekNumber, seasonStartDate) : "");
       setIsBye(false);
       setByeTeamId(null);
@@ -116,21 +121,24 @@ const ScheduleMatchEditModal: React.FC<ScheduleMatchEditModalProps> = ({
     setAwayTeamId(temp);
   };
 
+  // The home team hosts, so default the venue to that team's home venue. The
+  // operator can still override it (which sets venueTouched and stops the
+  // auto-follow).
+  const handleHomeTeamChange = (id: number | null) => {
+    setHomeTeamId(id);
+    if (!venueTouched && id != null) {
+      const participation = teams.find((t) => t.team === id);
+      const homeVenue = participation?.venue;
+      if (homeVenue != null) setVenueId(homeVenue);
+    }
+  };
+
   // Picking a date derives the week (so a date a week out lands in the next week).
   const handleDateChange = (newDate: string) => {
     setDate(newDate);
     if (isNewMatch && onWeekChange && seasonStartDate) {
       const wk = weekFromDate(newDate, seasonStartDate);
       if (wk) onWeekChange(wk);
-    }
-  };
-
-  // Picking a week tile fills in that week's date, keeping the two in sync.
-  const handleWeekSelect = (week: number) => {
-    if (onWeekChange) onWeekChange(week);
-    if (seasonStartDate) {
-      const d = dateForWeek(week, seasonStartDate);
-      if (d) setDate(d);
     }
   };
 
@@ -167,23 +175,12 @@ const ScheduleMatchEditModal: React.FC<ScheduleMatchEditModalProps> = ({
   const availableTeamsForHome = teams.filter((t) => t.team !== awayTeamId);
   const availableTeamsForAway = teams.filter((t) => t.team !== homeTeamId);
 
-  // Week selection (new matches only). The currently-selected week is derived
-  // from the chosen date when a season start date is available (date is the
-  // source of truth); otherwise it falls back to the week passed in.
-  const sortedWeeks = [...existingWeeks].sort((a, b) => a - b);
-  const nextNewWeek =
-    sortedWeeks.length > 0 ? Math.max(...sortedWeeks) + 1 : 1;
+  // For new matches the week is derived from the chosen date (the date is the
+  // source of truth) when a season start date is available; otherwise it falls
+  // back to the week passed in. The operator picks the date directly — there
+  // is no separate week picker.
   const selectedWeek =
     (seasonStartDate && weekFromDate(date, seasonStartDate)) || weekNumber;
-  const isNewWeekSelected = !sortedWeeks.includes(selectedWeek);
-
-  // Reusable tile classes
-  const tileClass = (selected: boolean) =>
-    `p-3 rounded-lg border-2 text-left transition-all ${
-      selected
-        ? "border-primary bg-primary-50"
-        : "border-gray-200 bg-white hover:border-gray-300"
-    }`;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -215,44 +212,28 @@ const ScheduleMatchEditModal: React.FC<ScheduleMatchEditModalProps> = ({
 
           {/* Content */}
           <div className="p-6 space-y-5 overflow-y-auto flex-1">
-            {/* Week selector (new matches only) */}
-            {isNewMatch && onWeekChange && (
-              <div className="form-group">
-                <label className="form-label">Week</label>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {sortedWeeks.map((w) => (
-                    <button
-                      key={w}
-                      type="button"
-                      onClick={() => handleWeekSelect(w)}
-                      className={`p-3 rounded-lg border-2 text-center transition-all ${
-                        selectedWeek === w
-                          ? "border-primary bg-primary-50"
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                      }`}
-                    >
-                      <span className="font-medium text-dark text-sm">
-                        Week {w}
-                      </span>
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => handleWeekSelect(nextNewWeek)}
-                    className={`p-3 rounded-lg border-2 border-dashed text-center transition-all ${
-                      isNewWeekSelected
-                        ? "border-primary bg-primary-50"
-                        : "border-gray-300 bg-gray-50 hover:border-primary"
-                    }`}
-                  >
-                    <span className="font-medium text-sm text-dark-300 flex items-center justify-center gap-1">
-                      <Plus className="h-4 w-4" />
-                      Week {isNewWeekSelected ? selectedWeek : nextNewWeek}
-                    </span>
-                  </button>
-                </div>
+            {/* Date picker (top). The match date is the source of truth for
+                which week a new match belongs to, so it leads the form. */}
+            <div className="rounded-lg border border-cream-300 bg-cream-50 p-4">
+              <label className="form-label flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary-600" />
+                Match Date
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  type="date"
+                  value={date}
+                  min={seasonStartDate || undefined}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                  className="form-input flex-1"
+                />
+                {date && (
+                  <span className="inline-flex items-center justify-center rounded-full bg-primary-100 px-3 py-1.5 text-sm font-semibold text-primary-700">
+                    Week {selectedWeek}
+                  </span>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Bye toggle */}
             <div className="flex items-center gap-3">
@@ -273,53 +254,21 @@ const ScheduleMatchEditModal: React.FC<ScheduleMatchEditModalProps> = ({
               /* Bye team selection */
               <div className="form-group">
                 <label className="form-label">Team with Bye</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-56 overflow-y-auto">
-                  {teams.map((t) => (
-                    <button
-                      key={t.team}
-                      type="button"
-                      onClick={() => setByeTeamId(t.team)}
-                      className={tileClass(byeTeamId === t.team)}
-                    >
-                      <p className="font-medium text-dark text-sm truncate">
-                        {t.team_detail?.name || `Team ${t.team}`}
-                      </p>
-                      {t.team_detail?.establishment && (
-                        <p className="text-xs text-dark-300 truncate mt-1">
-                          {t.team_detail.establishment}
-                        </p>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                <SearchableSelect
+                  options={teams.map((t) => ({
+                    value: t.team,
+                    label: t.team_detail?.name || `Team ${t.team}`,
+                    sublabel: t.team_detail?.establishment,
+                  }))}
+                  value={byeTeamId}
+                  onChange={setByeTeamId}
+                  placeholder="Select team..."
+                  searchPlaceholder="Search teams..."
+                />
               </div>
             ) : (
               /* Regular match fields */
               <>
-                {/* Home Team */}
-                <div className="form-group">
-                  <label className="form-label">Home Team</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-56 overflow-y-auto">
-                    {availableTeamsForHome.map((t) => (
-                      <button
-                        key={t.team}
-                        type="button"
-                        onClick={() => setHomeTeamId(t.team)}
-                        className={tileClass(homeTeamId === t.team)}
-                      >
-                        <p className="font-medium text-dark text-sm truncate">
-                          {t.team_detail?.name || `Team ${t.team}`}
-                        </p>
-                        {t.team_detail?.establishment && (
-                          <p className="text-xs text-dark-300 truncate mt-1">
-                            {t.team_detail.establishment}
-                          </p>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Swap button */}
                 {homeTeamId && awayTeamId && (
                   <div className="flex justify-center">
@@ -334,32 +283,40 @@ const ScheduleMatchEditModal: React.FC<ScheduleMatchEditModalProps> = ({
                     </button>
                   </div>
                 )}
-
-                {/* Away Team */}
+                {/* Away Team — listed first ("away at home"); the home team
+                    hosts and is shown last. */}
                 <div className="form-group">
                   <label className="form-label">Away Team</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-56 overflow-y-auto">
-                    {availableTeamsForAway.map((t) => (
-                      <button
-                        key={t.team}
-                        type="button"
-                        onClick={() => setAwayTeamId(t.team)}
-                        className={tileClass(awayTeamId === t.team)}
-                      >
-                        <p className="font-medium text-dark text-sm truncate">
-                          {t.team_detail?.name || `Team ${t.team}`}
-                        </p>
-                        {t.team_detail?.establishment && (
-                          <p className="text-xs text-dark-300 truncate mt-1">
-                            {t.team_detail.establishment}
-                          </p>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                  <SearchableSelect
+                    options={availableTeamsForAway.map((t) => ({
+                      value: t.team,
+                      label: t.team_detail?.name || `Team ${t.team}`,
+                      sublabel: t.team_detail?.establishment,
+                    }))}
+                    value={awayTeamId}
+                    onChange={setAwayTeamId}
+                    placeholder="Select away team..."
+                    searchPlaceholder="Search teams..."
+                  />
                 </div>
 
-                {/* Venue */}
+                {/* Home Team — hosts the match, listed last. */}
+                <div className="form-group">
+                  <label className="form-label">Home Team</label>
+                  <SearchableSelect
+                    options={availableTeamsForHome.map((t) => ({
+                      value: t.team,
+                      label: t.team_detail?.name || `Team ${t.team}`,
+                      sublabel: t.team_detail?.establishment,
+                    }))}
+                    value={homeTeamId}
+                    onChange={handleHomeTeamChange}
+                    placeholder="Select home team..."
+                    searchPlaceholder="Search teams..."
+                  />
+                </div>
+
+                {/* Venue — defaults to the home team's venue, editable. */}
                 <div className="form-group">
                   <label className="form-label">Venue</label>
                   {venues.length === 0 ? (
@@ -367,52 +324,34 @@ const ScheduleMatchEditModal: React.FC<ScheduleMatchEditModalProps> = ({
                       No venues available.
                     </p>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-56 overflow-y-auto">
-                      {venues.map((v) => (
-                        <button
-                          key={v.id}
-                          type="button"
-                          onClick={() => setVenueId(v.id)}
-                          className={tileClass(venueId === v.id)}
-                        >
-                          <p className="font-medium text-dark text-sm truncate">
-                            {v.name}
-                          </p>
-                          {v.address && (
-                            <p className="text-xs text-dark-300 truncate mt-1">
-                              {v.address}
-                            </p>
-                          )}
-                        </button>
-                      ))}
-                    </div>
+                    <SearchableSelect
+                      options={venues.map((v) => ({
+                        value: v.id,
+                        label: v.name,
+                        sublabel: v.address,
+                      }))}
+                      value={venueId}
+                      onChange={(v) => {
+                        setVenueId(v);
+                        setVenueTouched(true);
+                      }}
+                      placeholder="Select venue..."
+                      searchPlaceholder="Search venues..."
+                    />
                   )}
                 </div>
               </>
             )}
 
-            {/* Date */}
-            <div className="form-group">
-              <label className="form-label">Date</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => handleDateChange(e.target.value)}
-                className="form-input"
-              />
-              {isNewMatch && seasonStartDate && date && (
-                <p className="text-xs text-dark-300 mt-1">
-                  This match falls in Week {selectedWeek}.
+            {/* Validation error */}
+            {!isBye &&
+              homeTeamId &&
+              awayTeamId &&
+              homeTeamId === awayTeamId && (
+                <p className="text-red-500 text-sm">
+                  Home and away teams must be different.
                 </p>
               )}
-            </div>
-
-            {/* Validation error */}
-            {!isBye && homeTeamId && awayTeamId && homeTeamId === awayTeamId && (
-              <p className="text-red-500 text-sm">
-                Home and away teams must be different.
-              </p>
-            )}
           </div>
 
           {/* Footer */}
@@ -433,7 +372,11 @@ const ScheduleMatchEditModal: React.FC<ScheduleMatchEditModalProps> = ({
               )}
             </div>
             <div className="flex gap-3">
-              <button type="button" onClick={onClose} className="btn btn-outline">
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn btn-outline"
+              >
                 Cancel
               </button>
               <button
