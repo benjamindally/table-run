@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { ChevronDown, ChevronUp, Upload, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Upload, Trash2, Plus } from "lucide-react";
 import type { Match, ScheduleBye } from "../../api";
 import { formatDateDisplay } from "@league-genius/shared";
 
@@ -8,6 +8,11 @@ interface SeasonMatchesProps {
   byes?: ScheduleBye[];
   editable?: boolean | ((match: Match) => boolean);
   onImportSchedule?: () => void;
+  /**
+   * Add more matches. Routes the operator into the scheduler (manual mode) with
+   * the existing schedule loaded, where they can append matches week by week.
+   */
+  onAddMatches?: () => void;
   onEditMatch?: (match: Match) => void;
   /**
    * Delete a match. Only shown (alongside `editable`) for matches that are
@@ -23,6 +28,7 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
   byes,
   editable = false,
   onImportSchedule,
+  onAddMatches,
   onEditMatch,
   onDeleteMatch,
   initialWeeksToShow = 3,
@@ -135,11 +141,15 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
               <span className="hidden sm:inline">Import Schedule</span>
             </button>
           )}
-          {/* {hasEditableMatches && onScheduleMatch && (
-            <button onClick={onScheduleMatch} className="btn btn-primary btn-sm">
-              Schedule Match
+          {hasEditableMatches && onAddMatches && (
+            <button
+              onClick={onAddMatches}
+              className="btn btn-primary btn-sm flex items-center"
+            >
+              <Plus className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Add Matches</span>
             </button>
-          )} */}
+          )}
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="text-dark-300 hover:text-dark transition-colors"

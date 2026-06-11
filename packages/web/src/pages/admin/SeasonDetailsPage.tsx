@@ -679,6 +679,9 @@ const SeasonDetailsPage: React.FC = () => {
             byes={byes}
             editable={true}
             onImportSchedule={() => setShowScheduleImportModal(true)}
+            onAddMatches={() =>
+              navigate(`/admin/seasons/${seasonId}/schedule`)
+            }
             onEditMatch={handleEditMatch}
             onDeleteMatch={(match) => setMatchToDelete(match)}
           />
