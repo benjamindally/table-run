@@ -152,8 +152,28 @@ export const seasonsApi = {
   /**
    * Generate schedule preview (doesn't save)
    */
-  generateSchedule: (seasonId: number, config: ScheduleConfiguration, token?: string) =>
-    api.post<GeneratedScheduleResponse>(`/seasons/${seasonId}/generate-schedule/`, config, token),
+  generateSchedule: (seasonId: number, config: ScheduleConfiguration, token?: string) => {
+    // Map the frontend config to the field names the backend serializer expects.
+    // The backend silently ignores unknown fields, so a mismatch here means the
+    // option is dropped entirely (team selection, round-robin count, etc.).
+    // `selected_team_ids` holds Team IDs (not participation IDs).
+    const body: Record<string, unknown> = {
+      times_to_play_each_team: config.times_play_each_other ?? 1,
+      alternate_home_away: config.alternating_home_away ?? true,
+      break_weeks: config.break_weeks ?? [],
+    };
+    if (config.selected_team_ids && config.selected_team_ids.length > 0) {
+      body.team_ids = config.selected_team_ids;
+    }
+    if (config.default_match_day != null) {
+      body.default_match_day = config.default_match_day;
+    }
+    return api.post<GeneratedScheduleResponse>(
+      `/seasons/${seasonId}/generate-schedule/`,
+      body,
+      token
+    );
+  },
 
   /**
    * Validate and save the schedule

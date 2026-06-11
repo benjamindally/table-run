@@ -47,7 +47,9 @@ const SchedulePreview: React.FC<SchedulePreviewProps> = ({
     );
   }
 
-  const weeksToShow = expanded ? schedule : schedule.slice(0, initialWeeksToShow);
+  const weeksToShow = expanded
+    ? schedule
+    : schedule.slice(0, initialWeeksToShow);
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
@@ -55,7 +57,9 @@ const SchedulePreview: React.FC<SchedulePreviewProps> = ({
         <h2 className="text-xl font-semibold text-dark">
           Schedule Preview
           <span className="text-sm font-normal text-dark-400 ml-2">
-            ({schedule.length} weeks, {schedule.reduce((sum, week) => sum + week.matches.length, 0)} matches)
+            ({schedule.length} weeks,{" "}
+            {schedule.reduce((sum, week) => sum + week.matches.length, 0)}{" "}
+            matches)
           </span>
         </h2>
         <div className="flex items-center space-x-2">
@@ -215,27 +219,28 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onClick, onRemove }) => {
       className="p-3 rounded-lg bg-white border border-cream-300 hover:shadow-md cursor-pointer transition-shadow"
     >
       <div className="space-y-2">
+        {/* Away team on top, home team (host) on the bottom. */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm text-dark truncate">
-              {match.home_team_name || (match.home_team_id ? `Team ${match.home_team_id}` : "TBD")}
+              {match.away_team_name ||
+                (match.away_team_id ? `Team ${match.away_team_id}` : "TBD")}
+              <span className="text-xs text-dark-300 pl-1.5">@</span>
             </p>
             <p className="font-medium text-sm text-dark truncate">
-              {match.away_team_name || (match.away_team_id ? `Team ${match.away_team_id}` : "TBD")}
+              {match.home_team_name ||
+                (match.home_team_id ? `Team ${match.home_team_id}` : "TBD")}
             </p>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-dark-300">vs</span>
-            {onRemove && <RemoveButton onRemove={onRemove} label="Remove match" />}
-          </div>
+          {onRemove && (
+            <div className="flex items-center gap-1">
+              <RemoveButton onRemove={onRemove} label="Remove match" />
+            </div>
+          )}
         </div>
         <div className="flex items-center justify-between text-xs text-dark-400">
-          <span className="truncate">
-            {match.venue_name || "Venue TBD"}
-          </span>
-          <span>
-            {formatDateDisplay(match.date)}
-          </span>
+          <span className="truncate">{match.venue_name || "Venue TBD"}</span>
+          <span>{formatDateDisplay(match.date)}</span>
         </div>
       </div>
     </div>

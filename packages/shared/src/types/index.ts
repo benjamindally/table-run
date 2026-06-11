@@ -175,6 +175,8 @@ export interface SeasonParticipation {
   season_detail?: SeasonList;
   team: number;
   team_detail?: TeamList;
+  venue?: number | null; // season-specific home venue for this team (if set)
+  venue_detail?: Venue | null;
   wins: number;
   losses: number;
   win_percentage?: number;
@@ -200,6 +202,7 @@ export interface Match {
   away_team: number;
   away_team_detail?: TeamList;
   date: string;
+  location?: string;
   home_score: number | null;
   away_score: number | null;
   status: 'scheduled' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled';

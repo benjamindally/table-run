@@ -4,6 +4,7 @@ import { X, Info, Plus, Minus, Trash2, Calendar } from "lucide-react";
 import type { ScheduleConfiguration, Venue, SeasonParticipation } from "../../api";
 import { formatDateDisplay } from "@league-genius/shared";
 import type { ParamModalType } from "./ScheduleParameterGrid";
+import { SearchableMultiSelect } from "./SearchableSelect";
 
 // Break week entry with both date and calculated week number
 interface BreakWeekEntry {
@@ -150,12 +151,14 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
           }
           break;
         case "teams":
-          // Initialize selected teams from config, or select all if not set
+          // Initialize selected teams from config, or select all if not set.
+          // These are Team IDs (participation.team), matching what the backend
+          // generate-schedule endpoint expects.
           if (config.selected_team_ids && config.selected_team_ids.length > 0) {
             setSelectedTeamIds(new Set(config.selected_team_ids));
           } else {
             // Default to all teams selected
-            setSelectedTeamIds(new Set(teams.map((t) => t.id)));
+            setSelectedTeamIds(new Set(teams.map((t) => t.team)));
           }
           break;
         case "times_play_each_other":
@@ -300,56 +303,31 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
         );
 
       case "teams":
-        const toggleTeamSelection = (teamId: number) => {
-          setSelectedTeamIds((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(teamId)) {
-              newSet.delete(teamId);
-            } else {
-              newSet.add(teamId);
-            }
-            return newSet;
-          });
-        };
-
         return (
           <div className="space-y-4">
             <p className="text-sm text-dark-400">
               Select the teams to include in the schedule.
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-72 overflow-y-auto">
-              {teams.map((participation) => (
-                <button
-                  key={participation.id}
-                  type="button"
-                  onClick={() => toggleTeamSelection(participation.id)}
-                  className={`p-3 rounded-lg border-2 text-left transition-all ${
-                    selectedTeamIds.has(participation.id)
-                      ? "border-primary bg-primary-50"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
+            <SearchableMultiSelect
+              options={teams.map((p) => ({
+                value: p.team,
+                label: p.team_detail?.name || `Team ${p.team}`,
+                sublabel: p.team_detail?.establishment,
+              }))}
+              values={Array.from(selectedTeamIds)}
+              onChange={(vals) => setSelectedTeamIds(new Set(vals))}
+              placeholder="Select teams..."
+              searchPlaceholder="Search teams..."
+              footer={
+                <Link
+                  to="/admin/teams/register"
+                  className="flex items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium text-dark-300 transition-all hover:border-primary hover:bg-primary-50"
                 >
-                  <p className="font-medium text-dark text-sm truncate">
-                    {participation.team_detail?.name || `Team ${participation.team}`}
-                  </p>
-                  {participation.team_detail?.establishment && (
-                    <p className="text-xs text-dark-300 truncate mt-1">
-                      {participation.team_detail.establishment}
-                    </p>
-                  )}
-                </button>
-              ))}
-              {/* Create Team Tile */}
-              <Link
-                to="/admin/teams/register"
-                className="p-3 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:border-primary hover:bg-primary-50 transition-all flex flex-col items-center justify-center text-center"
-              >
-                <Plus className="h-5 w-5 text-dark-300 mb-1" />
-                <p className="text-sm font-medium text-dark-300">
+                  <Plus className="h-4 w-4" />
                   Add Team
-                </p>
-              </Link>
-            </div>
+                </Link>
+              }
+            />
             {selectedTeamIds.size === 0 && teams.length > 0 && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
                 <Info className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
@@ -367,56 +345,31 @@ const ScheduleParameterModal: React.FC<ScheduleParameterModalProps> = ({
         );
 
       case "establishments":
-        const toggleVenueSelection = (venueId: number) => {
-          setSelectedVenueIds((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(venueId)) {
-              newSet.delete(venueId);
-            } else {
-              newSet.add(venueId);
-            }
-            return newSet;
-          });
-        };
-
         return (
           <div className="space-y-4">
             <p className="text-sm text-dark-400">
               Select the venues to use for scheduling matches.
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-72 overflow-y-auto">
-              {venues.map((venue) => (
-                <button
-                  key={venue.id}
-                  type="button"
-                  onClick={() => toggleVenueSelection(venue.id)}
-                  className={`p-3 rounded-lg border-2 text-left transition-all ${
-                    selectedVenueIds.has(venue.id)
-                      ? "border-primary bg-primary-50"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
+            <SearchableMultiSelect
+              options={venues.map((v) => ({
+                value: v.id,
+                label: v.name,
+                sublabel: v.address,
+              }))}
+              values={Array.from(selectedVenueIds)}
+              onChange={(vals) => setSelectedVenueIds(new Set(vals))}
+              placeholder="Select venues..."
+              searchPlaceholder="Search venues..."
+              footer={
+                <Link
+                  to="/admin/venues/register"
+                  className="flex items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium text-dark-300 transition-all hover:border-primary hover:bg-primary-50"
                 >
-                  <p className="font-medium text-dark text-sm truncate">
-                    {venue.name}
-                  </p>
-                  {venue.address && (
-                    <p className="text-xs text-dark-300 truncate mt-1">
-                      {venue.address}
-                    </p>
-                  )}
-                </button>
-              ))}
-              {/* Create Venue Tile */}
-              <Link
-                to="/admin/venues/register"
-                className="p-3 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:border-primary hover:bg-primary-50 transition-all flex flex-col items-center justify-center text-center"
-              >
-                <Plus className="h-5 w-5 text-dark-300 mb-1" />
-                <p className="text-sm font-medium text-dark-300">
+                  <Plus className="h-4 w-4" />
                   Create Venue
-                </p>
-              </Link>
-            </div>
+                </Link>
+              }
+            />
             {selectedVenueIds.size === 0 && venues.length > 0 && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
                 <Info className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
