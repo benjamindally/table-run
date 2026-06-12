@@ -7,6 +7,7 @@ interface MatchActionBarProps {
   captainRole: TeamSide | null;
   isLeagueOperator: boolean;
   isMatchLive: boolean;
+  isMatchCompleted: boolean;
   lineupState: string;
 
   // Lineup submit visibility
@@ -36,12 +37,14 @@ interface MatchActionBarProps {
   onScorecardSubmit: () => void;
   onScorecardReject: () => void;
   onFinalizeMatch: () => Promise<void>;
+  onResetLineup: () => Promise<void>;
 }
 
 export default function MatchActionBar({
   captainRole,
   isLeagueOperator,
   isMatchLive,
+  isMatchCompleted,
   lineupState,
   showAwaySubmit,
   showHomeSubmit,
@@ -61,6 +64,7 @@ export default function MatchActionBar({
   onScorecardSubmit,
   onScorecardReject,
   onFinalizeMatch,
+  onResetLineup,
 }: MatchActionBarProps) {
   const awayHasEnough = presentAwayCount >= gamesPerSet;
   const homeHasEnough = presentHomeCount >= gamesPerSet;
@@ -132,6 +136,20 @@ export default function MatchActionBar({
           )}
           <Text className={`font-bold ${isHomeLineupComplete ? "text-white" : "text-gray-400"}`}>
             Submit Home Lineup
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Operator: full reset of a stuck match */}
+      {isLeagueOperator && !isMatchCompleted && (
+        <TouchableOpacity
+          onPress={onResetLineup}
+          disabled={isSubmitting}
+          className="flex-row items-center justify-center gap-2 py-2.5 border bg-white border-red-300"
+        >
+          <RotateCcw size={15} color="#DC2626" />
+          <Text className="text-sm font-medium text-red-600">
+            Reset Match Lineups (Operator)
           </Text>
         </TouchableOpacity>
       )}

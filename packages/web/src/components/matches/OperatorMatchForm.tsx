@@ -416,7 +416,11 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
         token
       );
 
-      const newState = isAway ? "awaiting_home_lineup" : "ready_to_start";
+      // Trust the server's persisted state rather than guessing locally.
+      const updated = await matchesApi.getById(match.id, token);
+      const newState =
+        (updated.lineup_state as LineupState) ??
+        (isAway ? "awaiting_home_lineup" : "ready_to_start");
       setLineupState(newState);
 
       sendWebSocket({
@@ -441,7 +445,8 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
 
     try {
       await matchesApi.startMatch(match.id, token);
-      setLineupState("match_live");
+      const updated = await matchesApi.getById(match.id, token);
+      setLineupState((updated.lineup_state as LineupState) ?? "match_live");
       sendWebSocket({ type: "match_start" });
       toast.success("Match started!");
     } catch (error: any) {
@@ -583,6 +588,34 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
 
     handleStartMatch();
   }, [getExistingDataInfo, requestConfirmation, handleStartMatch]);
+
+  // Reset lineups — operator recovery for a stuck match. Clears both lineups
+  // and games and returns the match to the scheduled/lineup phase.
+  const handleResetLineup = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      toast.error("Authentication required");
+      return;
+    }
+    try {
+      const res = await matchesApi.resetLineup(match.id, "both", token);
+      setLineupState(
+        (res.match.lineup_state as LineupState) ?? "awaiting_away_lineup"
+      );
+      toast.success("Match lineups reset");
+    } catch (error: any) {
+      console.error("Failed to reset lineups:", error);
+      toast.error(error.message || "Failed to reset lineups");
+    }
+  }, [match.id, getAuthToken, setLineupState]);
+
+  const handleResetLineupWithConfirm = useCallback(() => {
+    requestConfirmation(
+      "Reset Match Lineups?",
+      "This clears both submitted lineups and all games, returning the match to the lineup phase so the captains can start over.\n\nUse this to recover a stuck match. Are you sure?",
+      handleResetLineup
+    );
+  }, [requestConfirmation, handleResetLineup]);
 
   // Finalize match with confirmation check (always confirm since it affects standings)
   const handleFinalizeMatchWithConfirm = useCallback(() => {
@@ -1339,6 +1372,15 @@ const OperatorMatchForm: React.FC<OperatorMatchFormProps> = ({
                 className="flex-1 py-3 px-4 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition-colors"
               >
                 Finalize Match ({homeScore} - {awayScore})
+              </button>
+            )}
+
+            {lineupState !== "completed" && (
+              <button
+                onClick={handleResetLineupWithConfirm}
+                className="py-3 px-4 bg-white text-red-600 font-semibold rounded-md border border-red-300 hover:bg-red-50 transition-colors"
+              >
+                Reset Lineups
               </button>
             )}
 

@@ -92,11 +92,16 @@ export function useMatchDetails(matchId: number) {
   const isMatchCompleted = lineupState === "completed";
 
   // ── Permission checks ────────────────────────────────────────────────
+  // A captain may edit their own lineup any time before the match starts
+  // (not just during their initial phase). Operators may always edit.
+  const matchNotStarted = !isMatchLive && !isMatchCompleted;
+  const awayLineupIn =
+    lineupState !== "awaiting_away_lineup" && lineupState !== "not_started";
   const canEditAwayLineup =
-    (isAwayLineupPhase || isLeagueOperator) &&
+    (isAwayLineupPhase || isLeagueOperator || (captainRole === "away" && matchNotStarted)) &&
     (captainRole === "away" || isLeagueOperator);
   const canEditHomeLineup =
-    (isHomeLineupPhase || isLeagueOperator) &&
+    (isHomeLineupPhase || isLeagueOperator || (captainRole === "home" && matchNotStarted)) &&
     (captainRole === "home" || isLeagueOperator);
   const canScore =
     (isLeagueOperator || (!isMatchCompleted && lineupState === "match_live")) &&
@@ -457,7 +462,9 @@ export function useMatchDetails(matchId: number) {
     setIsStartingMatch(true);
     try {
       await matchesApi.startMatch(matchId, accessToken);
-      setLineupState("match_live");
+      const updated = await matchesApi.getById(matchId, accessToken);
+      setMatch(updated);
+      setLineupState((updated.lineup_state as LineupState) || "match_live");
       sendWebSocket({ type: "match_start" });
       await loadLineupData();
     } catch (err) {
@@ -465,6 +472,21 @@ export function useMatchDetails(matchId: number) {
       Alert.alert("Error", "Failed to start match. Please try again.");
     } finally {
       setIsStartingMatch(false);
+    }
+  };
+
+  const handleResetLineup = async () => {
+    if (!accessToken) return;
+    setIsSubmitting(true);
+    try {
+      const res = await matchesApi.resetLineup(matchId, "both", accessToken);
+      setMatch(res.match);
+      setLineupState((res.match.lineup_state as LineupState) || "awaiting_away_lineup");
+      await loadData();
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Failed to reset lineup.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -478,7 +500,12 @@ export function useMatchDetails(matchId: number) {
     try {
       await matchesApi.submitLineup(matchId, { games, team_side: team }, accessToken);
       sendWebSocket({ type: "lineup_submitted", team_side: team });
-      setLineupState(team === "away" ? "awaiting_home_lineup" : "ready_to_start");
+      // Trust the server's persisted state rather than guessing locally.
+      const updated = await matchesApi.getById(matchId, accessToken);
+      setMatch(updated);
+      if (updated.lineup_state) {
+        setLineupState(updated.lineup_state as LineupState);
+      }
     } catch (err) {
       console.error("[useMatchDetails] Failed to submit lineup:", err);
       Alert.alert("Error", "Failed to submit lineup. Please try again.");
@@ -690,9 +717,10 @@ export function useMatchDetails(matchId: number) {
   const showScoreOverride = isLeagueOperator && (hasNoGameData || isMatchCompleted);
 
   const showAwaySubmit =
-    isAwayLineupPhase && (captainRole === "away" || isLeagueOperator);
+    canEditAwayLineup && matchNotStarted && (captainRole === "away" || isLeagueOperator);
   const showHomeSubmit =
-    isHomeLineupPhase && (captainRole === "home" || isLeagueOperator);
+    canEditHomeLineup && awayLineupIn && matchNotStarted &&
+    (captainRole === "home" || isLeagueOperator);
 
   // ── Return ───────────────────────────────────────────────────────────
 
@@ -759,6 +787,7 @@ export function useMatchDetails(matchId: number) {
     // Match flow
     handleSubmitLineup,
     handleStartMatch,
+    handleResetLineup,
     autoAssignPlayers,
     handleScorecardSubmit,
     handleScorecardReject,

@@ -80,6 +80,7 @@ export default function MatchDetailsScreen() {
     handle8BallToggle,
     handleSubmitLineup,
     handleStartMatch,
+    handleResetLineup,
     autoAssignPlayers,
     handleScorecardSubmit,
     handleScorecardReject,
@@ -205,6 +206,7 @@ export default function MatchDetailsScreen() {
           captainRole={captainRole}
           isLeagueOperator={isLeagueOperator}
           isMatchLive={isMatchLive}
+          isMatchCompleted={isMatchCompleted}
           lineupState={lineupState}
           showAwaySubmit={showAwaySubmit}
           showHomeSubmit={showHomeSubmit}
@@ -224,6 +226,7 @@ export default function MatchDetailsScreen() {
           onScorecardSubmit={handleScorecardSubmit}
           onScorecardReject={handleScorecardReject}
           onFinalizeMatch={handleFinalizeMatch}
+          onResetLineup={handleResetLineup}
         />
 
         {/* Games grid */}

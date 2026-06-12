@@ -767,7 +767,12 @@ const MatchForm: React.FC<MatchFormProps> = ({
 
       try {
         await matchesApi.submitLineup(match.id, { games: lineupGames }, token);
-        setLineupState(isAway ? "awaiting_home_lineup" : "ready_to_start");
+        // Trust the server's persisted state rather than guessing locally.
+        const updated = await matchesApi.getById(match.id, token);
+        setLineupState(
+          (updated.lineup_state as LineupState) ??
+            (isAway ? "awaiting_home_lineup" : "ready_to_start")
+        );
 
         // Notify other captain via WebSocket
         sendWebSocket({
@@ -807,7 +812,8 @@ const MatchForm: React.FC<MatchFormProps> = ({
 
     try {
       await matchesApi.startMatch(match.id, token);
-      setLineupState("match_live");
+      const updated = await matchesApi.getById(match.id, token);
+      setLineupState((updated.lineup_state as LineupState) ?? "match_live");
 
       // Notify other captain via WebSocket
       sendWebSocket({
