@@ -74,4 +74,20 @@ export const matchesApi = {
    */
   getLineup: (matchId: number, token?: string) =>
     api.get<MatchLineupResponse>(`/matches/${matchId}/lineup/`, token),
+
+  /**
+   * Reset lineup state (league operators only).
+   * team_side 'both' performs a complete reset: clears games and returns the
+   * match to 'scheduled'.
+   */
+  resetLineup: (
+    matchId: number,
+    teamSide: 'home' | 'away' | 'both',
+    token?: string
+  ) =>
+    api.post<{ message: string; match: Match }>(
+      `/matches/${matchId}/reset-lineup/`,
+      { team_side: teamSide },
+      token
+    ),
 };
