@@ -469,7 +469,11 @@ export function useMatchDetails(matchId: number) {
       await loadLineupData();
     } catch (err) {
       console.error("[useMatchDetails] Failed to start match:", err);
-      Alert.alert("Error", "Failed to start match. Please try again.");
+      const reason =
+        err instanceof Error && err.message
+          ? err.message
+          : "Something went wrong. Check your connection and try again.";
+      Alert.alert("Couldn't start match", reason);
     } finally {
       setIsStartingMatch(false);
     }
@@ -508,7 +512,11 @@ export function useMatchDetails(matchId: number) {
       }
     } catch (err) {
       console.error("[useMatchDetails] Failed to submit lineup:", err);
-      Alert.alert("Error", "Failed to submit lineup. Please try again.");
+      const reason =
+        err instanceof Error && err.message
+          ? err.message
+          : "Something went wrong. Check your connection and try again.";
+      Alert.alert("Couldn't submit lineup", reason);
     } finally {
       setIsSubmitting(false);
     }
@@ -668,7 +676,11 @@ export function useMatchDetails(matchId: number) {
       setLineupState("completed");
     } catch (err) {
       console.error("[useMatchDetails] Failed to finalize match:", err);
-      Alert.alert("Error", "Failed to finalize match. Please try again.");
+      const reason =
+        err instanceof Error && err.message
+          ? err.message
+          : "Something went wrong. Check your connection and try again.";
+      Alert.alert("Couldn't finalize match", reason);
     } finally {
       setIsSubmitting(false);
     }
