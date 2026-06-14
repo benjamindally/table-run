@@ -11,6 +11,7 @@ import type {
   ScheduleConfiguration,
   GeneratedScheduleResponse,
   SaveScheduleRequest,
+  AppendScheduleRequest,
   SeasonStandingsResponse,
   SeasonPlayersResponse,
   SeasonMatchesResponse,
@@ -180,6 +181,19 @@ export const seasonsApi = {
    */
   saveSchedule: (seasonId: number, data: SaveScheduleRequest, token?: string) =>
     api.post<{ success: boolean; matches_created: number }>(`/seasons/${seasonId}/save-schedule/`, data, token),
+
+  /**
+   * Append individual matches/byes to a season's existing schedule. Only the
+   * supplied matches are created; previously-saved matches are left untouched
+   * (mirrors the web "Add Match" append flow). Hits the same save-schedule
+   * endpoint with `append: true`.
+   */
+  appendMatches: (seasonId: number, data: AppendScheduleRequest, token?: string) =>
+    api.post<{ success: boolean; matches_created: number }>(
+      `/seasons/${seasonId}/save-schedule/`,
+      data,
+      token
+    ),
 
   /**
    * Delete all scheduled matches and byes for a season (operator only).

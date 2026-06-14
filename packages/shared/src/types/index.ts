@@ -383,6 +383,34 @@ export interface SaveScheduleRequest {
   is_manual?: boolean;
 }
 
+/** A single regular match in an append-to-schedule request. */
+export interface AppendScheduleMatch {
+  week_number: number;
+  date: string;
+  home_team_id: number;
+  away_team_id: number;
+  location?: string;
+}
+
+/** A single bye in an append-to-schedule request. */
+export interface AppendScheduleBye {
+  week_number: number;
+  date: string;
+  team_id: number;
+}
+
+/**
+ * Append individual matches/byes to a season's existing schedule without
+ * touching what's already saved. Used for the one-at-a-time "Add Match" flow.
+ */
+export interface AppendScheduleRequest {
+  matches: AppendScheduleMatch[];
+  byes: AppendScheduleBye[];
+  append: true;
+  replace_existing: false;
+  schedule_config?: ScheduleConfiguration;
+}
+
 /**
  * Playoff Types
  */
