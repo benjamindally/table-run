@@ -1,5 +1,7 @@
 import { View, Text, TouchableOpacity, Linking, Platform, ScrollView } from "react-native";
 import { ChevronRight, Mail, Star, Shield, FileText } from "lucide-react-native";
+import * as Application from "expo-application";
+import * as Updates from "expo-updates";
 
 // TODO: Update these URLs after first App Store / Play Store submission
 const IOS_APP_STORE_URL = "https://apps.apple.com/app/idPLACEHOLDER";
@@ -54,7 +56,23 @@ export default function AboutScreen() {
       </View>
 
       <View className="mt-auto pt-10 pb-6 items-center">
-        <Text className="text-gray-400 text-sm">League Genius v1.0.0</Text>
+        <Text className="text-gray-400 text-sm">
+          League Genius v{Application.nativeApplicationVersion ?? "—"}
+          {Application.nativeBuildVersion ? ` (${Application.nativeBuildVersion})` : ""}
+        </Text>
+        <Text className="text-gray-300 text-xs mt-1">
+          Runtime {Updates.runtimeVersion ?? "—"} · {Updates.channel ?? "no channel"}
+        </Text>
+        <Text className="text-gray-300 text-xs mt-0.5">
+          {Updates.isEmbeddedLaunch
+            ? "Bundled build — no OTA update applied"
+            : `OTA update ${Updates.updateId ? Updates.updateId.slice(0, 8) : "active"}`}
+        </Text>
+        {!Updates.isEmbeddedLaunch && Updates.createdAt ? (
+          <Text className="text-gray-300 text-xs mt-0.5">
+            Updated {Updates.createdAt.toLocaleString()}
+          </Text>
+        ) : null}
       </View>
     </ScrollView>
   );

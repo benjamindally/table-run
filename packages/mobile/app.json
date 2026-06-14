@@ -3,7 +3,7 @@
     "name": "League Genius",
     "slug": "league-genius",
     "scheme": "leaguegenius",
-    "version": "1.0.1",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/league-genius-logo-black.png",
     "userInterfaceStyle": "light",

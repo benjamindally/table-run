@@ -11,6 +11,8 @@ type Props = {
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
+  /** Earliest selectable date in YYYY-MM-DD format. */
+  minimumDate?: string;
 };
 
 /** Format a Date to YYYY-MM-DD */
@@ -49,8 +51,10 @@ export default function DatePickerField({
   placeholder = "Select date",
   required = false,
   disabled = false,
+  minimumDate,
 }: Props) {
   const [show, setShow] = useState(false);
+  const minDate = minimumDate ? parseToDate(minimumDate) : undefined;
   // On Android, we need a temp date since the picker is a one-shot dialog
   const [tempDate, setTempDate] = useState<Date>(parseToDate(value));
 
@@ -105,6 +109,7 @@ export default function DatePickerField({
           value={tempDate}
           mode="date"
           display="default"
+          minimumDate={minDate}
           onChange={handleChange}
         />
       )}
@@ -127,6 +132,7 @@ export default function DatePickerField({
                 value={tempDate}
                 mode="date"
                 display="spinner"
+                minimumDate={minDate}
                 onChange={handleChange}
                 style={{ height: 200, alignSelf: "center", width: "100%" }}
               />

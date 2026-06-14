@@ -44,6 +44,7 @@ import { useAuthStore } from "../stores/authStore";
 import { useUserContextStore } from "../stores/userContextStore";
 import type { SeasonsStackScreenProps } from "../navigation/types";
 import DatePickerField from "../components/DatePickerField";
+import AddMatchModal, { type AddMatchSubmission } from "../components/AddMatchModal";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -188,6 +189,11 @@ export default function SeasonScheduleScreen({
   const [previewWeeks, setPreviewWeeks] = useState<ScheduleWeek[] | null>(null);
   const [warnings, setWarnings] = useState<ScheduleWarning[]>([]);
 
+  // ── Add Match (one-at-a-time) state ──
+  const [addMatchOpen, setAddMatchOpen] = useState(false);
+  const [addingMatch, setAddingMatch] = useState(false);
+  const [seasonStartDate, setSeasonStartDate] = useState("");
+
   // ── Week collapse state ──
   const [collapsedWeeks, setCollapsedWeeks] = useState<Set<number>>(new Set());
 
@@ -263,12 +269,14 @@ export default function SeasonScheduleScreen({
   const loadResources = useCallback(async () => {
     if (resourcesLoaded) return;
     try {
-      const [teamsResp, venuesResp] = await Promise.all([
+      const [teamsResp, venuesResp, seasonResp] = await Promise.all([
         seasonsApi.getTeams(seasonId, accessToken ?? undefined),
         seasonsApi.getVenues(seasonId, accessToken ?? undefined),
+        seasonsApi.getById(seasonId, accessToken ?? undefined),
       ]);
       setTeams(teamsResp);
       setVenues(venuesResp);
+      if (seasonResp.start_date) setSeasonStartDate(seasonResp.start_date);
       // Pre-select all
       const allTeamIds = teamsResp.map((t) => t.team);
       const allVenueIds = venuesResp.map((v) => v.id);
@@ -400,6 +408,56 @@ export default function SeasonScheduleScreen({
         },
       ]
     );
+  };
+
+  // ── Add a single match/bye (one at a time) ──
+  const handleOpenAddMatch = async () => {
+    // Ensure teams, venues, and the season start date are loaded before the
+    // form opens (resources only load lazily when the config panel is opened).
+    await loadResources();
+    setAddMatchOpen(true);
+  };
+
+  const handleAddMatch = async (submission: AddMatchSubmission) => {
+    setAddingMatch(true);
+    try {
+      const payload = submission.is_bye
+        ? {
+            matches: [],
+            byes: [
+              {
+                week_number: submission.week_number,
+                date: submission.date,
+                team_id: submission.team_id,
+              },
+            ],
+            append: true as const,
+            replace_existing: false as const,
+          }
+        : {
+            matches: [
+              {
+                week_number: submission.week_number,
+                date: submission.date,
+                home_team_id: submission.home_team_id,
+                away_team_id: submission.away_team_id,
+                location: submission.location,
+              },
+            ],
+            byes: [],
+            append: true as const,
+            replace_existing: false as const,
+          };
+      await seasonsApi.appendMatches(seasonId, payload, accessToken ?? undefined);
+      setAddMatchOpen(false);
+      setRefreshing(true);
+      await loadSchedule();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to add match.";
+      Alert.alert("Error", msg);
+    } finally {
+      setAddingMatch(false);
+    }
   };
 
   // ── Clear all scheduled matches for the season ──
@@ -608,6 +666,17 @@ export default function SeasonScheduleScreen({
           </View>
         )}
 
+        {/* ── Add a single match (operator, live mode) ── */}
+        {!isPreview && canGenerate && (
+          <TouchableOpacity
+            onPress={handleOpenAddMatch}
+            className="flex-row items-center justify-center gap-2 border border-primary bg-teal-50 rounded-lg py-2.5"
+          >
+            <Plus color="#26A69A" size={16} />
+            <Text className="text-sm font-semibold text-primary">Add Match</Text>
+          </TouchableOpacity>
+        )}
+
         {/* ── Clear scheduled matches (operator, live mode) ── */}
         {!isPreview && canGenerate && scheduledMatchCount > 0 && (
           <TouchableOpacity
@@ -627,7 +696,7 @@ export default function SeasonScheduleScreen({
             <CalendarDays color="#d1d5db" size={40} />
             <Text className="text-gray-400 text-center mt-3">
               {canGenerate
-                ? "No schedule yet. Open Schedule Generator above to create one."
+                ? "No schedule yet. Tap Add Match to build one match at a time, or open Schedule Generator above to create a full schedule."
                 : "No schedule has been generated yet."}
             </Text>
           </View>
@@ -1006,6 +1075,17 @@ export default function SeasonScheduleScreen({
           ))
         )}
       </ParamModal>
+
+      {/* Add Match (one at a time) */}
+      <AddMatchModal
+        visible={addMatchOpen}
+        onClose={() => setAddMatchOpen(false)}
+        teams={teams}
+        venues={venues}
+        seasonStartDate={seasonStartDate || config.start_date}
+        onSubmit={handleAddMatch}
+        saving={addingMatch}
+      />
     </ScrollView>
   );
 }
