@@ -186,93 +186,97 @@ export default function GameRow({
               </TouchableOpacity>
             </View>
 
-            {/* Special achievements */}
-            <View className="flex-row items-center gap-2">
-              {/* Table Run toggles */}
-              <TouchableOpacity
-                onPress={() => canScore && onTableRunToggle("home")}
-                disabled={!canScore || isReadOnly}
-                className={`flex-1 flex-row items-center justify-center gap-1 p-2 rounded-lg ${
-                  game.homeTableRun ? "bg-yellow-100" : "bg-gray-50"
-                }`}
-                activeOpacity={canScore && !isReadOnly ? 0.7 : 1}
-              >
-                <Zap
-                  size={14}
-                  color={game.homeTableRun ? "#CA8A04" : "#9CA3AF"}
-                />
-                <Text
-                  className={`text-xs font-medium ${
-                    game.homeTableRun ? "text-yellow-700" : "text-gray-500"
+            {/* Special achievements — grouped under each team, table run above 8-ball */}
+            <View className="flex-row items-start gap-2">
+              {/* Home achievements */}
+              <View className="flex-1 gap-2">
+                <TouchableOpacity
+                  onPress={() => canScore && onTableRunToggle("home")}
+                  disabled={!canScore || isReadOnly}
+                  className={`flex-row items-center justify-center gap-1 p-2 rounded-lg ${
+                    game.homeTableRun ? "bg-yellow-100" : "bg-gray-50"
                   }`}
+                  activeOpacity={canScore && !isReadOnly ? 0.7 : 1}
                 >
-                  H TR
-                </Text>
-              </TouchableOpacity>
+                  <Zap
+                    size={14}
+                    color={game.homeTableRun ? "#CA8A04" : "#9CA3AF"}
+                  />
+                  <Text
+                    className={`text-xs font-medium ${
+                      game.homeTableRun ? "text-yellow-700" : "text-gray-500"
+                    }`}
+                  >
+                    H Table Run
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => canScore && onTableRunToggle("away")}
-                disabled={!canScore || isReadOnly}
-                className={`flex-1 flex-row items-center justify-center gap-1 p-2 rounded-lg ${
-                  game.awayTableRun ? "bg-yellow-100" : "bg-gray-50"
-                }`}
-                activeOpacity={canScore && !isReadOnly ? 0.7 : 1}
-              >
-                <Zap
-                  size={14}
-                  color={game.awayTableRun ? "#CA8A04" : "#9CA3AF"}
-                />
-                <Text
-                  className={`text-xs font-medium ${
-                    game.awayTableRun ? "text-yellow-700" : "text-gray-500"
+                <TouchableOpacity
+                  onPress={() => canScore && on8BallToggle("home")}
+                  disabled={!canScore || isReadOnly}
+                  className={`flex-row items-center justify-center gap-1 p-2 rounded-lg ${
+                    game.home8Ball ? "bg-purple-100" : "bg-gray-50"
                   }`}
+                  activeOpacity={canScore && !isReadOnly ? 0.7 : 1}
                 >
-                  A TR
-                </Text>
-              </TouchableOpacity>
+                  <Target
+                    size={14}
+                    color={game.home8Ball ? "#7C3AED" : "#9CA3AF"}
+                  />
+                  <Text
+                    className={`text-xs font-medium ${
+                      game.home8Ball ? "text-purple-700" : "text-gray-500"
+                    }`}
+                  >
+                    H 8-Ball
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-              {/* 8-Ball Break toggles */}
-              <TouchableOpacity
-                onPress={() => canScore && on8BallToggle("home")}
-                disabled={!canScore || isReadOnly}
-                className={`flex-1 flex-row items-center justify-center gap-1 p-2 rounded-lg ${
-                  game.home8Ball ? "bg-purple-100" : "bg-gray-50"
-                }`}
-                activeOpacity={canScore && !isReadOnly ? 0.7 : 1}
-              >
-                <Target
-                  size={14}
-                  color={game.home8Ball ? "#7C3AED" : "#9CA3AF"}
-                />
-                <Text
-                  className={`text-xs font-medium ${
-                    game.home8Ball ? "text-purple-700" : "text-gray-500"
+              {/* Away achievements */}
+              <View className="flex-1 gap-2">
+                <TouchableOpacity
+                  onPress={() => canScore && onTableRunToggle("away")}
+                  disabled={!canScore || isReadOnly}
+                  className={`flex-row items-center justify-center gap-1 p-2 rounded-lg ${
+                    game.awayTableRun ? "bg-yellow-100" : "bg-gray-50"
                   }`}
+                  activeOpacity={canScore && !isReadOnly ? 0.7 : 1}
                 >
-                  H 8B
-                </Text>
-              </TouchableOpacity>
+                  <Zap
+                    size={14}
+                    color={game.awayTableRun ? "#CA8A04" : "#9CA3AF"}
+                  />
+                  <Text
+                    className={`text-xs font-medium ${
+                      game.awayTableRun ? "text-yellow-700" : "text-gray-500"
+                    }`}
+                  >
+                    A Table Run
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => canScore && on8BallToggle("away")}
-                disabled={!canScore || isReadOnly}
-                className={`flex-1 flex-row items-center justify-center gap-1 p-2 rounded-lg ${
-                  game.away8Ball ? "bg-purple-100" : "bg-gray-50"
-                }`}
-                activeOpacity={canScore && !isReadOnly ? 0.7 : 1}
-              >
-                <Target
-                  size={14}
-                  color={game.away8Ball ? "#7C3AED" : "#9CA3AF"}
-                />
-                <Text
-                  className={`text-xs font-medium ${
-                    game.away8Ball ? "text-purple-700" : "text-gray-500"
+                <TouchableOpacity
+                  onPress={() => canScore && on8BallToggle("away")}
+                  disabled={!canScore || isReadOnly}
+                  className={`flex-row items-center justify-center gap-1 p-2 rounded-lg ${
+                    game.away8Ball ? "bg-purple-100" : "bg-gray-50"
                   }`}
+                  activeOpacity={canScore && !isReadOnly ? 0.7 : 1}
                 >
-                  A 8B
-                </Text>
-              </TouchableOpacity>
+                  <Target
+                    size={14}
+                    color={game.away8Ball ? "#7C3AED" : "#9CA3AF"}
+                  />
+                  <Text
+                    className={`text-xs font-medium ${
+                      game.away8Ball ? "text-purple-700" : "text-gray-500"
+                    }`}
+                  >
+                    A 8-Ball
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         )}

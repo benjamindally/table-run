@@ -148,6 +148,11 @@ export function useMatchDetails(matchId: number) {
           ...(g.id !== undefined ? { id: g.id } : {}),
           awayPlayerId: g.away_player?.id ?? null,
           homePlayerId: g.home_player?.id ?? null,
+          winner: g.winner ?? null,
+          homeTableRun: g.home_table_run ?? false,
+          awayTableRun: g.away_table_run ?? false,
+          home8Ball: g.home_8ball_break ?? false,
+          away8Ball: g.away_8ball_break ?? false,
         });
       });
     } catch (err) {
@@ -171,13 +176,22 @@ export function useMatchDetails(matchId: number) {
           const gameIndex =
             scoringState?.games.findIndex((g) => g.id === message.game_id) ?? -1;
           if (gameIndex >= 0) {
-            updateGame(gameIndex, {
-              winner: message.game_data.winner ?? undefined,
-              homeTableRun: message.game_data.home_table_run,
-              awayTableRun: message.game_data.away_table_run,
-              home8Ball: message.game_data.home_8ball_break,
-              away8Ball: message.game_data.away_8ball_break,
-            });
+            // Apply ONLY the fields present in this (partial) update. The server
+            // echoes just the changed field, so blindly writing all of them
+            // would clobber e.g. an already-set winner when a table-run/8-ball
+            // toggle comes through. Mirrors the web handler.
+            const gd = message.game_data;
+            const updates: Partial<GameState> = {};
+            if (gd.winner !== undefined) updates.winner = gd.winner;
+            if (gd.home_table_run !== undefined)
+              updates.homeTableRun = gd.home_table_run;
+            if (gd.away_table_run !== undefined)
+              updates.awayTableRun = gd.away_table_run;
+            if (gd.home_8ball_break !== undefined)
+              updates.home8Ball = gd.home_8ball_break;
+            if (gd.away_8ball_break !== undefined)
+              updates.away8Ball = gd.away_8ball_break;
+            updateGame(gameIndex, updates);
           }
           break;
         }
@@ -269,7 +283,10 @@ export function useMatchDetails(matchId: number) {
     reconnect: reconnectWebSocket,
   } = useMatchWebSocket({
     matchId,
-    enabled: match !== null && scoringState !== null && !isMatchCompleted,
+    // Only captains/operators get a live socket; read-only viewers (team
+    // members) rely on initial load + pull-to-refresh. The backend rejects
+    // non-captain sockets anyway, so this avoids needless reconnect churn.
+    enabled: canEdit && match !== null && scoringState !== null && !isMatchCompleted,
     onMessage: handleWebSocketMessage,
   });
 
@@ -368,6 +385,11 @@ export function useMatchDetails(matchId: number) {
               ...(gameData.id !== undefined ? { id: gameData.id } : {}),
               awayPlayerId: gameData.away_player?.id ?? null,
               homePlayerId: gameData.home_player?.id ?? null,
+              winner: gameData.winner ?? null,
+              homeTableRun: gameData.home_table_run ?? false,
+              awayTableRun: gameData.away_table_run ?? false,
+              home8Ball: gameData.home_8ball_break ?? false,
+              away8Ball: gameData.away_8ball_break ?? false,
             });
           });
         } catch (err) {
@@ -431,15 +453,22 @@ export function useMatchDetails(matchId: number) {
       const game = scoringState?.games[gameIndex];
       if (!game?.id) return;
       const newValue = team === "home" ? !game.homeTableRun : !game.awayTableRun;
-      const key = team === "home" ? "homeTableRun" : "awayTableRun";
-      updateGame(gameIndex, { [key]: newValue });
+      // A table run is a win for that player: enabling it sets the winner;
+      // turning it back off clears the auto-set win.
+      const winner: TeamSide | null = newValue ? team : null;
+      updateGame(
+        gameIndex,
+        team === "home"
+          ? { homeTableRun: newValue, winner }
+          : { awayTableRun: newValue, winner }
+      );
       sendWebSocket({
         type: "game_update",
         game_id: game.id,
         game_data:
           team === "home"
-            ? { home_table_run: newValue }
-            : { away_table_run: newValue },
+            ? { home_table_run: newValue, winner }
+            : { away_table_run: newValue, winner },
       });
     },
     [scoringState?.games, updateGame, sendWebSocket]
@@ -450,15 +479,22 @@ export function useMatchDetails(matchId: number) {
       const game = scoringState?.games[gameIndex];
       if (!game?.id) return;
       const newValue = team === "home" ? !game.home8Ball : !game.away8Ball;
-      const key = team === "home" ? "home8Ball" : "away8Ball";
-      updateGame(gameIndex, { [key]: newValue });
+      // An 8-ball break is a win for that player: enabling it sets the winner;
+      // turning it back off clears the auto-set win.
+      const winner: TeamSide | null = newValue ? team : null;
+      updateGame(
+        gameIndex,
+        team === "home"
+          ? { home8Ball: newValue, winner }
+          : { away8Ball: newValue, winner }
+      );
       sendWebSocket({
         type: "game_update",
         game_id: game.id,
         game_data:
           team === "home"
-            ? { home_8ball_break: newValue }
-            : { away_8ball_break: newValue },
+            ? { home_8ball_break: newValue, winner }
+            : { away_8ball_break: newValue, winner },
       });
     },
     [scoringState?.games, updateGame, sendWebSocket]
