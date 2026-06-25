@@ -126,13 +126,16 @@ export interface MatchStartedBroadcast {
   type: 'match_started';
 }
 
-// Match state sent on initial connection
+// Match state sent on initial connection.
+// NOTE: the backend consumer (get_match_data) emits FLAT player ids
+// (home_player_id / away_player_id), not nested player objects. Keep this in
+// sync with league/consumers.py — see the lineup REST endpoint for the nested shape.
 export interface MatchStateGame {
   id: number;
   game_number: number;
   set_number: number;
-  home_player: { id: number; full_name: string } | null;
-  away_player: { id: number; full_name: string } | null;
+  home_player_id: number | null;
+  away_player_id: number | null;
   winner: 'home' | 'away' | null;
   home_table_run: boolean;
   away_table_run: boolean;

@@ -441,10 +441,10 @@ const MatchForm: React.FC<MatchFormProps> = ({
             const awayPlayerIds = new Set<number>();
 
             matchData.games.forEach((gameData) => {
-              if (gameData.home_player?.id)
-                homePlayerIds.add(gameData.home_player.id);
-              if (gameData.away_player?.id)
-                awayPlayerIds.add(gameData.away_player.id);
+              if (gameData.home_player_id)
+                homePlayerIds.add(gameData.home_player_id);
+              if (gameData.away_player_id)
+                awayPlayerIds.add(gameData.away_player_id);
 
               // Update each game with its real ID and any existing data
               // Only update player IDs if the backend provides them - don't overwrite with null
@@ -467,11 +467,11 @@ const MatchForm: React.FC<MatchFormProps> = ({
               };
 
               // Only include player IDs if backend provided them
-              if (gameData.home_player?.id) {
-                gameUpdate.homePlayerId = gameData.home_player.id;
+              if (gameData.home_player_id) {
+                gameUpdate.homePlayerId = gameData.home_player_id;
               }
-              if (gameData.away_player?.id) {
-                gameUpdate.awayPlayerId = gameData.away_player.id;
+              if (gameData.away_player_id) {
+                gameUpdate.awayPlayerId = gameData.away_player_id;
               }
               updateGame(gameData.game_number - 1, gameUpdate);
             });

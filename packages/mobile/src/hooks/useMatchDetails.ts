@@ -23,6 +23,7 @@ import { useUserContextStore } from "../stores/userContextStore";
 import {
   useMatchScoringStore,
   type PlayerAttendance,
+  type GameState,
 } from "../stores/matchScoringStore";
 import { useMatchWebSocket } from "./useMatchWebSocket";
 
@@ -184,16 +185,24 @@ export function useMatchDetails(matchId: number) {
         case "match_state":
           if (message.data?.games) {
             message.data.games.forEach((gameData, index) => {
-              updateGame(index, {
+              // The backend sends flat home_player_id/away_player_id. Only
+              // apply them when present so a partial broadcast never nulls out
+              // the lineup the REST load already populated.
+              const updates: Partial<GameState> = {
                 id: gameData.id,
-                homePlayerId: gameData.home_player?.id ?? null,
-                awayPlayerId: gameData.away_player?.id ?? null,
                 winner: gameData.winner,
                 homeTableRun: gameData.home_table_run,
                 awayTableRun: gameData.away_table_run,
                 home8Ball: gameData.home_8ball_break,
                 away8Ball: gameData.away_8ball_break,
-              });
+              };
+              if (gameData.home_player_id != null) {
+                updates.homePlayerId = gameData.home_player_id;
+              }
+              if (gameData.away_player_id != null) {
+                updates.awayPlayerId = gameData.away_player_id;
+              }
+              updateGame(index, updates);
             });
           }
           if (message.data?.lineup_state) {
