@@ -17,6 +17,12 @@ interface UseMatchWebSocketOptions {
   matchId: number;
   enabled: boolean;
   onMessage?: (message: IncomingMessage) => void;
+  /**
+   * When false, the socket is receive-only: send() becomes a no-op. Used so
+   * read-only viewers structurally cannot emit writes (the backend ignores
+   * them too, but this keeps the client honest).
+   */
+  canWrite?: boolean;
 }
 
 interface UseMatchWebSocketReturn {
@@ -33,6 +39,7 @@ export function useMatchWebSocket({
   matchId,
   enabled,
   onMessage,
+  canWrite = true,
 }: UseMatchWebSocketOptions): UseMatchWebSocketReturn {
   const accessToken = useAuthStore((state) => state.accessToken);
   const wsRef = useRef<WebSocket | null>(null);
@@ -134,14 +141,18 @@ export function useMatchWebSocket({
     connect();
   }, [connect, disconnect]);
 
-  // Send message
-  const send = useCallback((message: OutgoingMessage) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
-    } else {
-      console.warn("[WebSocket] Cannot send - not connected");
-    }
-  }, []);
+  // Send message (no-op for read-only viewers)
+  const send = useCallback(
+    (message: OutgoingMessage) => {
+      if (!canWrite) return;
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify(message));
+      } else {
+        console.warn("[WebSocket] Cannot send - not connected");
+      }
+    },
+    [canWrite]
+  );
 
   // Connect on mount, disconnect on unmount
   useEffect(() => {

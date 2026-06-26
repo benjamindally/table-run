@@ -144,16 +144,19 @@ export function useMatchDetails(matchId: number) {
         }))
       );
       lineupData.games.forEach((g) => {
-        updateGame(g.game_number - 1, {
+        const updates: Partial<GameState> = {
           ...(g.id !== undefined ? { id: g.id } : {}),
           awayPlayerId: g.away_player?.id ?? null,
           homePlayerId: g.home_player?.id ?? null,
-          winner: g.winner ?? null,
-          homeTableRun: g.home_table_run ?? false,
-          awayTableRun: g.away_table_run ?? false,
-          home8Ball: g.home_8ball_break ?? false,
-          away8Ball: g.away_8ball_break ?? false,
-        });
+        };
+        // Apply scoring fields only when the backend provides them, so a
+        // refresh never clears a live winner against an older backend.
+        if (g.winner !== undefined) updates.winner = g.winner;
+        if (g.home_table_run !== undefined) updates.homeTableRun = g.home_table_run;
+        if (g.away_table_run !== undefined) updates.awayTableRun = g.away_table_run;
+        if (g.home_8ball_break !== undefined) updates.home8Ball = g.home_8ball_break;
+        if (g.away_8ball_break !== undefined) updates.away8Ball = g.away_8ball_break;
+        updateGame(g.game_number - 1, updates);
       });
     } catch (err) {
       console.warn("[useMatchDetails] Could not load lineup data:", err);
@@ -283,10 +286,16 @@ export function useMatchDetails(matchId: number) {
     reconnect: reconnectWebSocket,
   } = useMatchWebSocket({
     matchId,
-    // Only captains/operators get a live socket; read-only viewers (team
-    // members) rely on initial load + pull-to-refresh. The backend rejects
-    // non-captain sockets anyway, so this avoids needless reconnect churn.
-    enabled: canEdit && match !== null && scoringState !== null && !isMatchCompleted,
+    // Any logged-in user opens the live feed; the backend decides whether
+    // they're a writer (captain/operator) or a read-only viewer, and rejects
+    // non-participants of a private league.
+    enabled:
+      isAuthenticated &&
+      match !== null &&
+      scoringState !== null &&
+      !isMatchCompleted,
+    // Front-end chokepoint: only captains/operators may emit writes.
+    canWrite: canEdit,
     onMessage: handleWebSocketMessage,
   });
 
@@ -381,16 +390,24 @@ export function useMatchDetails(matchId: number) {
           );
 
           lineupData.games.forEach((gameData) => {
-            updateGame(gameData.game_number - 1, {
+            const updates: Partial<GameState> = {
               ...(gameData.id !== undefined ? { id: gameData.id } : {}),
               awayPlayerId: gameData.away_player?.id ?? null,
               homePlayerId: gameData.home_player?.id ?? null,
-              winner: gameData.winner ?? null,
-              homeTableRun: gameData.home_table_run ?? false,
-              awayTableRun: gameData.away_table_run ?? false,
-              home8Ball: gameData.home_8ball_break ?? false,
-              away8Ball: gameData.away_8ball_break ?? false,
-            });
+            };
+            // Scoring fields only exist once the backend change is deployed.
+            // Apply them only when present so a refresh never wipes a live
+            // winner/table-run if a build is talking to the old backend.
+            if (gameData.winner !== undefined) updates.winner = gameData.winner;
+            if (gameData.home_table_run !== undefined)
+              updates.homeTableRun = gameData.home_table_run;
+            if (gameData.away_table_run !== undefined)
+              updates.awayTableRun = gameData.away_table_run;
+            if (gameData.home_8ball_break !== undefined)
+              updates.home8Ball = gameData.home_8ball_break;
+            if (gameData.away_8ball_break !== undefined)
+              updates.away8Ball = gameData.away_8ball_break;
+            updateGame(gameData.game_number - 1, updates);
           });
         } catch (err) {
           console.warn("[useMatchDetails] Could not load lineup data:", err);
