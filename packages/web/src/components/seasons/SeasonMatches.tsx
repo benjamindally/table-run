@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { ChevronDown, ChevronUp, Upload, Trash2, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ChevronDown, ChevronUp, Upload, Trash2, Plus, Radio } from "lucide-react";
 import type { Match, ScheduleBye } from "../../api";
 import { formatDateDisplay } from "@league-genius/shared";
 
@@ -34,6 +35,7 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
   initialWeeksToShow = 3,
   isUserTeamMatch,
 }) => {
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -236,6 +238,19 @@ const SeasonMatches: React.FC<SeasonMatchesProps> = ({
                                 <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
                                   Scheduled
                                 </span>
+                              )}
+                              {match.status === "in_progress" && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/matches/${match.id}/live`);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors font-medium"
+                                >
+                                  <Radio className="h-3 w-3" />
+                                  Watch Live
+                                </button>
                               )}
                               {matchEditable &&
                                 onDeleteMatch &&

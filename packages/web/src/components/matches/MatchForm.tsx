@@ -535,18 +535,20 @@ const MatchForm: React.FC<MatchFormProps> = ({
     ]
   );
 
-  // Initialize WebSocket connection - only after state is initialized to avoid race condition
-  const { send: sendWebSocket, status } = useMatchWebSocket({
-    matchId: match.id,
-    enabled: !!state,
-    onMessage: handleWebSocketMessage,
-  });
-
   // Determine if user is in read-only mode (viewer or match completed)
   // League operators have full access and are never read-only
   const isReadOnly =
     (isMatchCompleted && !isLeagueOperator) ||
     (userTeamSide === null && !isLeagueOperator);
+
+  // Initialize WebSocket connection - only after state is initialized to avoid race condition.
+  // Read-only viewers get a receive-only socket (send() is a no-op).
+  const { send: sendWebSocket, status } = useMatchWebSocket({
+    matchId: match.id,
+    enabled: !!state,
+    onMessage: handleWebSocketMessage,
+    canWrite: !isReadOnly,
+  });
 
   // Scoring (winner/TR/8B) is additionally locked during awaiting_confirmation.
   // Once away submits, neither captain can alter results — home can only confirm or send back.

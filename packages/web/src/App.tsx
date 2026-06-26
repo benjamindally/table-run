@@ -19,6 +19,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import HomePage from "./pages/HomePage";
 import TeamRegistrationPage from "./pages/TeamRegistrationPage";
 import MatchScorePage from "./pages/MatchScorePage";
+import LiveMatchPage from "./pages/LiveMatchPage";
 import ScoreEntryPage from "./pages/ScoreEntryPage";
 import LeaguesPage from "./pages/LeaguesPage";
 import StandingsPage from "./pages/StandingsPage";
@@ -66,6 +67,7 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path="register" element={<TeamRegistrationPage />} />
             <Route path="match-score" element={<MatchScorePage />} />
+            <Route path="matches/:matchId/live" element={<LiveMatchPage />} />
             <Route path="score-entry/:seasonId" element={<ScoreEntryPage />} />
             <Route path="leagues" element={<LeaguesPage />} />
             <Route
